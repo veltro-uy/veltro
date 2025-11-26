@@ -98,7 +98,7 @@ interface Props {
 }
 
 export default function Show({ team, isMember, canManage }: Props) {
-	const { flash, auth } = usePage<{ 
+	const { flash, auth } = usePage<{
 		flash: { success?: string; error?: string };
 		auth: { user: { id: number } };
 	}>().props;
@@ -106,7 +106,9 @@ export default function Show({ team, isMember, canManage }: Props) {
 		(m) => m.user_id === auth.user.id && m.role === "captain",
 	);
 	const isLeader = team.team_members.some(
-		(m) => m.user_id === auth.user.id && (m.role === "captain" || m.role === "co_captain"),
+		(m) =>
+			m.user_id === auth.user.id &&
+			(m.role === "captain" || m.role === "co_captain"),
 	);
 	const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
@@ -137,41 +139,57 @@ export default function Show({ team, isMember, canManage }: Props) {
 	}, [flash]);
 
 	const handleAcceptRequest = (requestId: number) => {
-		router.post(joinRequests.accept(requestId).url, {}, {
-			onSuccess: () => {
-				toast.success("¡Solicitud de unión aceptada!", {
-					description: "El jugador ha sido añadido a tu equipo.",
-				});
+		router.post(
+			joinRequests.accept(requestId).url,
+			{},
+			{
+				onSuccess: () => {
+					toast.success("¡Solicitud de unión aceptada!", {
+						description: "El jugador ha sido añadido a tu equipo.",
+					});
+				},
+				onError: () => {
+					toast.error("Error al aceptar la solicitud");
+				},
 			},
-			onError: () => {
-				toast.error("Error al aceptar la solicitud");
-			},
-		});
+		);
 	};
 
 	const handleRejectRequest = (requestId: number) => {
-		router.post(joinRequests.reject(requestId).url, {}, {
-			onSuccess: () => {
-				toast.success("Solicitud de unión rechazada");
+		router.post(
+			joinRequests.reject(requestId).url,
+			{},
+			{
+				onSuccess: () => {
+					toast.success("Solicitud de unión rechazada");
+				},
+				onError: () => {
+					toast.error("Error al rechazar la solicitud");
+				},
 			},
-			onError: () => {
-				toast.error("Error al rechazar la solicitud");
-			},
-		});
+		);
 	};
 
 	const handleLeaveTeam = () => {
-		router.post(teams.leave(team.id).url, {}, {
-			onSuccess: () => {
-				setShowLeaveDialog(false);
-				toast.success("Has abandonado el equipo exitosamente");
+		router.post(
+			teams.leave(team.id).url,
+			{},
+			{
+				onSuccess: () => {
+					setShowLeaveDialog(false);
+					toast.success("Has abandonado el equipo exitosamente");
+				},
+				onError: (
+					errors: Record<string, string | string[]> | { message?: string },
+				) => {
+					setShowLeaveDialog(false);
+					const errorMessage =
+						(errors as { message?: string })?.message ||
+						"Error al abandonar el equipo";
+					toast.error(errorMessage);
+				},
 			},
-			onError: (errors: any) => {
-				setShowLeaveDialog(false);
-				const errorMessage = errors?.message || "Error al abandonar el equipo";
-				toast.error(errorMessage);
-			},
-		});
+		);
 	};
 
 	// Sort members: Captain first, then Co-Captains, then Players

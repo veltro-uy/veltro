@@ -75,8 +75,12 @@ export function MemberManagementDropdown({
 				onSuccess: () => {
 					toast.success("Role updated successfully!");
 				},
-				onError: (errors: any) => {
-					const errorMessage = errors?.message || "Failed to update role";
+				onError: (
+					errors: Record<string, string | string[]> | { message?: string },
+				) => {
+					const errorMessage =
+						(errors as { message?: string })?.message ||
+						"Failed to update role";
 					toast.error(errorMessage);
 				},
 			},
@@ -92,8 +96,12 @@ export function MemberManagementDropdown({
 				onSuccess: () => {
 					toast.success("Position updated successfully!");
 				},
-				onError: (errors: any) => {
-					const errorMessage = errors?.message || "Failed to update position";
+				onError: (
+					errors: Record<string, string | string[]> | { message?: string },
+				) => {
+					const errorMessage =
+						(errors as { message?: string })?.message ||
+						"Failed to update position";
 					toast.error(errorMessage);
 				},
 			},
@@ -110,10 +118,13 @@ export function MemberManagementDropdown({
 					setShowTransferDialog(false);
 					toast.success("Captaincy transferred successfully!");
 				},
-				onError: (errors: any) => {
+				onError: (
+					errors: Record<string, string | string[]> | { message?: string },
+				) => {
 					setShowTransferDialog(false);
 					const errorMessage =
-						errors?.message || "Failed to transfer captaincy";
+						(errors as { message?: string })?.message ||
+						"Failed to transfer captaincy";
 					toast.error(errorMessage);
 				},
 			},
@@ -129,9 +140,13 @@ export function MemberManagementDropdown({
 					setShowRemoveDialog(false);
 					toast.success("Member removed successfully!");
 				},
-				onError: (errors: any) => {
+				onError: (
+					errors: Record<string, string | string[]> | { message?: string },
+				) => {
 					setShowRemoveDialog(false);
-					const errorMessage = errors?.message || "Failed to remove member";
+					const errorMessage =
+						(errors as { message?: string })?.message ||
+						"Failed to remove member";
 					toast.error(errorMessage);
 				},
 			},

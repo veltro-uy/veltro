@@ -1,4 +1,4 @@
-import { router, useForm } from "@inertiajs/react";
+import { useForm } from "@inertiajs/react";
 import { Clock, Minus, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -92,7 +92,7 @@ export function ScoreTracker({ match, isLeader }: Props) {
 			home_score: match.home_score ?? 0,
 			away_score: match.away_score ?? 0,
 		});
-	}, [match.home_score, match.away_score]);
+	}, [match.home_score, match.away_score, setData]);
 
 	const handleUpdateScore = () => {
 		post(matches.updateScore(match.id).url, {
