@@ -368,13 +368,47 @@ final class MatchService
     public function getMatchDetails(int $matchId): ?FootballMatch
     {
         return FootballMatch::with([
-            'homeTeam.teamMembers.user',
-            'awayTeam.teamMembers.user',
+            'homeTeam',
+            'awayTeam',
             'creator',
             'matchRequests.requestingTeam',
-            'lineups.user',
-            'events.user',
         ])->find($matchId);
+    }
+
+    /**
+     * Get opposing team leaders with phone numbers for a match.
+     *
+     * @return array{home_leaders: \Illuminate\Database\Eloquent\Collection, away_leaders: \Illuminate\Database\Eloquent\Collection}
+     */
+    public function getOpposingTeamLeaders(FootballMatch $match, int $userId): array
+    {
+        $homeLeaders = collect();
+        $awayLeaders = collect();
+
+        // Only return leaders if match is confirmed and user is a leader of one of the teams
+        if (!$match->isConfirmed() || !$match->isTeamLeader($userId)) {
+            return [
+                'home_leaders' => $homeLeaders,
+                'away_leaders' => $awayLeaders,
+            ];
+        }
+
+        // Get home team leaders efficiently - only load leaders with user data
+        $homeLeaders = $match->homeTeam->getLeaders()
+            ->with('user:id,name,phone_number')
+            ->get();
+
+        // Get away team leaders if away team exists
+        if ($match->away_team_id) {
+            $awayLeaders = $match->awayTeam->getLeaders()
+                ->with('user:id,name,phone_number')
+                ->get();
+        }
+
+        return [
+            'home_leaders' => $homeLeaders,
+            'away_leaders' => $awayLeaders,
+        ];
     }
 
     /**

@@ -177,26 +177,58 @@ final class FootballMatch extends Model
      */
     public function isTeamLeader(int $userId): bool
     {
-        $homeLeader = $this->homeTeam->isLeader($userId);
-        $awayLeader = $this->away_team_id ? $this->awayTeam->isLeader($userId) : false;
+        $homeLeader = $this->isHomeTeamLeader($userId);
+        $awayLeader = $this->away_team_id ? $this->isAwayTeamLeader($userId) : false;
         
         return $homeLeader || $awayLeader;
     }
 
     /**
      * Check if a user is a leader of the home team.
+     * Uses loaded team members if available to avoid additional queries.
      */
     public function isHomeTeamLeader(int $userId): bool
     {
+        if (!$this->relationLoaded('homeTeam')) {
+            return $this->homeTeam->isLeader($userId);
+        }
+
+        // Use loaded team members if available
+        if ($this->homeTeam->relationLoaded('teamMembers')) {
+            return $this->homeTeam->teamMembers
+                ->where('user_id', $userId)
+                ->whereIn('role', ['captain', 'co_captain'])
+                ->where('status', 'active')
+                ->isNotEmpty();
+        }
+
         return $this->homeTeam->isLeader($userId);
     }
 
     /**
      * Check if a user is a leader of the away team.
+     * Uses loaded team members if available to avoid additional queries.
      */
     public function isAwayTeamLeader(int $userId): bool
     {
-        return $this->away_team_id ? $this->awayTeam->isLeader($userId) : false;
+        if (!$this->away_team_id) {
+            return false;
+        }
+
+        if (!$this->relationLoaded('awayTeam') || !$this->awayTeam) {
+            return $this->awayTeam->isLeader($userId);
+        }
+
+        // Use loaded team members if available
+        if ($this->awayTeam->relationLoaded('teamMembers')) {
+            return $this->awayTeam->teamMembers
+                ->where('user_id', $userId)
+                ->whereIn('role', ['captain', 'co_captain'])
+                ->where('status', 'active')
+                ->isNotEmpty();
+        }
+
+        return $this->awayTeam->isLeader($userId);
     }
 
     /**

@@ -111,7 +111,24 @@ final class MatchController extends Controller
 
         $user = Auth::user();
         
-        // Check if user is a leader of either team
+        // Load team members (leaders only) for leader checks to avoid N+1 queries
+        $match->loadMissing([
+            'homeTeam.teamMembers' => function ($query) {
+                $query->whereIn('role', ['captain', 'co_captain'])
+                    ->where('status', 'active');
+            },
+        ]);
+
+        if ($match->away_team_id) {
+            $match->loadMissing([
+                'awayTeam.teamMembers' => function ($query) {
+                    $query->whereIn('role', ['captain', 'co_captain'])
+                        ->where('status', 'active');
+                },
+            ]);
+        }
+        
+        // Check if user is a leader of either team (uses loaded data)
         $isHomeLeader = $match->isHomeTeamLeader($user->id);
         $isAwayLeader = $match->away_team_id ? $match->isAwayTeamLeader($user->id) : false;
         $isLeader = $isHomeLeader || $isAwayLeader;
@@ -130,17 +147,61 @@ final class MatchController extends Controller
                 ->get();
         }
 
-        // Get lineups and events for the match
-        $homeLineup = $match->lineups()
-            ->where('team_id', $match->home_team_id)
-            ->with('user')
-            ->get();
-        
-        $awayLineup = $match->away_team_id 
-            ? $match->lineups()->where('team_id', $match->away_team_id)->with('user')->get()
-            : collect();
+        // Get lineups and events for the match (only load if needed)
+        $homeLineup = collect();
+        $awayLineup = collect();
+        $events = collect();
 
-        $events = $match->events()->with(['user', 'team'])->orderBy('minute')->get();
+        if ($match->isConfirmed() || $match->isInProgress() || $match->isCompleted()) {
+            $homeLineup = $match->lineups()
+                ->where('team_id', $match->home_team_id)
+                ->with('user:id,name')
+                ->get();
+            
+            if ($match->away_team_id) {
+                $awayLineup = $match->lineups()
+                    ->where('team_id', $match->away_team_id)
+                    ->with('user:id,name')
+                    ->get();
+            }
+
+            $events = $match->events()
+                ->with(['user:id,name', 'team:id,name'])
+                ->orderBy('minute')
+                ->get();
+        }
+
+        // Get opposing team leaders with phone numbers
+        $opposingLeaders = $this->matchService->getOpposingTeamLeaders($match, $user->id);
+        
+        // Determine which leaders to show based on user's team
+        $opposingTeamLeaders = collect();
+        if ($isHomeLeader && $match->away_team_id) {
+            // User is home leader, show away team leaders
+            $opposingTeamLeaders = $opposingLeaders['away_leaders'];
+        } elseif ($isAwayLeader) {
+            // User is away leader, show home team leaders
+            $opposingTeamLeaders = $opposingLeaders['home_leaders'];
+        }
+
+        // Format opposing team leaders for Inertia (ensure user relationship is loaded)
+        $formattedOpposingLeaders = $opposingTeamLeaders->map(function ($leader) {
+            // Ensure user is loaded
+            if (!$leader->relationLoaded('user')) {
+                $leader->load('user:id,name,phone_number');
+            }
+
+            return [
+                'id' => $leader->id,
+                'user_id' => $leader->user_id,
+                'role' => $leader->role,
+                'user' => [
+                    'id' => $leader->user->id,
+                    'name' => $leader->user->name,
+                    'phone_number' => $leader->user->phone_number ?? null,
+                ],
+            ];
+        });
 
         return Inertia::render('matches/show', [
             'match' => $match,
@@ -151,6 +212,7 @@ final class MatchController extends Controller
             'homeLineup' => $homeLineup,
             'awayLineup' => $awayLineup,
             'events' => $events,
+            'opposingTeamLeaders' => $formattedOpposingLeaders,
         ]);
     }
 

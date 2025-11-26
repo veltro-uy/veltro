@@ -1,4 +1,5 @@
 import { Form, Head } from "@inertiajs/react";
+import { useState } from "react";
 import InputError from "@/components/input-error";
 import TextLink from "@/components/text-link";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import AuthLayout from "@/layouts/auth-layout";
+import { validateEmail, validatePassword } from "@/lib/validation";
 import { register } from "@/routes";
 import { store } from "@/routes/login";
 import { request } from "@/routes/password";
@@ -24,6 +26,65 @@ export default function Login({
 	canResetPassword,
 	canRegister,
 }: LoginProps) {
+	const [clientErrors, setClientErrors] = useState<{
+		email?: string;
+		password?: string;
+	}>({});
+
+	const validateField = (field: 'email' | 'password', value: string) => {
+		let error: string | null = null;
+
+		if (field === 'email') {
+			error = validateEmail(value);
+		} else if (field === 'password') {
+			error = validatePassword(value);
+		}
+
+		setClientErrors((prev) => ({
+			...prev,
+			[field]: error || undefined,
+		}));
+
+		return error === null;
+	};
+
+	const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		if (clientErrors.email) {
+			validateField('email', value);
+		}
+	};
+
+	const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+		validateField('email', e.target.value);
+	};
+
+	const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		if (clientErrors.password) {
+			validateField('password', value);
+		}
+	};
+
+	const handlePasswordBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+		validateField('password', e.target.value);
+	};
+
+	const handleSubmit = (e: React.FormEvent) => {
+		const form = e.currentTarget as HTMLFormElement;
+		const formData = new FormData(form);
+		const email = (formData.get('email') as string) || '';
+		const password = (formData.get('password') as string) || '';
+
+		const emailValid = validateField('email', email);
+		const passwordValid = validateField('password', password);
+
+		if (!emailValid || !passwordValid) {
+			e.preventDefault();
+			return false;
+		}
+	};
+
 	return (
 		<AuthLayout
 			title="Inicia sesión en tu cuenta"
@@ -71,78 +132,90 @@ export default function Login({
 			<Form
 				{...store.form()}
 				resetOnSuccess={["password"]}
+				onSubmit={handleSubmit}
 				className="flex flex-col gap-6"
 			>
-				{({ processing, errors }) => (
-					<>
-						<div className="grid gap-6">
-							<div className="grid gap-2">
-								<Label htmlFor="email">Correo electrónico</Label>
-								<Input
-									id="email"
-									type="email"
-									name="email"
-									required
-									autoFocus
-									tabIndex={1}
-									autoComplete="email"
-									placeholder="correo@ejemplo.com"
-								/>
-								<InputError message={errors.email} />
-							</div>
+				{({ processing, errors }) => {
+					const emailError = errors.email || clientErrors.email;
+					const passwordError = errors.password || clientErrors.password;
 
-							<div className="grid gap-2">
-								<div className="flex items-center">
-									<Label htmlFor="password">Contraseña</Label>
-									{canResetPassword && (
-										<TextLink
-											href={request()}
-											className="ml-auto text-sm"
-											tabIndex={5}
-										>
-											¿Olvidaste tu contraseña?
-										</TextLink>
-									)}
+					return (
+						<>
+							<div className="grid gap-6">
+								<div className="grid gap-2">
+									<Label htmlFor="email">Correo electrónico</Label>
+									<Input
+										id="email"
+										type="email"
+										name="email"
+										required
+										autoFocus
+										tabIndex={1}
+										autoComplete="email"
+										placeholder="correo@ejemplo.com"
+										error={Boolean(emailError)}
+										onChange={handleEmailChange}
+										onBlur={handleEmailBlur}
+									/>
+									<InputError message={emailError} />
 								</div>
-								<Input
-									id="password"
-									type="password"
-									name="password"
-									required
-									tabIndex={2}
-									autoComplete="current-password"
-									placeholder="Contraseña"
-								/>
-								<InputError message={errors.password} />
-							</div>
+
+								<div className="grid gap-2">
+									<div className="flex items-center">
+										<Label htmlFor="password">Contraseña</Label>
+										{canResetPassword && (
+											<TextLink
+												href={request()}
+												className="ml-auto text-sm"
+												tabIndex={5}
+											>
+												¿Olvidaste tu contraseña?
+											</TextLink>
+										)}
+									</div>
+									<Input
+										id="password"
+										type="password"
+										name="password"
+										required
+										tabIndex={2}
+										autoComplete="current-password"
+										placeholder="Contraseña"
+										error={Boolean(passwordError)}
+										onChange={handlePasswordChange}
+										onBlur={handlePasswordBlur}
+									/>
+									<InputError message={passwordError} />
+								</div>
 
 							<div className="flex items-center space-x-3">
 								<Checkbox id="remember" name="remember" tabIndex={3} />
 								<Label htmlFor="remember">Recuérdame</Label>
 							</div>
 
-							<Button
-								type="submit"
-								className="mt-4 w-full"
-								tabIndex={4}
-								disabled={processing}
-								data-test="login-button"
-							>
-								{processing && <Spinner />}
-								Iniciar sesión
-							</Button>
-						</div>
-
-						{canRegister && (
-							<div className="text-center text-sm text-muted-foreground">
-								¿No tienes una cuenta?{" "}
-								<TextLink href={register()} tabIndex={5}>
-									Regístrate
-								</TextLink>
+								<Button
+									type="submit"
+									className="mt-4 w-full"
+									tabIndex={4}
+									disabled={processing}
+									data-test="login-button"
+								>
+									{processing && <Spinner />}
+									Iniciar sesión
+								</Button>
 							</div>
-						)}
-					</>
-				)}
+
+							{canRegister && (
+								<div className="text-center text-sm text-muted-foreground">
+									¿No tienes una cuenta?{" "}
+									<TextLink href={register()} tabIndex={5}>
+										Regístrate
+									</TextLink>
+								</div>
+							)}
+						</>
+					);
+				}}
 			</Form>
 
 			{status && (

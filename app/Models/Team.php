@@ -108,6 +108,17 @@ final class Team extends Model
     }
 
     /**
+     * Get all team leaders (captains and co-captains).
+     */
+    public function getLeaders(): HasMany
+    {
+        return $this->teamMembers()
+            ->whereIn('role', ['captain', 'co_captain'])
+            ->where('status', 'active')
+            ->with('user');
+    }
+
+    /**
      * Check if user is a member of the team.
      */
     public function hasMember(int $userId): bool

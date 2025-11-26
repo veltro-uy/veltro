@@ -4,6 +4,7 @@ import {
 	Clock,
 	Edit,
 	MapPin,
+	Phone,
 	Trophy,
 	Users,
 	X,
@@ -100,6 +101,17 @@ interface Match {
 	match_requests?: MatchRequest[];
 }
 
+interface OpposingTeamLeader {
+	id: number;
+	user_id: number;
+	role: string;
+	user: {
+		id: number;
+		name: string;
+		phone_number?: string;
+	};
+}
+
 interface Props {
 	match: Match;
 	isHomeLeader: boolean;
@@ -109,6 +121,7 @@ interface Props {
 	homeLineup: LineupPlayer[];
 	awayLineup: LineupPlayer[];
 	events: MatchEvent[];
+	opposingTeamLeaders?: OpposingTeamLeader[];
 }
 
 const getStatusColor = (status: string): string => {
@@ -146,6 +159,19 @@ const formatTime = (dateString: string): string => {
 	});
 };
 
+const formatPhoneForWhatsApp = (phone: string): string => {
+	// Remove all non-digit characters except +
+	const cleaned = phone.replace(/[^\d+]/g, "");
+	// If it doesn't start with +, assume it's a local number and add country code
+	// For now, we'll just return the cleaned number
+	return cleaned;
+};
+
+const getWhatsAppUrl = (phone: string): string => {
+	const formatted = formatPhoneForWhatsApp(phone);
+	return `https://wa.me/${formatted}`;
+};
+
 export default function Show({
 	match,
 	isHomeLeader,
@@ -155,6 +181,7 @@ export default function Show({
 	homeLineup,
 	awayLineup,
 	events,
+	opposingTeamLeaders = [],
 }: Props) {
 	const { flash } = usePage<{ flash: { success?: string; error?: string } }>()
 		.props;
@@ -360,6 +387,74 @@ export default function Show({
 								)}
 							</CardContent>
 						</Card>
+
+						{isLeader &&
+							(match.status === "confirmed" ||
+								match.status === "in_progress" ||
+								match.status === "completed") &&
+							opposingTeamLeaders.length > 0 && (
+								<Card>
+									<CardHeader>
+										<CardTitle>Contacto del Equipo Rival</CardTitle>
+										<CardDescription>
+											Líderes del equipo oponente para coordinar detalles del partido
+										</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<div className="space-y-3">
+											{opposingTeamLeaders.map((leader) => (
+												<div
+													key={leader.id}
+													className="flex items-center justify-between rounded-lg border bg-card p-4"
+												>
+													<div className="flex items-center gap-3">
+														<UserAvatar
+															name={leader.user.name}
+															size="sm"
+														/>
+														<div>
+															<p className="font-medium">
+																{leader.user.name}
+															</p>
+															<div className="flex items-center gap-2 mt-1">
+																<Badge variant="outline" className="text-xs">
+																	{leader.role === "captain"
+																		? "Capitán"
+																		: "Subcapitán"}
+																</Badge>
+																{leader.user.phone_number && (
+																	<div className="flex items-center gap-1 text-sm text-muted-foreground">
+																		<Phone className="h-3 w-3" />
+																		<span>{leader.user.phone_number}</span>
+																	</div>
+																)}
+															</div>
+														</div>
+													</div>
+													{leader.user.phone_number && (
+														<Button
+															asChild
+															variant="outline"
+															size="sm"
+														>
+															<a
+																href={getWhatsAppUrl(
+																	leader.user.phone_number,
+																)}
+																target="_blank"
+																rel="noopener noreferrer"
+															>
+																<Phone className="mr-2 h-4 w-4" />
+																WhatsApp
+															</a>
+														</Button>
+													)}
+												</div>
+											))}
+										</div>
+									</CardContent>
+								</Card>
+							)}
 
 						{(match.status === "confirmed" ||
 							match.status === "in_progress") && (
