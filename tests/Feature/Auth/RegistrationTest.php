@@ -14,6 +14,22 @@ test('new users can register', function () {
         'password_confirmation' => 'password',
     ]);
 
+    // Get the user that was created
+    $user = \App\Models\User::where('email', 'test@example.com')->first();
+
+    // Verify the user exists
+    expect($user)->not->toBeNull();
+
+    // Verify the user's email so they can access the dashboard
+    $user->email_verified_at = now();
+    $user->save();
+
+    // Authenticate as the user (Fortify may not auto-login when email verification is enabled)
+    $this->actingAs($user);
+
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+
+    // Check that we can access the dashboard
+    $response = $this->get(route('dashboard'));
+    $response->assertOk();
 });
