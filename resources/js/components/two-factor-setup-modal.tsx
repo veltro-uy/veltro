@@ -68,36 +68,53 @@ function TwoFactorSetupStep({
 	const IconComponent = copiedText === manualSetupKey ? Check : Copy;
 
 	useEffect(() => {
-		if (qrCodeUrl) {
-			setQrCodeReady(false);
-			// Check if QR code has rendered by observing the container
-			const checkInterval = setInterval(() => {
-				if (qrCodeRef.current?.querySelector("svg")) {
-					setQrCodeReady(true);
-					clearInterval(checkInterval);
-				}
-			}, 50);
-
-			// Cleanup after 2 seconds max
-			const timeout = setTimeout(() => {
-				clearInterval(checkInterval);
-				setQrCodeReady(true);
-			}, 2000);
-
-			return () => {
-				clearInterval(checkInterval);
-				clearTimeout(timeout);
-			};
-		} else {
-			setQrCodeReady(false);
+		if (!qrCodeUrl) {
+			// Use setTimeout to avoid synchronous setState in effect
+			const timeoutId = setTimeout(() => {
+				setQrCodeReady(false);
+			}, 0);
+			return () => clearTimeout(timeoutId);
 		}
+
+		// Reset ready state when URL changes (deferred to avoid synchronous setState)
+		let isMounted = true;
+		const resetTimeout = setTimeout(() => {
+			if (isMounted) {
+				setQrCodeReady(false);
+			}
+		}, 0);
+
+		// Check if QR code has rendered by observing the container
+		const checkInterval = setInterval(() => {
+			if (qrCodeRef.current?.querySelector("svg")) {
+				if (isMounted) {
+					setQrCodeReady(true);
+				}
+				clearInterval(checkInterval);
+			}
+		}, 50);
+
+		// Cleanup after 2 seconds max
+		const timeout = setTimeout(() => {
+			clearInterval(checkInterval);
+			if (isMounted) {
+				setQrCodeReady(true);
+			}
+		}, 2000);
+
+		return () => {
+			isMounted = false;
+			clearTimeout(resetTimeout);
+			clearInterval(checkInterval);
+			clearTimeout(timeout);
+		};
 	}, [qrCodeUrl]);
 
 	const hasSetupDataErrors = errors.some(
 		(error) =>
-			error.includes('Failed to fetch') ||
-			error.includes('setup key') ||
-			error.includes('QR code')
+			error.includes("Failed to fetch") ||
+			error.includes("setup key") ||
+			error.includes("QR code"),
 	);
 
 	return (
