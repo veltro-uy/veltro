@@ -29,7 +29,7 @@ export default function TwoFactor({
     twoFactorEnabled = false,
 }: TwoFactorProps) {
     const {
-        qrCodeSvg,
+        qrCodeUrl,
         hasSetupData,
         manualSetupKey,
         clearSetupData,
@@ -124,7 +124,7 @@ export default function TwoFactor({
                         onClose={() => setShowSetupModal(false)}
                         requiresConfirmation={requiresConfirmation}
                         twoFactorEnabled={twoFactorEnabled}
-                        qrCodeSvg={qrCodeSvg}
+                        qrCodeUrl={qrCodeUrl}
                         manualSetupKey={manualSetupKey}
                         clearSetupData={clearSetupData}
                         fetchSetupData={fetchSetupData}
