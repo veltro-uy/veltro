@@ -1,8 +1,5 @@
 import { Head, Link } from "@inertiajs/react";
 import {
-	CalendarDays,
-	Clock,
-	MapPin,
 	Plus,
 	Search,
 	Trophy,

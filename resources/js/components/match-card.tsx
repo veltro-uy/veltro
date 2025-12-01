@@ -1,7 +1,6 @@
 import { Link } from "@inertiajs/react";
 import { CalendarDays, Clock, MapPin, Trophy } from "lucide-react";
 import { TeamAvatar } from "@/components/team-avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,

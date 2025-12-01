@@ -1,5 +1,5 @@
-import { router, useForm } from "@inertiajs/react";
-import { Plus, Send } from "lucide-react";
+import { useForm } from "@inertiajs/react";
+import { Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";

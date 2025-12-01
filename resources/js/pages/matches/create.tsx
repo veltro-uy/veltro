@@ -1,6 +1,4 @@
 import { Head, router, useForm } from "@inertiajs/react";
-import { CalendarIcon } from "lucide-react";
-import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
