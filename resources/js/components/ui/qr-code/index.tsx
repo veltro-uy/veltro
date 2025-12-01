@@ -53,16 +53,18 @@ export const QRCode = ({
 	...props
 }: QRCodeProps) => {
 	const [svg, setSVG] = useState<string | null>(null);
-	const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+	const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+		if (typeof document === "undefined") {
+			return false;
+		}
+		return document.documentElement.classList.contains("dark");
+	});
 
-	// Detect dark mode state
+	// Detect dark mode state changes
 	useEffect(() => {
 		const checkDarkMode = () => {
 			return document.documentElement.classList.contains("dark");
 		};
-
-		// Set initial dark mode state
-		setIsDarkMode(checkDarkMode());
 
 		// Watch for class changes on document.documentElement
 		const observer = new MutationObserver(() => {
