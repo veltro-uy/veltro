@@ -25,38 +25,38 @@ export default function Register() {
 	}>({});
 
 	const [formData, setFormData] = useState({
-		name: '',
-		email: '',
-		password: '',
-		password_confirmation: '',
+		name: "",
+		email: "",
+		password: "",
+		password_confirmation: "",
 	});
 
 	const validateField = (
-		field: 'name' | 'email' | 'password' | 'password_confirmation',
+		field: "name" | "email" | "password" | "password_confirmation",
 		value: string,
-		currentFormData?: typeof formData
+		currentFormData?: typeof formData,
 	) => {
 		const data = currentFormData || formData;
 		let error: string | null = null;
 
-		if (field === 'name') {
+		if (field === "name") {
 			error = validateName(value);
-		} else if (field === 'email') {
+		} else if (field === "email") {
 			error = validateEmail(value);
-		} else if (field === 'password') {
+		} else if (field === "password") {
 			error = validatePassword(value);
 			// Also re-validate password confirmation if it has a value
 			if (data.password_confirmation && !error) {
 				const confirmationError = validatePasswordConfirmation(
 					value,
-					data.password_confirmation
+					data.password_confirmation,
 				);
 				setClientErrors((prev) => ({
 					...prev,
 					password_confirmation: confirmationError || undefined,
 				}));
 			}
-		} else if (field === 'password_confirmation') {
+		} else if (field === "password_confirmation") {
 			error = validatePasswordConfirmation(data.password, value);
 		}
 
@@ -69,8 +69,8 @@ export default function Register() {
 	};
 
 	const handleFieldChange = (
-		field: 'name' | 'email' | 'password' | 'password_confirmation',
-		value: string
+		field: "name" | "email" | "password" | "password_confirmation",
+		value: string,
 	) => {
 		const updatedFormData = { ...formData, [field]: value };
 		setFormData(updatedFormData);
@@ -80,14 +80,18 @@ export default function Register() {
 		}
 
 		// If password changes, re-validate password confirmation
-		if (field === 'password' && updatedFormData.password_confirmation) {
-			validateField('password_confirmation', updatedFormData.password_confirmation, updatedFormData);
+		if (field === "password" && updatedFormData.password_confirmation) {
+			validateField(
+				"password_confirmation",
+				updatedFormData.password_confirmation,
+				updatedFormData,
+			);
 		}
 	};
 
 	const handleFieldBlur = (
-		field: 'name' | 'email' | 'password' | 'password_confirmation',
-		value: string
+		field: "name" | "email" | "password" | "password_confirmation",
+		value: string,
 	) => {
 		validateField(field, value);
 	};
@@ -95,21 +99,26 @@ export default function Register() {
 	const handleSubmit = (e: React.FormEvent) => {
 		const form = e.currentTarget as HTMLFormElement;
 		const formDataObj = new FormData(form);
-		const name = (formDataObj.get('name') as string) || '';
-		const email = (formDataObj.get('email') as string) || '';
-		const password = (formDataObj.get('password') as string) || '';
+		const name = (formDataObj.get("name") as string) || "";
+		const email = (formDataObj.get("email") as string) || "";
+		const password = (formDataObj.get("password") as string) || "";
 		const passwordConfirmation =
-			(formDataObj.get('password_confirmation') as string) || '';
+			(formDataObj.get("password_confirmation") as string) || "";
 
-		const nameValid = validateField('name', name);
-		const emailValid = validateField('email', email);
-		const passwordValid = validateField('password', password);
+		const nameValid = validateField("name", name);
+		const emailValid = validateField("email", email);
+		const passwordValid = validateField("password", password);
 		const passwordConfirmationValid = validateField(
-			'password_confirmation',
-			passwordConfirmation
+			"password_confirmation",
+			passwordConfirmation,
 		);
 
-		if (!nameValid || !emailValid || !passwordValid || !passwordConfirmationValid) {
+		if (
+			!nameValid ||
+			!emailValid ||
+			!passwordValid ||
+			!passwordConfirmationValid
+		) {
 			e.preventDefault();
 			return false;
 		}
@@ -188,8 +197,8 @@ export default function Register() {
 										name="name"
 										placeholder="Nombre completo"
 										error={Boolean(nameError)}
-										onChange={(e) => handleFieldChange('name', e.target.value)}
-										onBlur={(e) => handleFieldBlur('name', e.target.value)}
+										onChange={(e) => handleFieldChange("name", e.target.value)}
+										onBlur={(e) => handleFieldBlur("name", e.target.value)}
 									/>
 									<InputError message={nameError} />
 								</div>
@@ -205,8 +214,8 @@ export default function Register() {
 										name="email"
 										placeholder="correo@ejemplo.com"
 										error={Boolean(emailError)}
-										onChange={(e) => handleFieldChange('email', e.target.value)}
-										onBlur={(e) => handleFieldBlur('email', e.target.value)}
+										onChange={(e) => handleFieldChange("email", e.target.value)}
+										onBlur={(e) => handleFieldBlur("email", e.target.value)}
 									/>
 									<InputError message={emailError} />
 								</div>
@@ -222,14 +231,18 @@ export default function Register() {
 										name="password"
 										placeholder="Contraseña"
 										error={Boolean(passwordError)}
-										onChange={(e) => handleFieldChange('password', e.target.value)}
-										onBlur={(e) => handleFieldBlur('password', e.target.value)}
+										onChange={(e) =>
+											handleFieldChange("password", e.target.value)
+										}
+										onBlur={(e) => handleFieldBlur("password", e.target.value)}
 									/>
 									<InputError message={passwordError} />
 								</div>
 
 								<div className="grid gap-2">
-									<Label htmlFor="password_confirmation">Confirmar contraseña</Label>
+									<Label htmlFor="password_confirmation">
+										Confirmar contraseña
+									</Label>
 									<Input
 										id="password_confirmation"
 										type="password"
@@ -240,10 +253,10 @@ export default function Register() {
 										placeholder="Confirmar contraseña"
 										error={Boolean(passwordConfirmationError)}
 										onChange={(e) =>
-											handleFieldChange('password_confirmation', e.target.value)
+											handleFieldChange("password_confirmation", e.target.value)
 										}
 										onBlur={(e) =>
-											handleFieldBlur('password_confirmation', e.target.value)
+											handleFieldBlur("password_confirmation", e.target.value)
 										}
 									/>
 									<InputError message={passwordConfirmationError} />

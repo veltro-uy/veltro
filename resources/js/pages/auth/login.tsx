@@ -31,12 +31,12 @@ export default function Login({
 		password?: string;
 	}>({});
 
-	const validateField = (field: 'email' | 'password', value: string) => {
+	const validateField = (field: "email" | "password", value: string) => {
 		let error: string | null = null;
 
-		if (field === 'email') {
+		if (field === "email") {
 			error = validateEmail(value);
-		} else if (field === 'password') {
+		} else if (field === "password") {
 			error = validatePassword(value);
 		}
 
@@ -51,33 +51,33 @@ export default function Login({
 	const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
 		if (clientErrors.email) {
-			validateField('email', value);
+			validateField("email", value);
 		}
 	};
 
 	const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-		validateField('email', e.target.value);
+		validateField("email", e.target.value);
 	};
 
 	const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
 		if (clientErrors.password) {
-			validateField('password', value);
+			validateField("password", value);
 		}
 	};
 
 	const handlePasswordBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-		validateField('password', e.target.value);
+		validateField("password", e.target.value);
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
 		const form = e.currentTarget as HTMLFormElement;
 		const formData = new FormData(form);
-		const email = (formData.get('email') as string) || '';
-		const password = (formData.get('password') as string) || '';
+		const email = (formData.get("email") as string) || "";
+		const password = (formData.get("password") as string) || "";
 
-		const emailValid = validateField('email', email);
-		const passwordValid = validateField('password', password);
+		const emailValid = validateField("email", email);
+		const passwordValid = validateField("password", password);
 
 		if (!emailValid || !passwordValid) {
 			e.preventDefault();
@@ -188,10 +188,10 @@ export default function Login({
 									<InputError message={passwordError} />
 								</div>
 
-							<div className="flex items-center space-x-3">
-								<Checkbox id="remember" name="remember" tabIndex={3} />
-								<Label htmlFor="remember">Recuérdame</Label>
-							</div>
+								<div className="flex items-center space-x-3">
+									<Checkbox id="remember" name="remember" tabIndex={3} />
+									<Label htmlFor="remember">Recuérdame</Label>
+								</div>
 
 								<Button
 									type="submit"
