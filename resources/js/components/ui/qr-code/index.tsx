@@ -28,6 +28,22 @@ const getOklch = (color: string, fallback: [number, number, number]) => {
 	};
 };
 
+// Fallback colors based on theme
+const getFallbackColors = (isDark: boolean) => {
+	if (isDark) {
+		// Dark mode: white foreground, dark background
+		return {
+			foreground: "oklch(0.985 0 0)", // white
+			background: "oklch(0.145 0 0)", // dark
+		};
+	}
+	// Light mode: dark foreground, white background
+	return {
+		foreground: "oklch(0.145 0 0)", // dark
+		background: "oklch(1 0 0)", // white
+	};
+};
+
 export const QRCode = ({
 	data,
 	foreground,
@@ -37,21 +53,61 @@ export const QRCode = ({
 	...props
 }: QRCodeProps) => {
 	const [svg, setSVG] = useState<string | null>(null);
+	const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+	// Detect dark mode state
+	useEffect(() => {
+		const checkDarkMode = () => {
+			return document.documentElement.classList.contains("dark");
+		};
+
+		// Set initial dark mode state
+		setIsDarkMode(checkDarkMode());
+
+		// Watch for class changes on document.documentElement
+		const observer = new MutationObserver(() => {
+			setIsDarkMode(checkDarkMode());
+		});
+
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+
+		return () => {
+			observer.disconnect();
+		};
+	}, []);
 
 	useEffect(() => {
 		const generateQR = async () => {
 			try {
+				// Wait a tick to ensure CSS is loaded and dark class is applied
+				await new Promise((resolve) => {
+					setTimeout(resolve, 0);
+				});
+
 				const styles = getComputedStyle(document.documentElement);
-				const foregroundColor =
-					foreground ?? styles.getPropertyValue("--foreground");
-				const backgroundColor =
-					background ?? styles.getPropertyValue("--background");
+				let foregroundColor =
+					foreground ?? styles.getPropertyValue("--foreground").trim();
+				let backgroundColor =
+					background ?? styles.getPropertyValue("--background").trim();
+
+				// Use fallback colors if CSS variables are empty or not loaded
+				if (!foregroundColor || !backgroundColor) {
+					const fallbacks = getFallbackColors(isDarkMode);
+					foregroundColor = foregroundColor || fallbacks.foreground;
+					backgroundColor = backgroundColor || fallbacks.background;
+				}
 
 				const foregroundOklch = getOklch(
 					foregroundColor,
-					[0.21, 0.006, 285.885],
+					isDarkMode ? [0.985, 0, 0] : [0.145, 0, 0],
 				);
-				const backgroundOklch = getOklch(backgroundColor, [0.985, 0, 0]);
+				const backgroundOklch = getOklch(
+					backgroundColor,
+					isDarkMode ? [0.145, 0, 0] : [0.985, 0, 0],
+				);
 
 				const newSvg = await QR.toString(data, {
 					type: "svg",
@@ -71,7 +127,7 @@ export const QRCode = ({
 		};
 
 		generateQR();
-	}, [data, foreground, background, robustness]);
+	}, [data, foreground, background, robustness, isDarkMode]);
 
 	if (!svg) {
 		return null;
