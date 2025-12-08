@@ -147,7 +147,7 @@ export default function LandingFooter({
 							derechos reservados.
 						</p>
 						<div className="flex items-center gap-4 text-sm text-muted-foreground">
-							<span>Hecho con ❤️ para equipos uruguayos</span>
+							<span>Hecho con ❤️ para equipos uruguayos amateurs</span>
 						</div>
 					</div>
 				</div>
