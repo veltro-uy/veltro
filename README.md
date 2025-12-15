@@ -37,6 +37,7 @@ Para documentación detallada de características, consulta [project.md](project
 ## Características
 
 ### Gestión de Usuarios
+
 - Autenticación con email y contraseña
 - Integración con OAuth de Google
 - Soporte para autenticación de dos factores
@@ -44,6 +45,7 @@ Para documentación detallada de características, consulta [project.md](project
 - Verificación de email
 
 ### Gestión de Equipos
+
 - Crear y gestionar equipos
 - Descubrimiento y búsqueda de equipos
 - Sistema de solicitudes de unión con flujo de aprobación
@@ -52,6 +54,7 @@ Para documentación detallada de características, consulta [project.md](project
 - Estadísticas e historial del equipo
 
 ### Organización de Partidos
+
 - Crear partidos con información detallada
 - Tablero de partidos para encontrar oponentes
 - Invitaciones y solicitudes de partidos
@@ -61,6 +64,7 @@ Para documentación detallada de características, consulta [project.md](project
 - Historial y estadísticas de partidos
 
 ### Características Adicionales
+
 - Notificaciones en tiempo real
 - Diseño responsivo para móvil y escritorio
 - Soporte para modo oscuro
@@ -69,6 +73,7 @@ Para documentación detallada de características, consulta [project.md](project
 ## Stack Tecnológico
 
 ### Backend
+
 - **Framework**: Laravel 12.0+
 - **PHP**: 8.2+
 - **Base de Datos**: MySQL 8.0
@@ -77,6 +82,7 @@ Para documentación detallada de características, consulta [project.md](project
 - **Pruebas**: Pest PHP
 
 ### Frontend
+
 - **Framework**: React 19.2+
 - **Lenguaje**: TypeScript 5.7+
 - **Framework UI**: Inertia.js 2.0+
@@ -86,6 +92,7 @@ Para documentación detallada de características, consulta [project.md](project
 - **Gestor de Paquetes**: Bun
 
 ### Herramientas de Desarrollo
+
 - **Docker**: Laravel Sail
 - **Calidad de Código**: ESLint, Prettier, Laravel Pint
 - **Verificación de Tipos**: TypeScript
@@ -183,6 +190,7 @@ composer setup
 ```
 
 Este comando realizará:
+
 - Instalar dependencias de Composer
 - Crear archivo `.env` si no existe
 - Generar clave de aplicación
@@ -197,6 +205,7 @@ Este comando realizará:
 Variables de entorno clave para configurar en tu archivo `.env`:
 
 #### Aplicación
+
 ```env
 APP_NAME="Veltro"
 APP_ENV=local
@@ -206,6 +215,7 @@ APP_URL=http://localhost
 ```
 
 #### Base de Datos
+
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -216,6 +226,7 @@ DB_PASSWORD=
 ```
 
 #### OAuth de Google
+
 ```env
 GOOGLE_CLIENT_ID=tu_google_client_id
 GOOGLE_CLIENT_SECRET=tu_google_client_secret
@@ -223,6 +234,7 @@ GOOGLE_REDIRECT_URI=http://localhost/auth/google/callback
 ```
 
 #### Configuración de Correo
+
 ```env
 MAIL_MAILER=smtp
 MAIL_HOST=mailpit
@@ -235,6 +247,7 @@ MAIL_FROM_NAME="${APP_NAME}"
 ```
 
 #### Configuración de Cola
+
 ```env
 QUEUE_CONNECTION=database
 ```
@@ -242,6 +255,7 @@ QUEUE_CONNECTION=database
 ### Configuración de Laravel Fortify
 
 Fortify está configurado en `config/fortify.php`. Características clave habilitadas:
+
 - Registro
 - Verificación de email
 - Autenticación de dos factores
@@ -250,6 +264,7 @@ Fortify está configurado en `config/fortify.php`. Características clave habili
 ### Configuración de Inertia.js
 
 Inertia.js está configurado en `config/inertia.php`. La aplicación usa:
+
 - React como framework frontend
 - Soporte para renderizado del lado del servidor (SSR)
 - Wayfinder para generación de rutas
@@ -265,6 +280,7 @@ composer dev
 ```
 
 Este comando inicia:
+
 - Servidor de desarrollo de Laravel (puerto 8000)
 - Worker de cola
 - Servidor de desarrollo de Vite (puerto 5173)
@@ -278,6 +294,7 @@ composer dev:ssr
 ```
 
 Esto inicia:
+
 - Servidor de desarrollo de Laravel
 - Worker de cola
 - Laravel Pail (registro)
@@ -489,9 +506,9 @@ El archivo `compose.yaml` incluye:
 - **Aplicación Laravel**: PHP 8.4 con todas las extensiones requeridas
 - **MySQL 8.0**: Servidor de base de datos
 - **Puertos**:
-  - Aplicación: `80` (configurable vía `APP_PORT`)
-  - Vite: `5173` (configurable vía `VITE_PORT`)
-  - MySQL: `3307` (configurable vía `FORWARD_DB_PORT`)
+    - Aplicación: `80` (configurable vía `APP_PORT`)
+    - Vite: `5173` (configurable vía `VITE_PORT`)
+    - MySQL: `3307` (configurable vía `FORWARD_DB_PORT`)
 
 ### Variables de Entorno para Docker
 
