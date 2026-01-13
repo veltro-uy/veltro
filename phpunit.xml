@@ -19,7 +19,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
-        <env name="APP_KEY" value="base64:2fl3unkN7fDQnNXz4PqRUhGDh+M5PGE7sk9oG8AfiWg="/>
+        <!-- Test-only APP_KEY - safe to commit, NOT used in production -->
+        <env name="APP_KEY" value="base64:39xBbfK/H7HBWzYYiq0uZoIZkT/I+yRbSqn89hoWPhc="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
