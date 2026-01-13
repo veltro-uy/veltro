@@ -50,7 +50,15 @@ class GoogleAuthController extends Controller
                 ]);
             }
 
-            // Log the user in
+            // Check if user has two-factor authentication enabled
+            if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
+                // Store user ID in session for two-factor challenge
+                session(['login.id' => $user->id]);
+
+                return redirect()->route('two-factor.login');
+            }
+
+            // Log the user in directly if no 2FA
             Auth::login($user);
 
             return redirect()->intended('/dashboard');
