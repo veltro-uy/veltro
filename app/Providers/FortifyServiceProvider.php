@@ -87,5 +87,35 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+
+        // Public routes rate limiting
+        RateLimiter::for('public', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
+
+        RateLimiter::for('oauth', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
+        // Authenticated routes rate limiting
+        RateLimiter::for('dashboard', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
+        });
+
+        RateLimiter::for('teams', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
+        });
+
+        RateLimiter::for('matches', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
+        });
+
+        RateLimiter::for('settings-read', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
+        });
+
+        RateLimiter::for('settings-write', function (Request $request) {
+            return Limit::perMinute(6)->by($request->user()?->id ?? $request->ip());
+        });
     }
 }

@@ -18,6 +18,7 @@
 - [Desarrollo](#desarrollo)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Pruebas](#pruebas)
+- [Limitación de Tasa](#limitación-de-tasa)
 - [Configuración de Docker](#configuración-de-docker)
 - [Recursos Adicionales](#recursos-adicionales)
 
@@ -464,6 +465,26 @@ php artisan test --coverage
 ### Configuración de Pruebas
 
 Las pruebas usan base de datos SQLite en memoria para velocidad. La configuración está en `phpunit.xml`.
+
+## Limitación de Tasa
+
+El proyecto implementa limitación de tasa (rate limiting) para proteger contra abuso y ataques DoS.
+
+### Límites Configurados
+
+- **Rutas de Autenticación**: 5 solicitudes/minuto (login, 2FA)
+- **Rutas Públicas**: 30 solicitudes/minuto (página de inicio)
+- **Rutas OAuth**: 10 solicitudes/minuto (Google OAuth)
+- **Rutas Autenticadas**: 60 solicitudes/minuto (equipos, partidos, dashboard)
+- **Operaciones de Configuración**:
+  - Lectura: 60 solicitudes/minuto
+  - Escritura: 6 solicitudes/minuto (actualizaciones de perfil, contraseña, eliminación)
+
+### Detalles Técnicos
+
+Los limitadores de tasa están configurados en `app/Providers/FortifyServiceProvider.php` y se aplican mediante middleware en los archivos de rutas. Cada grupo de rutas tiene su propio limitador independiente para evitar conflictos.
+
+Para más información, consulta [RATE_LIMITING.md](RATE_LIMITING.md).
 
 ## Configuración de Docker
 
