@@ -7,22 +7,31 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware('auth')->group(function () {
-    Route::redirect('settings', '/settings/profile');
+    Route::redirect('settings', '/settings/profile')->middleware('throttle:settings-read');
 
-    Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('settings/profile', [ProfileController::class, 'edit'])
+        ->middleware('throttle:settings-read')
+        ->name('profile.edit');
+    Route::patch('settings/profile', [ProfileController::class, 'update'])
+        ->middleware('throttle:settings-write')
+        ->name('profile.update');
+    Route::delete('settings/profile', [ProfileController::class, 'destroy'])
+        ->middleware('throttle:settings-write')
+        ->name('profile.destroy');
 
-    Route::get('settings/password', [PasswordController::class, 'edit'])->name('user-password.edit');
+    Route::get('settings/password', [PasswordController::class, 'edit'])
+        ->middleware('throttle:settings-read')
+        ->name('user-password.edit');
 
     Route::put('settings/password', [PasswordController::class, 'update'])
-        ->middleware('throttle:6,1')
+        ->middleware('throttle:settings-write')
         ->name('user-password.update');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
-    })->name('appearance.edit');
+    })->middleware('throttle:settings-read')->name('appearance.edit');
 
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
+        ->middleware('throttle:settings-read')
         ->name('two-factor.show');
 });
