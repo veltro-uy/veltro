@@ -21,6 +21,9 @@ export function UserAvatar({
 	size = "md",
 }: UserAvatarProps) {
 	const getInitials = (userName: string) => {
+		if (!userName || userName.trim().length === 0) {
+			return '??';
+		}
 		const words = userName.trim().split(/\s+/);
 		if (words.length >= 2) {
 			// Take first letter of first name and first letter of last name

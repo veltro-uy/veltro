@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\MatchAvailabilityController;
 use App\Http\Controllers\MatchController;
 use App\Http\Controllers\MatchEventController;
 use App\Http\Controllers\MatchLineupController;
@@ -33,5 +34,8 @@ Route::middleware(['auth', 'verified', 'throttle:matches'])->group(function () {
 
     // Match Score
     Route::post('/matches/{id}/score', [MatchController::class, 'updateScore'])->name('matches.update-score');
+
+    // Match Availability
+    Route::post('/matches/{matchId}/availability', [MatchAvailabilityController::class, 'update'])->name('matches.availability.update');
 });
 
