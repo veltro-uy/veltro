@@ -14,7 +14,6 @@ interface AvailabilityStatsProps {
 
 export function AvailabilityStatsComponent({ stats, teamName, isLeader = false }: AvailabilityStatsProps) {
     const hasEnoughPlayers = stats.available >= stats.minimum;
-    const availablePercentage = stats.total > 0 ? (stats.available / stats.total) * 100 : 0;
 
     return (
         <Card>
