@@ -203,6 +203,89 @@ final class MatchController extends Controller
             ];
         });
 
+        // Get availability data
+        $homeAvailability = $match->availability()
+            ->where('team_id', $match->home_team_id)
+            ->with('user')
+            ->get()
+            ->map(function ($availability) {
+                return [
+                    'id' => $availability->id,
+                    'match_id' => $availability->match_id,
+                    'user_id' => $availability->user_id,
+                    'team_id' => $availability->team_id,
+                    'status' => $availability->status,
+                    'confirmed_at' => $availability->confirmed_at,
+                    'reminded_at' => $availability->reminded_at,
+                    'created_at' => $availability->created_at,
+                    'updated_at' => $availability->updated_at,
+                    'user' => $availability->user ? [
+                        'id' => $availability->user->id,
+                        'name' => $availability->user->name,
+                        'avatar_url' => $availability->user->avatar_url,
+                    ] : null,
+                ];
+            });
+
+        $awayAvailability = $match->away_team_id
+            ? $match->availability()
+                ->where('team_id', $match->away_team_id)
+                ->with('user')
+                ->get()
+                ->map(function ($availability) {
+                    return [
+                        'id' => $availability->id,
+                        'match_id' => $availability->match_id,
+                        'user_id' => $availability->user_id,
+                        'team_id' => $availability->team_id,
+                        'status' => $availability->status,
+                        'confirmed_at' => $availability->confirmed_at,
+                        'reminded_at' => $availability->reminded_at,
+                        'created_at' => $availability->created_at,
+                        'updated_at' => $availability->updated_at,
+                        'user' => $availability->user ? [
+                            'id' => $availability->user->id,
+                            'name' => $availability->user->name,
+                            'avatar_url' => $availability->user->avatar_url,
+                        ] : null,
+                    ];
+                })
+            : collect();
+
+        // Get user's availability status for their team
+        $userTeamId = null;
+        if ($isHomeLeader || $match->homeTeam->hasMember($user->id)) {
+            $userTeamId = $match->home_team_id;
+        } elseif ($match->away_team_id && ($isAwayLeader || $match->awayTeam->hasMember($user->id))) {
+            $userTeamId = $match->away_team_id;
+        }
+
+        $userAvailability = $userTeamId
+            ? $match->availability()
+                ->where('team_id', $userTeamId)
+                ->where('user_id', $user->id)
+                ->first()
+            : null;
+
+        // Calculate availability statistics
+        $homeAvailabilityStats = [
+            'available' => $homeAvailability->where('status', 'available')->count(),
+            'maybe' => $homeAvailability->where('status', 'maybe')->count(),
+            'unavailable' => $homeAvailability->where('status', 'unavailable')->count(),
+            'pending' => $homeAvailability->where('status', 'pending')->count(),
+            'total' => $homeAvailability->count(),
+            'minimum' => $match->getMinimumPlayers(),
+        ];
+
+        $awayAvailabilityStats = $match->away_team_id ? [
+            'available' => $awayAvailability->where('status', 'available')->count(),
+            'maybe' => $awayAvailability->where('status', 'maybe')->count(),
+            'unavailable' => $awayAvailability->where('status', 'unavailable')->count(),
+            'pending' => $awayAvailability->where('status', 'pending')->count(),
+            'total' => $awayAvailability->count(),
+            'minimum' => $match->getMinimumPlayers(),
+        ] : null;
+
         return Inertia::render('matches/show', [
             'match' => $match,
             'isHomeLeader' => $isHomeLeader,
@@ -213,6 +296,12 @@ final class MatchController extends Controller
             'awayLineup' => $awayLineup,
             'events' => $events,
             'opposingTeamLeaders' => $formattedOpposingLeaders,
+            'homeAvailability' => $homeAvailability,
+            'awayAvailability' => $awayAvailability,
+            'userAvailability' => $userAvailability,
+            'userTeamId' => $userTeamId,
+            'homeAvailabilityStats' => $homeAvailabilityStats,
+            'awayAvailabilityStats' => $awayAvailabilityStats,
         ]);
     }
 

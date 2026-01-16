@@ -42,3 +42,27 @@ export interface User {
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
 }
+
+export type AvailabilityStatus = 'pending' | 'available' | 'maybe' | 'unavailable';
+
+export interface MatchAvailability {
+    id: number;
+    match_id: number;
+    user_id: number;
+    team_id: number;
+    status: AvailabilityStatus;
+    confirmed_at: string | null;
+    reminded_at: string | null;
+    created_at: string;
+    updated_at: string;
+    user?: User;
+}
+
+export interface AvailabilityStats {
+    available: number;
+    maybe: number;
+    unavailable: number;
+    pending: number;
+    total: number;
+    minimum: number;
+}

@@ -486,6 +486,50 @@ Los limitadores de tasa están configurados en `app/Providers/FortifyServiceProv
 
 Para más información, consulta [RATE_LIMITING.md](RATE_LIMITING.md).
 
+## Tareas Programadas (Scheduler)
+
+La aplicación utiliza el programador de tareas de Laravel para ejecutar comandos automáticamente en segundo plano.
+
+### Comandos Programados
+
+- **Recordatorios de Disponibilidad**: Envía notificaciones a los jugadores 48 horas antes de un partido si no han confirmado su disponibilidad
+  - Comando: `availability:send-reminders`
+  - Frecuencia: Cada 30 minutos
+  - Configurado en: `routes/console.php`
+
+### Configurar Cron Job (Producción)
+
+Para que el programador de Laravel funcione en producción, debes agregar una entrada de cron en tu servidor:
+
+```bash
+* * * * * cd /ruta-a-tu-proyecto && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Esta entrada ejecutará el programador de Laravel cada minuto, y Laravel determinará qué tareas deben ejecutarse.
+
+### Modo Desarrollo
+
+Durante el desarrollo, puedes ejecutar el programador manualmente:
+
+```bash
+# Ejecutar el programador una vez
+php artisan schedule:run
+
+# O ejecutar un comando específico directamente
+php artisan availability:send-reminders
+
+# Mantener el programador ejecutándose en desarrollo
+php artisan schedule:work
+```
+
+### Verificar Tareas Programadas
+
+Para ver todas las tareas programadas y su próxima ejecución:
+
+```bash
+php artisan schedule:list
+```
+
 ## Configuración de Docker
 
 El proyecto incluye configuración de Docker vía Laravel Sail para facilitar la configuración de desarrollo.
