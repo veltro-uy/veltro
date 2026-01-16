@@ -8,9 +8,14 @@ import {
 	Trophy,
 	Users,
 	X,
+	Shield,
+	Swords,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { AvailabilityList } from "@/components/availability-list";
+import { AvailabilitySelector } from "@/components/availability-selector";
+import { AvailabilityStatsComponent } from "@/components/availability-stats";
 import { CreateMatchRequestDialog } from "@/components/create-match-request-dialog";
 import { MatchEventsManager } from "@/components/match-events-manager";
 import { ScoreTracker } from "@/components/score-tracker";
@@ -34,12 +39,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
 import { VariantBadge } from "@/components/variant-badge";
 import AppLayout from "@/layouts/app-layout";
 import matchRequests from "@/routes/match-requests";
 import matches from "@/routes/matches";
-import type { BreadcrumbItem } from "@/types";
+import type { AvailabilityStats, BreadcrumbItem, MatchAvailability } from "@/types";
 
 interface Team {
 	id: number;
@@ -122,22 +128,45 @@ interface Props {
 	awayLineup: LineupPlayer[];
 	events: MatchEvent[];
 	opposingTeamLeaders?: OpposingTeamLeader[];
+	homeAvailability: MatchAvailability[];
+	awayAvailability: MatchAvailability[];
+	userAvailability: MatchAvailability | null;
+	userTeamId: number | null;
+	homeAvailabilityStats: AvailabilityStats;
+	awayAvailabilityStats: AvailabilityStats | null;
 }
 
 const getStatusColor = (status: string): string => {
 	switch (status) {
 		case "available":
-			return "bg-green-500/10 text-green-700 dark:text-green-400";
+			return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20";
 		case "confirmed":
-			return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+			return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20";
 		case "in_progress":
-			return "bg-orange-500/10 text-orange-700 dark:text-orange-400";
+			return "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20";
 		case "completed":
-			return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
+			return "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20";
 		case "cancelled":
-			return "bg-red-500/10 text-red-700 dark:text-red-400";
+			return "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20";
 		default:
-			return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
+			return "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20";
+	}
+};
+
+const getStatusText = (status: string): string => {
+	switch (status) {
+		case "available":
+			return "Disponible";
+		case "confirmed":
+			return "Confirmado";
+		case "in_progress":
+			return "En Vivo";
+		case "completed":
+			return "Completado";
+		case "cancelled":
+			return "Cancelado";
+		default:
+			return status;
 	}
 };
 
@@ -182,6 +211,12 @@ export default function Show({
 	awayLineup,
 	events,
 	opposingTeamLeaders = [],
+	homeAvailability,
+	awayAvailability,
+	userAvailability,
+	userTeamId,
+	homeAvailabilityStats,
+	awayAvailabilityStats,
 }: Props) {
 	const { flash } = usePage<{ flash: { success?: string; error?: string } }>()
 		.props;
@@ -282,112 +317,237 @@ export default function Show({
 			<Head
 				title={`${match.home_team.name}${match.away_team ? ` vs ${match.away_team.name}` : ""}`}
 			/>
-			<div className="flex h-full flex-1 flex-col gap-4 p-4 overflow-auto">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							{match.home_team.name}
-							{match.away_team && <> vs {match.away_team.name}</>}
-							{!match.away_team && " - Buscando Rival"}
-						</h1>
-						<div className="mt-2 flex flex-wrap gap-2">
-							<VariantBadge variant={match.variant} />
-							<Badge variant="outline" className={getStatusColor(match.status)}>
-								{match.status === "available" && "Disponible"}
-								{match.status === "confirmed" && "Confirmado"}
-								{match.status === "in_progress" && "En Vivo"}
-								{match.status === "completed" && "Completado"}
-								{match.status === "cancelled" && "Cancelado"}
+
+			<div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6 overflow-auto">
+				{/* Hero Section - Match Header */}
+				<div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-background via-background to-muted/20 p-6 md:p-8">
+					<div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+					<div className="absolute bottom-0 left-0 -mb-16 -ml-16 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+
+					<div className="relative">
+						{/* Insignias de Estado */}
+						<div className="mb-4 flex flex-wrap items-center gap-2">
+							<Badge className={getStatusColor(match.status)}>
+								{getStatusText(match.status)}
 							</Badge>
+							<VariantBadge variant={match.variant} />
 							<Badge variant="outline">
 								{match.match_type === "friendly" ? "Amistoso" : "Competitivo"}
 							</Badge>
 						</div>
-					</div>
-					<div className="flex gap-2">
-						{isHomeLeader && match.status === "available" && (
-							<>
-								<Button asChild variant="outline">
-									<Link href={matches.edit(match.id).url}>
-										<Edit className="mr-2 h-4 w-4" />
-										Editar
-									</Link>
-								</Button>
-								<Button
-									variant="destructive"
-									onClick={() => setShowCancelDialog(true)}
-								>
-									<X className="mr-2 h-4 w-4" />
-									Cancelar Partido
-								</Button>
-							</>
-						)}
-					{isLeader && match.status === "in_progress" && (
-						<Button 
-							onClick={() => setShowCompleteDialog(true)}
-							disabled={!matchHasStarted}
-							title={!matchHasStarted ? "No se puede completar el partido antes de que comience" : ""}
-						>
-							<Trophy className="mr-2 h-4 w-4" />
-							Completar Partido
-						</Button>
-					)}
-						{!isLeader &&
-							match.status === "available" &&
-							eligibleTeams.length > 0 && (
-								<CreateMatchRequestDialog
-									matchId={match.id}
-									eligibleTeams={eligibleTeams}
+
+						{/* Enfrentamiento */}
+						<div className="grid grid-cols-1 items-center gap-6 md:grid-cols-[1fr,auto,1fr]">
+							{/* Equipo Local */}
+							<Link
+								href={`/teams/${match.home_team.id}`}
+								className="group flex flex-col items-center gap-3 rounded-lg p-4 transition-colors hover:bg-muted/50 md:flex-row md:justify-end"
+							>
+								<TeamAvatar
+									name={match.home_team.name}
+									logoUrl={match.home_team.logo_url}
+									size="lg"
+									className="h-20 w-20"
 								/>
+								<div className="text-center md:text-right">
+									<h2 className="text-2xl font-bold">{match.home_team.name}</h2>
+									<div className="flex items-center justify-center gap-1 mt-1 md:justify-end">
+										<Shield className="h-4 w-4 text-muted-foreground" />
+										<p className="text-sm text-muted-foreground">Local</p>
+									</div>
+								</div>
+							</Link>
+
+							{/* Insignia VS o Marcador */}
+							<div className="flex items-center justify-center">
+								{match.status === "completed" && match.home_score !== undefined && match.away_score !== undefined ? (
+									<div className="rounded-xl border bg-card px-6 py-3 shadow-sm">
+										<div className="flex items-center gap-4 text-3xl font-bold">
+											<span className={match.home_score > (match.away_score || 0) ? "text-primary" : ""}>
+												{match.home_score}
+											</span>
+											<span className="text-muted-foreground">-</span>
+											<span className={match.away_score > match.home_score ? "text-primary" : ""}>
+												{match.away_score ?? 0}
+											</span>
+										</div>
+									</div>
+								) : (
+									<div className="rounded-full border bg-card p-4 shadow-sm">
+										<Swords className="h-8 w-8 text-muted-foreground" />
+									</div>
+								)}
+							</div>
+
+							{/* Equipo Visitante */}
+							{match.away_team ? (
+								<Link
+									href={`/teams/${match.away_team.id}`}
+									className="group flex flex-col items-center gap-3 rounded-lg p-4 transition-colors hover:bg-muted/50 md:flex-row"
+								>
+									<TeamAvatar
+										name={match.away_team.name}
+										logoUrl={match.away_team.logo_url}
+										size="lg"
+										className="h-20 w-20"
+									/>
+									<div className="text-center md:text-left">
+										<h2 className="text-2xl font-bold">{match.away_team.name}</h2>
+										<p className="text-sm text-muted-foreground mt-1">Visitante</p>
+									</div>
+								</Link>
+							) : (
+								<div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed bg-muted/30 p-6 md:flex-row">
+									<div className="rounded-full bg-muted p-4">
+										<Users className="h-8 w-8 text-muted-foreground" />
+									</div>
+									<div className="text-center md:text-left">
+										<h3 className="text-lg font-semibold">Buscando Rival</h3>
+										<p className="text-sm text-muted-foreground">
+											Esperando solicitudes de equipos
+										</p>
+									</div>
+								</div>
 							)}
+						</div>
+
+						{/* Información del Partido */}
+						<div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm">
+							<div className="flex items-center gap-2">
+								<Calendar className="h-4 w-4 text-muted-foreground" />
+								<span className="font-medium">{formatDate(match.scheduled_at)}</span>
+							</div>
+							<Separator orientation="vertical" className="h-4" />
+							<div className="flex items-center gap-2">
+								<Clock className="h-4 w-4 text-muted-foreground" />
+								<span className="font-medium">{formatTime(match.scheduled_at)}</span>
+							</div>
+							<Separator orientation="vertical" className="h-4" />
+							<div className="flex items-center gap-2">
+								<MapPin className="h-4 w-4 text-muted-foreground" />
+								<span className="font-medium">{match.location}</span>
+							</div>
+						</div>
+
+						{/* Botones de Acción */}
+						<div className="mt-6 flex flex-wrap justify-center gap-3">
+							{isHomeLeader && match.status === "available" && (
+								<>
+									<Button asChild variant="outline">
+										<Link href={matches.edit(match.id).url}>
+											<Edit className="mr-2 h-4 w-4" />
+											Editar
+										</Link>
+									</Button>
+									<Button
+										variant="destructive"
+										onClick={() => setShowCancelDialog(true)}
+									>
+										<X className="mr-2 h-4 w-4" />
+										Cancelar Partido
+									</Button>
+								</>
+							)}
+							{isLeader && match.status === "in_progress" && (
+								<Button
+									onClick={() => setShowCompleteDialog(true)}
+									disabled={!matchHasStarted}
+									title={!matchHasStarted ? "No se puede completar el partido antes de que comience" : ""}
+								>
+									<Trophy className="mr-2 h-4 w-4" />
+									Completar Partido
+								</Button>
+							)}
+							{!isLeader &&
+								match.status === "available" &&
+								eligibleTeams.length > 0 && (
+									<CreateMatchRequestDialog
+										matchId={match.id}
+										eligibleTeams={eligibleTeams}
+									/>
+								)}
+						</div>
 					</div>
 				</div>
 
-				<div className="grid gap-4 lg:grid-cols-3">
-					<div className="space-y-4 lg:col-span-2">
-						<Card>
-							<CardHeader className="pb-3">
-								<CardTitle>Información del Partido</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-3">
-								<div className="flex items-center gap-3">
-									<Calendar className="h-5 w-5 text-muted-foreground" />
-									<div>
-										<p className="text-sm font-medium">Fecha</p>
-										<p className="text-sm text-muted-foreground">
-											{formatDate(match.scheduled_at)}
-										</p>
-									</div>
-								</div>
-								<div className="flex items-center gap-3">
-									<Clock className="h-5 w-5 text-muted-foreground" />
-									<div>
-										<p className="text-sm font-medium">Hora</p>
-										<p className="text-sm text-muted-foreground">
-											{formatTime(match.scheduled_at)}
-										</p>
-									</div>
-								</div>
-								<div className="flex items-center gap-3">
-									<MapPin className="h-5 w-5 text-muted-foreground" />
-									<div>
-										<p className="text-sm font-medium">Ubicación</p>
-										<p className="text-sm text-muted-foreground">
-											{match.location}
-										</p>
-									</div>
-								</div>
-								{match.notes && (
-									<div className="pt-3 border-t">
-										<p className="text-sm font-medium mb-2">Notas</p>
-										<p className="text-sm text-muted-foreground">
-											{match.notes}
-										</p>
-									</div>
-								)}
-							</CardContent>
-						</Card>
+				{/* Contenido Principal */}
+				<div className="grid gap-6 lg:grid-cols-3">
+					{/* Columna Izquierda - Contenido Principal */}
+					<div className="space-y-6 lg:col-span-2">
+						{/* Marcador */}
+						{(match.status === "confirmed" || match.status === "in_progress" || match.status === "completed") && (
+							<ScoreTracker match={match} isLeader={isLeader} />
+						)}
 
+						{/* Eventos del Partido (Solo Completados) */}
+						{match.status === "completed" && (
+							<MatchEventsManager
+								match={match}
+								homeLineup={homeLineup}
+								awayLineup={awayLineup}
+								events={events}
+								isHomeLeader={isHomeLeader}
+								isAwayLeader={isAwayLeader}
+							/>
+						)}
+
+						{/* Solicitudes de Partido */}
+						{isHomeLeader &&
+							match.status === "available" &&
+							match.match_requests &&
+							match.match_requests.length > 0 && (
+							<Card>
+								<CardHeader>
+									<CardTitle>Solicitudes de Partido</CardTitle>
+									<CardDescription>
+										Equipos interesados en jugar este partido
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<div className="space-y-3">
+										{match.match_requests.map((request) => (
+											<div
+												key={request.id}
+												className="flex items-start gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50"
+											>
+												<TeamAvatar
+													name={request.requesting_team.name}
+													logoUrl={request.requesting_team.logo_url}
+													size="md"
+												/>
+												<div className="flex-1 min-w-0">
+													<p className="font-semibold">
+														{request.requesting_team.name}
+													</p>
+													{request.message && (
+														<p className="mt-1 text-sm text-muted-foreground">
+															{request.message}
+														</p>
+													)}
+													<div className="flex gap-2 mt-3">
+														<Button
+															size="sm"
+															onClick={() => handleAcceptRequest(request.id)}
+														>
+															Aceptar
+														</Button>
+														<Button
+															size="sm"
+															variant="outline"
+															onClick={() => handleRejectRequest(request.id)}
+														>
+															Rechazar
+														</Button>
+													</div>
+												</div>
+											</div>
+										))}
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
+						{/* Contacto del Equipo Rival */}
 						{isLeader &&
 							(match.status === "confirmed" ||
 								match.status === "in_progress" ||
@@ -397,7 +557,7 @@ export default function Show({
 									<CardHeader>
 										<CardTitle>Contacto del Equipo Rival</CardTitle>
 										<CardDescription>
-											Líderes del equipo oponente para coordinar detalles del partido
+											Coordina los detalles del partido con los líderes del equipo oponente
 										</CardDescription>
 									</CardHeader>
 									<CardContent>
@@ -456,197 +616,149 @@ export default function Show({
 								</Card>
 							)}
 
-						{(match.status === "confirmed" ||
-							match.status === "in_progress") && (
-							<ScoreTracker match={match} isLeader={isLeader} />
-						)}
-						
-						{match.status === "completed" && (
-							<>
-								<ScoreTracker match={match} isLeader={isLeader} />
-								<MatchEventsManager
-									match={match}
-									homeLineup={homeLineup}
-									awayLineup={awayLineup}
-									events={events}
-									isHomeLeader={isHomeLeader}
-									isAwayLeader={isAwayLeader}
-								/>
-							</>
-						)}
-
-						{isHomeLeader && 
-							match.status === "available" && 
-							match.match_requests && 
-							match.match_requests.length > 0 && (
+						{/* Notas Adicionales */}
+						{match.notes && (
 							<Card>
 								<CardHeader>
-									<CardTitle>Solicitudes de Partido</CardTitle>
-									<CardDescription>
-										Equipos interesados en jugar este partido
-									</CardDescription>
+									<CardTitle>Notas del Partido</CardTitle>
 								</CardHeader>
 								<CardContent>
-									<div className="space-y-3">
-										{match.match_requests.map((request) => (
-											<div
-												key={request.id}
-												className="flex items-start gap-3 rounded-lg border bg-card p-4"
-											>
-												<TeamAvatar
-													name={request.requesting_team.name}
-													logoUrl={request.requesting_team.logo_url}
-													size="md"
-												/>
-												<div className="flex-1 min-w-0">
-													<p className="font-medium">
-														{request.requesting_team.name}
-													</p>
-													{request.message && (
-														<p className="mt-1 text-sm text-muted-foreground">
-															{request.message}
-														</p>
-													)}
-													<div className="flex gap-2 mt-3">
-														<Button
-															size="sm"
-															onClick={() => handleAcceptRequest(request.id)}
-														>
-															Aceptar
-														</Button>
-														<Button
-															size="sm"
-															variant="outline"
-															onClick={() => handleRejectRequest(request.id)}
-														>
-															Rechazar
-														</Button>
-													</div>
-												</div>
-											</div>
-										))}
-									</div>
+									<p className="text-sm text-muted-foreground whitespace-pre-wrap">
+										{match.notes}
+									</p>
 								</CardContent>
 							</Card>
 						)}
 					</div>
 
-					<div className="space-y-4">
-						<Card>
-							<CardHeader className="pb-3">
-								<CardTitle>Equipos</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-3">
-								<div>
-									<p className="text-sm font-medium mb-2">Equipo Local</p>
-									<Link
-										href={`/teams/${match.home_team.id}`}
-										className="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50"
-									>
-										<TeamAvatar
-											name={match.home_team.name}
-											logoUrl={match.home_team.logo_url}
-											size="md"
-										/>
-										<span className="font-medium">{match.home_team.name}</span>
-									</Link>
-								</div>
-								{match.away_team && (
-									<div>
-										<p className="text-sm font-medium mb-2">Equipo Visitante</p>
-										<Link
-											href={`/teams/${match.away_team.id}`}
-											className="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50"
-										>
-											<TeamAvatar
-												name={match.away_team.name}
-												logoUrl={match.away_team.logo_url}
-												size="md"
-											/>
-											<span className="font-medium">
-												{match.away_team.name}
-											</span>
-										</Link>
-									</div>
-								)}
-							</CardContent>
-						</Card>
+					{/* Columna Derecha - Barra Lateral */}
+					<div className="space-y-6">
+						{/* Selector de Disponibilidad */}
+						{(match.status === "confirmed" || match.status === "available") && userTeamId && (
+							<AvailabilitySelector
+								matchId={match.id}
+								teamId={userTeamId}
+								currentStatus={userAvailability ?? undefined}
+							/>
+						)}
 
-						{isLeader && 
+						{/* Estadísticas de Disponibilidad - Equipo Local */}
+						{(match.status === "confirmed" || match.status === "available") && homeAvailabilityStats && (
+							<AvailabilityStatsComponent
+								stats={homeAvailabilityStats}
+								teamName={match.home_team.name}
+								isLeader={isHomeLeader}
+							/>
+						)}
+
+						{/* Estadísticas de Disponibilidad - Equipo Visitante */}
+						{match.away_team && awayAvailabilityStats && (match.status === "confirmed" || match.status === "available") && (
+							<AvailabilityStatsComponent
+								stats={awayAvailabilityStats}
+								teamName={match.away_team.name}
+								isLeader={isAwayLeader}
+							/>
+						)}
+
+						{/* Lista de Disponibilidad - Equipo Local */}
+						{isHomeLeader && homeAvailability.length > 0 && (match.status === "confirmed" || match.status === "available") && (
+							<AvailabilityList
+								availability={homeAvailability}
+								teamName={match.home_team.name}
+							/>
+						)}
+
+						{/* Lista de Disponibilidad - Equipo Visitante */}
+						{isAwayLeader && awayAvailability.length > 0 && match.away_team && (match.status === "confirmed" || match.status === "available") && (
+							<AvailabilityList
+								availability={awayAvailability}
+								teamName={match.away_team.name}
+							/>
+						)}
+
+						{/* Gestión de Alineación */}
+						{isLeader &&
 							(match.status === "confirmed" || match.status === "in_progress") && (
 							<Card>
-								<CardHeader className="pb-3">
+								<CardHeader>
 									<CardTitle>Gestión de Alineación</CardTitle>
 									<CardDescription>
-										Selecciona jugadores para el partido
+										Selecciona los jugadores para el partido
 									</CardDescription>
 								</CardHeader>
-								<CardContent className="space-y-2">
-									<Button asChild className="w-full" size="sm">
+								<CardContent className="space-y-3">
+									<Button asChild className="w-full">
 										<Link href={matches.lineup.edit(match.id).url}>
 											<Users className="mr-2 h-4 w-4" />
 											Gestionar Alineación
 										</Link>
 									</Button>
-									{homeLineup.length > 0 && (
-										<p className="text-xs text-muted-foreground">
-											{match.home_team.name}: {homeLineup.length} jugadores
-										</p>
-									)}
-									{awayLineup.length > 0 && match.away_team && (
-										<p className="text-xs text-muted-foreground">
-											{match.away_team.name}: {awayLineup.length} jugadores
-										</p>
+									{(homeLineup.length > 0 || awayLineup.length > 0) && (
+										<div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+											{homeLineup.length > 0 && (
+												<p className="text-sm">
+													<span className="font-medium">{match.home_team.name}:</span>{" "}
+													<span className="text-muted-foreground">{homeLineup.length} jugadores</span>
+												</p>
+											)}
+											{awayLineup.length > 0 && match.away_team && (
+												<p className="text-sm">
+													<span className="font-medium">{match.away_team.name}:</span>{" "}
+													<span className="text-muted-foreground">{awayLineup.length} jugadores</span>
+												</p>
+											)}
+										</div>
 									)}
 								</CardContent>
 							</Card>
 						)}
 					</div>
 				</div>
-
-				<AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Cancelar Partido</AlertDialogTitle>
-							<AlertDialogDescription>
-								¿Estás seguro de que quieres cancelar este partido? Esta acción no se puede
-								deshacer y todas las solicitudes pendientes serán eliminadas.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancelar</AlertDialogCancel>
-							<AlertDialogAction
-								onClick={handleCancelMatch}
-								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-							>
-								Cancelar Partido
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-
-				<AlertDialog
-					open={showCompleteDialog}
-					onOpenChange={setShowCompleteDialog}
-				>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Completar Partido</AlertDialogTitle>
-							<AlertDialogDescription>
-								¿Estás seguro de que quieres marcar este partido como completado? Asegúrate
-								de que el marcador final sea correcto antes de completar.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancelar</AlertDialogCancel>
-							<AlertDialogAction onClick={handleCompleteMatch}>
-								Completar Partido
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
 			</div>
+
+			{/* Diálogo de Cancelación */}
+			<AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Cancelar Partido</AlertDialogTitle>
+						<AlertDialogDescription>
+							¿Estás seguro de que quieres cancelar este partido? Esta acción no se puede
+							deshacer y todas las solicitudes pendientes serán eliminadas.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancelar</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleCancelMatch}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							Cancelar Partido
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Diálogo de Finalización */}
+			<AlertDialog
+				open={showCompleteDialog}
+				onOpenChange={setShowCompleteDialog}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Completar Partido</AlertDialogTitle>
+						<AlertDialogDescription>
+							¿Estás seguro de que quieres marcar este partido como completado? Asegúrate
+							de que el marcador final sea correcto antes de completar.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancelar</AlertDialogCancel>
+						<AlertDialogAction onClick={handleCompleteMatch}>
+							Completar Partido
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</AppLayout>
 	);
 }
-

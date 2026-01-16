@@ -117,6 +117,14 @@ final class FootballMatch extends Model
     }
 
     /**
+     * Get the availability responses for the match.
+     */
+    public function availability(): HasMany
+    {
+        return $this->hasMany(MatchAvailability::class, 'match_id');
+    }
+
+    /**
      * Get the lineup for a specific team.
      */
     public function getTeamLineup(int $teamId): HasMany
@@ -291,9 +299,45 @@ final class FootballMatch extends Model
      */
     public function isDraw(): bool
     {
-        return $this->isCompleted() 
-            && $this->home_score !== null 
+        return $this->isCompleted()
+            && $this->home_score !== null
             && $this->away_score !== null
             && $this->home_score === $this->away_score;
+    }
+
+    /**
+     * Get availability for a specific team.
+     */
+    public function getTeamAvailability(int $teamId): HasMany
+    {
+        return $this->availability()->where('team_id', $teamId);
+    }
+
+    /**
+     * Get the count of confirmed available players for a team.
+     */
+    public function getAvailablePlayersCount(int $teamId): int
+    {
+        return $this->availability()
+            ->where('team_id', $teamId)
+            ->where('status', 'available')
+            ->count();
+    }
+
+    /**
+     * Check if a team has enough confirmed players.
+     */
+    public function hasEnoughConfirmedPlayers(int $teamId): bool
+    {
+        $availableCount = $this->getAvailablePlayersCount($teamId);
+        return $availableCount >= $this->getMinimumPlayers();
+    }
+
+    /**
+     * Check if a team needs player confirmation alerts.
+     */
+    public function needsPlayerAlert(int $teamId): bool
+    {
+        return !$this->hasEnoughConfirmedPlayers($teamId);
     }
 }
