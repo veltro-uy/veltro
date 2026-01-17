@@ -1,5 +1,6 @@
 import { Form, Head } from "@inertiajs/react";
 import { useState } from "react";
+import { FormAlert } from "@/components/form-alert";
 import InputError from "@/components/input-error";
 import TextLink from "@/components/text-link";
 import { Button } from "@/components/ui/button";
@@ -50,24 +51,18 @@ export default function Login({
 
 	const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
+		// Only validate if there's already an error shown (to provide live feedback)
 		if (clientErrors.email) {
 			validateField("email", value);
 		}
 	};
 
-	const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-		validateField("email", e.target.value);
-	};
-
 	const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
+		// Only validate if there's already an error shown (to provide live feedback)
 		if (clientErrors.password) {
 			validateField("password", value);
 		}
-	};
-
-	const handlePasswordBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-		validateField("password", e.target.value);
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -91,6 +86,15 @@ export default function Login({
 			description="Ingresa tu correo electrónico y contraseña para iniciar sesión"
 		>
 			<Head title="Iniciar sesión" />
+
+			{/* Status and error messages */}
+			{status && (
+				<FormAlert message={status} type="success" />
+			)}
+
+			{error && (
+				<FormAlert message={error} type="error" />
+			)}
 
 			<div className="flex flex-col gap-6">
 				<Button
@@ -139,8 +143,17 @@ export default function Login({
 					const emailError = errors.email || clientErrors.email;
 					const passwordError = errors.password || clientErrors.password;
 
+					// General error (e.g., "Estas credenciales no coinciden con nuestros registros")
+					const generalError = !emailError && !passwordError && Object.keys(errors).length > 0
+						? Object.values(errors)[0]
+						: null;
+
 					return (
 						<>
+							{generalError && (
+								<FormAlert message={generalError} type="error" />
+							)}
+
 							<div className="grid gap-6">
 								<div className="grid gap-2">
 									<Label htmlFor="email">Correo electrónico</Label>
@@ -155,7 +168,6 @@ export default function Login({
 										placeholder="correo@ejemplo.com"
 										error={Boolean(emailError)}
 										onChange={handleEmailChange}
-										onBlur={handleEmailBlur}
 									/>
 									<InputError message={emailError} />
 								</div>
@@ -183,7 +195,6 @@ export default function Login({
 										placeholder="Contraseña"
 										error={Boolean(passwordError)}
 										onChange={handlePasswordChange}
-										onBlur={handlePasswordBlur}
 									/>
 									<InputError message={passwordError} />
 								</div>
@@ -217,18 +228,6 @@ export default function Login({
 					);
 				}}
 			</Form>
-
-			{status && (
-				<div className="mb-4 text-center text-sm font-medium text-green-600">
-					{status}
-				</div>
-			)}
-
-			{error && (
-				<div className="mb-4 text-center text-sm font-medium text-red-600">
-					{error}
-				</div>
-			)}
 		</AuthLayout>
 	);
 }

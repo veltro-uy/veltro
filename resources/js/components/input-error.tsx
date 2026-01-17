@@ -15,13 +15,14 @@ export default function InputError({
         <p
             {...props}
             role="alert"
+            aria-live="polite"
             className={cn(
-                'flex items-center gap-1.5 text-sm text-destructive animate-in fade-in-0 slide-in-from-top-1',
+                'flex items-start gap-1.5 text-sm font-medium text-destructive animate-in fade-in-0 slide-in-from-top-1 duration-200',
                 className
             )}
         >
-            <AlertCircleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>{message}</span>
+            <AlertCircleIcon className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+            <span className="leading-5">{message}</span>
         </p>
     );
 }
