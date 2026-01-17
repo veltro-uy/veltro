@@ -1,5 +1,6 @@
 import { Form, Head } from "@inertiajs/react";
 import { useState } from "react";
+import { FormAlert } from "@/components/form-alert";
 import InputError from "@/components/input-error";
 import TextLink from "@/components/text-link";
 import { Button } from "@/components/ui/button";
@@ -75,25 +76,19 @@ export default function Register() {
 		const updatedFormData = { ...formData, [field]: value };
 		setFormData(updatedFormData);
 
+		// Only validate if there's already an error (to provide live feedback)
 		if (clientErrors[field]) {
 			validateField(field, value, updatedFormData);
 		}
 
-		// If password changes, re-validate password confirmation
-		if (field === "password" && updatedFormData.password_confirmation) {
+		// If password changes and password_confirmation has an error, re-validate it
+		if (field === "password" && clientErrors.password_confirmation && updatedFormData.password_confirmation) {
 			validateField(
 				"password_confirmation",
 				updatedFormData.password_confirmation,
 				updatedFormData,
 			);
 		}
-	};
-
-	const handleFieldBlur = (
-		field: "name" | "email" | "password" | "password_confirmation",
-		value: string,
-	) => {
-		validateField(field, value);
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -182,8 +177,17 @@ export default function Register() {
 					const passwordConfirmationError =
 						errors.password_confirmation || clientErrors.password_confirmation;
 
+					// General error (if any error doesn't match specific fields)
+					const generalError = !nameError && !emailError && !passwordError && !passwordConfirmationError && Object.keys(errors).length > 0
+						? Object.values(errors)[0]
+						: null;
+
 					return (
 						<>
+							{generalError && (
+								<FormAlert message={generalError} type="error" />
+							)}
+
 							<div className="grid gap-6">
 								<div className="grid gap-2">
 									<Label htmlFor="name">Nombre</Label>
@@ -198,7 +202,6 @@ export default function Register() {
 										placeholder="Nombre completo"
 										error={Boolean(nameError)}
 										onChange={(e) => handleFieldChange("name", e.target.value)}
-										onBlur={(e) => handleFieldBlur("name", e.target.value)}
 									/>
 									<InputError message={nameError} />
 								</div>
@@ -215,7 +218,6 @@ export default function Register() {
 										placeholder="correo@ejemplo.com"
 										error={Boolean(emailError)}
 										onChange={(e) => handleFieldChange("email", e.target.value)}
-										onBlur={(e) => handleFieldBlur("email", e.target.value)}
 									/>
 									<InputError message={emailError} />
 								</div>
@@ -234,7 +236,6 @@ export default function Register() {
 										onChange={(e) =>
 											handleFieldChange("password", e.target.value)
 										}
-										onBlur={(e) => handleFieldBlur("password", e.target.value)}
 									/>
 									<InputError message={passwordError} />
 								</div>
@@ -254,9 +255,6 @@ export default function Register() {
 										error={Boolean(passwordConfirmationError)}
 										onChange={(e) =>
 											handleFieldChange("password_confirmation", e.target.value)
-										}
-										onBlur={(e) =>
-											handleFieldBlur("password_confirmation", e.target.value)
 										}
 									/>
 									<InputError message={passwordConfirmationError} />
