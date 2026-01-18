@@ -26,7 +26,7 @@ test('google oauth login works for users without two factor authentication', fun
     $response = $this->get(route('google.callback'));
 
     $this->assertAuthenticated();
-    $response->assertRedirect('/matches');
+    $response->assertRedirect('/teams');
 
     // Verify user was created
     $user = User::where('email', 'john@example.com')->first();
@@ -87,7 +87,7 @@ test('google oauth login updates existing user with google credentials', functio
     $response = $this->get(route('google.callback'));
 
     $this->assertAuthenticated();
-    $response->assertRedirect('/matches');
+    $response->assertRedirect('/teams');
 
     // Verify user was updated with Google credentials
     $user->refresh();
