@@ -40,17 +40,17 @@ test('google oauth callback is rate limited to 10 requests per minute', function
     $response->assertStatus(429);
 });
 
-test('dashboard is rate limited to 60 requests per minute', function () {
+test('matches page is rate limited to 60 requests per minute', function () {
     $user = User::factory()->create(['email_verified_at' => now()]);
 
     // Make 60 requests - should succeed
     for ($i = 0; $i < 60; $i++) {
-        $response = $this->actingAs($user)->get(route('dashboard'));
+        $response = $this->actingAs($user)->get(route('matches.index'));
         $response->assertOk();
     }
 
     // 61st request should be rate limited
-    $response = $this->actingAs($user)->get(route('dashboard'));
+    $response = $this->actingAs($user)->get(route('matches.index'));
     $response->assertStatus(429);
 });
 
@@ -161,14 +161,14 @@ test('profile deletion is rate limited to 6 requests per minute for same user', 
 test('different routes have independent rate limiters', function () {
     $user = User::factory()->create(['email_verified_at' => now()]);
 
-    // Hit dashboard 60 times
+    // Hit matches 60 times
     for ($i = 0; $i < 60; $i++) {
-        $response = $this->actingAs($user)->get(route('dashboard'));
+        $response = $this->actingAs($user)->get(route('matches.index'));
         $response->assertOk();
     }
 
-    // Dashboard should be rate limited
-    $response = $this->actingAs($user)->get(route('dashboard'));
+    // Matches should be rate limited
+    $response = $this->actingAs($user)->get(route('matches.index'));
     $response->assertStatus(429);
 
     // But teams should still work (different rate limiter)

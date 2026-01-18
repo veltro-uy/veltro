@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Trophy, Users, HelpCircle, Mail, FileText, Shield } from 'lucide-react';
 import AppLogo from './app-logo';
-import { dashboard, home, login, register } from '@/routes';
+import { home, login, register } from '@/routes';
 import teams from '@/routes/teams';
 import matches from '@/routes/matches';
 import type { SharedData } from '@/types';
@@ -22,7 +22,7 @@ export default function LandingFooter({
 					{/* Brand Section */}
 					<div className="flex flex-col gap-4">
 						<Link
-							href={auth?.user ? dashboard().url : home().url}
+							href={auth?.user ? teams.index().url : home().url}
 							className="flex items-center gap-2 font-semibold"
 						>
 							<AppLogo />
@@ -40,11 +40,11 @@ export default function LandingFooter({
 						<nav className="flex flex-col gap-3">
 							{auth?.user ? (
 								<Link
-									href={dashboard().url}
+									href={teams.index().url}
 									className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 								>
-									<Trophy className="h-4 w-4" />
-									Tablero
+									<Users className="h-4 w-4" />
+									Ver Equipos
 								</Link>
 							) : (
 								<>

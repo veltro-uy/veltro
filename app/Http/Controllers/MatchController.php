@@ -39,32 +39,16 @@ final class MatchController extends Controller
         // Get available matches with matching variants
         $availableMatches = $this->matchService->getAvailableMatches($userTeamVariants);
 
-        return Inertia::render('matches/index', [
-            'myMatches' => $myMatches,
-            'availableMatches' => $availableMatches,
-        ]);
-    }
-
-    /**
-     * Show the form for creating a new match.
-     */
-    public function create(Request $request): Response
-    {
-        $user = Auth::user();
-
-        // Get teams where user is a leader
+        // Get teams where user is a leader (for creating matches)
         $teams = Team::whereHas('teamMembers', function ($query) use ($user) {
             $query->where('user_id', $user->id)
                 ->whereIn('role', ['captain', 'co_captain'])
                 ->where('status', 'active');
-        })->with(['teamMembers.user'])->get();
+        })->get(['id', 'name', 'variant']);
 
-        if ($teams->isEmpty()) {
-            return redirect()->route('matches.index')
-                ->with('error', 'Debes ser líder de un equipo para crear partidos');
-        }
-
-        return Inertia::render('matches/create', [
+        return Inertia::render('matches/index', [
+            'myMatches' => $myMatches,
+            'availableMatches' => $availableMatches,
             'teams' => $teams,
         ]);
     }
