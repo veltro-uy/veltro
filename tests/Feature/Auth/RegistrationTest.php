@@ -20,7 +20,7 @@ test('new users can register', function () {
     // Verify the user exists
     expect($user)->not->toBeNull();
 
-    // Verify the user's email so they can access the dashboard
+    // Verify the user's email so they can access the matches page
     $user->email_verified_at = now();
     $user->save();
 
@@ -29,7 +29,7 @@ test('new users can register', function () {
 
     $this->assertAuthenticated();
 
-    // Check that we can access the dashboard
-    $response = $this->get(route('dashboard'));
+    // Check that we can access the matches page
+    $response = $this->get(route('matches.index'));
     $response->assertOk();
 });

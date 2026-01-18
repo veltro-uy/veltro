@@ -61,7 +61,7 @@ class GoogleAuthController extends Controller
             // Log the user in directly if no 2FA
             Auth::login($user);
 
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/teams');
         } catch (\Exception $e) {
             return redirect('/login')->withErrors([
                 'email' => 'Unable to login with Google. Please try again.',

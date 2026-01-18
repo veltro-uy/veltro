@@ -1,5 +1,5 @@
 import { Link } from "@inertiajs/react";
-import { LayoutGrid, Trophy, Users } from "lucide-react";
+import { Trophy, Users } from "lucide-react";
 import { NavFooter } from "@/components/nav-footer";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -12,18 +12,12 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { dashboard } from "@/routes";
 import matches from "@/routes/matches";
 import teams from "@/routes/teams";
 import type { NavItem } from "@/types";
 import AppLogo from "./app-logo";
 
 const mainNavItems: NavItem[] = [
-	{
-		title: "Tablero",
-		href: dashboard(),
-		icon: LayoutGrid,
-	},
 	{
 		title: "Equipos",
 		href: teams.index(),
@@ -45,7 +39,7 @@ export function AppSidebar() {
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>
-							<Link href={dashboard()} prefetch>
+							<Link href={teams.index()} prefetch>
 								<AppLogo />
 							</Link>
 						</SidebarMenuButton>

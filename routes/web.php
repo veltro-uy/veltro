@@ -6,6 +6,11 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
+    // Redirect authenticated users to teams page
+    if (auth()->check() && auth()->user()->hasVerifiedEmail()) {
+        return redirect()->route('teams.index');
+    }
+
     return Inertia::render('landing-page', [
         'canRegister' => Features::enabled(Features::registration()),
     ]);
@@ -14,12 +19,6 @@ Route::get('/', function () {
 Route::middleware('throttle:oauth')->group(function () {
     Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
-});
-
-Route::middleware(['auth', 'verified', 'throttle:dashboard'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
 });
 
 require __DIR__.'/settings.php';

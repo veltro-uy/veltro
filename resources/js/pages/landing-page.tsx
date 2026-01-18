@@ -10,7 +10,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { dashboard, login, register } from "@/routes";
+import { home, login, register } from "@/routes";
+import teams from "@/routes/teams";
 import type { SharedData } from "@/types";
 
 export default function LandingPage({
@@ -37,7 +38,7 @@ export default function LandingPage({
 				<header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 					<div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
 						<Link
-							href={dashboard().url}
+							href={home().url}
 							className="flex items-center gap-2 font-semibold"
 						>
 							<AppLogo />
@@ -46,8 +47,8 @@ export default function LandingPage({
 						<nav className="flex items-center gap-4">
 							{auth?.user ? (
 								<Button asChild>
-									<Link href={dashboard().url}>
-										Ir al Tablero
+									<Link href={teams.index().url}>
+										Ver Equipos
 										<ArrowRight className="ml-2 h-4 w-4" />
 									</Link>
 								</Button>
@@ -86,8 +87,8 @@ export default function LandingPage({
 						<div className="flex flex-col gap-4 sm:flex-row">
 							{auth?.user ? (
 								<Button size="lg" asChild>
-									<Link href={dashboard().url}>
-										Ir al Tablero
+									<Link href={teams.index().url}>
+										Ver Equipos
 										<ArrowRight className="ml-2 h-4 w-4" />
 									</Link>
 								</Button>
@@ -248,8 +249,8 @@ export default function LandingPage({
 						<div className="flex flex-col gap-4 sm:flex-row">
 							{auth?.user ? (
 								<Button size="lg" asChild>
-									<Link href={dashboard().url}>
-										Ir al Tablero
+									<Link href={teams.index().url}>
+										Ver Equipos
 										<ArrowRight className="ml-2 h-4 w-4" />
 									</Link>
 								</Button>

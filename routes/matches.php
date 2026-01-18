@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified', 'throttle:matches'])->group(function () {
     // Matches
     Route::get('/matches', [MatchController::class, 'index'])->name('matches.index');
-    Route::get('/matches/create', [MatchController::class, 'create'])->name('matches.create');
     Route::post('/matches', [MatchController::class, 'store'])->name('matches.store');
     Route::get('/matches/{id}', [MatchController::class, 'show'])->name('matches.show');
     Route::get('/matches/{id}/edit', [MatchController::class, 'edit'])->name('matches.edit');
