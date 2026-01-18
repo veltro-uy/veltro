@@ -15,7 +15,7 @@ import {
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 import { Form, Head } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function Register() {
     const [clientErrors, setClientErrors] = useState<{
@@ -25,25 +25,19 @@ export default function Register() {
         password_confirmation?: string;
     }>({});
 
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
-        invitation_token: '',
-    });
-
-    // Extract invitation token from URL on mount
-    useEffect(() => {
+    const [formData, setFormData] = useState(() => {
+        // Extract invitation token from URL on mount
         const urlParams = new URLSearchParams(window.location.search);
-        const invitationToken = urlParams.get('invitation');
-        if (invitationToken) {
-            setFormData((prev) => ({
-                ...prev,
-                invitation_token: invitationToken,
-            }));
-        }
-    }, []);
+        const invitationToken = urlParams.get('invitation') || '';
+
+        return {
+            name: '',
+            email: '',
+            password: '',
+            password_confirmation: '',
+            invitation_token: invitationToken,
+        };
+    });
 
     const validateField = (
         field: 'name' | 'email' | 'password' | 'password_confirmation',

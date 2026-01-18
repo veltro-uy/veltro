@@ -100,7 +100,7 @@ export function InviteTeamMemberModal({ teamId, teamName }: Props) {
                 setCopied(true);
                 toast.success('¡Enlace copiado al portapapeles!');
                 setTimeout(() => setCopied(false), 2000);
-            } catch (err) {
+            } catch {
                 toast.error('No se pudo copiar el enlace');
             }
         }
