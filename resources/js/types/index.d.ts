@@ -43,7 +43,11 @@ export interface User {
     [key: string]: unknown; // This allows for additional properties...
 }
 
-export type AvailabilityStatus = 'pending' | 'available' | 'maybe' | 'unavailable';
+export type AvailabilityStatus =
+    | 'pending'
+    | 'available'
+    | 'maybe'
+    | 'unavailable';
 
 export interface MatchAvailability {
     id: number;

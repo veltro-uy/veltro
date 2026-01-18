@@ -17,11 +17,14 @@ export default function InputError({
             role="alert"
             aria-live="polite"
             className={cn(
-                'flex items-start gap-1.5 text-sm font-medium text-destructive animate-in fade-in-0 slide-in-from-top-1 duration-200',
-                className
+                'flex animate-in items-start gap-1.5 text-sm font-medium text-destructive duration-200 fade-in-0 slide-in-from-top-1',
+                className,
             )}
         >
-            <AlertCircleIcon className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+            <AlertCircleIcon
+                className="mt-0.5 h-4 w-4 shrink-0"
+                aria-hidden="true"
+            />
             <span className="leading-5">{message}</span>
         </p>
     );

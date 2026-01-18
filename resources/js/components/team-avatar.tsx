@@ -16,7 +16,12 @@ const sizeClasses = {
     '2xl': 'h-20 w-20 text-xl',
 };
 
-export function TeamAvatar({ name, logoUrl, className, size = 'md' }: TeamAvatarProps) {
+export function TeamAvatar({
+    name,
+    logoUrl,
+    className,
+    size = 'md',
+}: TeamAvatarProps) {
     const getInitials = (teamName: string) => {
         const words = teamName.trim().split(/\s+/);
         if (words.length >= 2) {
@@ -34,4 +39,3 @@ export function TeamAvatar({ name, logoUrl, className, size = 'md' }: TeamAvatar
         </Avatar>
     );
 }
-

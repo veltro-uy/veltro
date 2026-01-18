@@ -38,7 +38,8 @@ export default function DeleteUser({ hasPassword }: DeleteUserProps) {
                     <InfoIcon />
                     <AlertTitle>Contraseña requerida</AlertTitle>
                     <AlertDescription>
-                        Para eliminar tu cuenta, necesitas configurar una contraseña primero.{' '}
+                        Para eliminar tu cuenta, necesitas configurar una
+                        contraseña primero.{' '}
                         <Link
                             href={edit()}
                             className="font-medium underline underline-offset-4"
@@ -53,7 +54,8 @@ export default function DeleteUser({ hasPassword }: DeleteUserProps) {
                 <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
                     <p className="font-medium">Advertencia</p>
                     <p className="text-sm">
-                        Por favor procede con precaución, esto no se puede deshacer.
+                        Por favor procede con precaución, esto no se puede
+                        deshacer.
                     </p>
                 </div>
 
@@ -72,10 +74,11 @@ export default function DeleteUser({ hasPassword }: DeleteUserProps) {
                             ¿Estás seguro de que quieres eliminar tu cuenta?
                         </DialogTitle>
                         <DialogDescription>
-                            Una vez que tu cuenta sea eliminada, todos sus recursos
-                            y datos también serán eliminados permanentemente. Por favor
-                            ingresa tu contraseña para confirmar que deseas eliminar
-                            permanentemente tu cuenta.
+                            Una vez que tu cuenta sea eliminada, todos sus
+                            recursos y datos también serán eliminados
+                            permanentemente. Por favor ingresa tu contraseña
+                            para confirmar que deseas eliminar permanentemente
+                            tu cuenta.
                         </DialogDescription>
 
                         <Form

@@ -2,7 +2,10 @@
 
 namespace App\Actions\Fortify;
 
+use App\Models\TeamInvitation;
+use App\Models\TeamMember;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -29,12 +32,41 @@ class CreateNewUser implements CreatesNewUsers
                 Rule::unique(User::class),
             ],
             'password' => $this->passwordRules(),
+            'invitation_token' => ['nullable', 'string', 'exists:team_invitations,token'],
         ])->validate();
 
-        return User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'password' => $input['password'],
-        ]);
+        return DB::transaction(function () use ($input) {
+            $user = User::create([
+                'name' => $input['name'],
+                'email' => $input['email'],
+                'password' => $input['password'],
+            ]);
+
+            // Handle team invitation if present
+            if (! empty($input['invitation_token'])) {
+                $invitation = TeamInvitation::where('token', $input['invitation_token'])
+                    ->where('status', 'pending')
+                    ->first();
+
+                if ($invitation && $invitation->isValid()) {
+                    // Add user to team
+                    TeamMember::create([
+                        'team_id' => $invitation->team_id,
+                        'user_id' => $user->id,
+                        'role' => $invitation->role,
+                        'status' => 'active',
+                    ]);
+
+                    // Mark invitation as accepted
+                    $invitation->update([
+                        'status' => 'accepted',
+                        'accepted_by' => $user->id,
+                        'accepted_at' => now(),
+                    ]);
+                }
+            }
+
+            return $user;
+        });
     }
 }

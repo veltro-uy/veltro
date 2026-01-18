@@ -28,9 +28,9 @@ interface PasswordProps {
     intendedUrl?: string;
 }
 
-export default function Password({ 
-    hasPassword, 
-    needsPasswordSetup = false 
+export default function Password({
+    hasPassword,
+    needsPasswordSetup = false,
 }: PasswordProps) {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
@@ -43,11 +43,15 @@ export default function Password({
             <SettingsLayout>
                 <div className="space-y-6">
                     <HeadingSmall
-                        title={isSetup ? "Configurar contraseña" : "Actualizar contraseña"}
+                        title={
+                            isSetup
+                                ? 'Configurar contraseña'
+                                : 'Actualizar contraseña'
+                        }
                         description={
                             isSetup
-                                ? "Crea una contraseña para proteger tu cuenta y acceder a funciones de seguridad"
-                                : "Asegúrate de que tu cuenta esté usando una contraseña larga y aleatoria para mantenerte seguro"
+                                ? 'Crea una contraseña para proteger tu cuenta y acceder a funciones de seguridad'
+                                : 'Asegúrate de que tu cuenta esté usando una contraseña larga y aleatoria para mantenerte seguro'
                         }
                     />
 
@@ -56,8 +60,10 @@ export default function Password({
                             <InfoIcon />
                             <AlertTitle>Contraseña requerida</AlertTitle>
                             <AlertDescription>
-                                Para habilitar la autenticación de dos factores, necesitas configurar una contraseña primero. 
-                                Como iniciaste sesión con Google, tu cuenta aún no tiene contraseña.
+                                Para habilitar la autenticación de dos factores,
+                                necesitas configurar una contraseña primero.
+                                Como iniciaste sesión con Google, tu cuenta aún
+                                no tiene contraseña.
                             </AlertDescription>
                         </Alert>
                     )}
@@ -110,7 +116,9 @@ export default function Password({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="password">
-                                        {isSetup ? "Contraseña" : "Nueva contraseña"}
+                                        {isSetup
+                                            ? 'Contraseña'
+                                            : 'Nueva contraseña'}
                                     </Label>
 
                                     <Input
@@ -120,7 +128,11 @@ export default function Password({
                                         type="password"
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
-                                        placeholder={isSetup ? "Contraseña" : "Nueva contraseña"}
+                                        placeholder={
+                                            isSetup
+                                                ? 'Contraseña'
+                                                : 'Nueva contraseña'
+                                        }
                                     />
 
                                     <InputError message={errors.password} />
@@ -150,7 +162,9 @@ export default function Password({
                                         disabled={processing}
                                         data-test="update-password-button"
                                     >
-                                        {isSetup ? "Crear contraseña" : "Guardar contraseña"}
+                                        {isSetup
+                                            ? 'Crear contraseña'
+                                            : 'Guardar contraseña'}
                                     </Button>
 
                                     <Transition
