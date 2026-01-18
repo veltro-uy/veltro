@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 use App\Http\Controllers\JoinRequestController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
+
+// Public invitation routes (no auth required to view)
+Route::get('/teams/invite/{token}', [TeamInvitationController::class, 'show'])
+    ->name('teams.invitation.show');
 
 Route::middleware(['auth', 'verified', 'throttle:teams'])->group(function () {
     // Teams
@@ -12,6 +17,20 @@ Route::middleware(['auth', 'verified', 'throttle:teams'])->group(function () {
     Route::get('/teams/create', [TeamController::class, 'create'])->name('teams.create');
     Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
     Route::get('/teams/search', [TeamController::class, 'search'])->name('teams.search');
+
+    // Team Invitations (for team leaders) - Must be before /teams/{id}
+    Route::post('/teams/{teamId}/invitations', [TeamInvitationController::class, 'create'])
+        ->name('teams.invitations.create');
+    Route::get('/teams/{teamId}/invitations', [TeamInvitationController::class, 'index'])
+        ->name('teams.invitations.index');
+    Route::post('/team-invitations/{id}/revoke', [TeamInvitationController::class, 'revoke'])
+        ->name('team-invitations.revoke');
+
+    // Accept invitation (requires auth)
+    Route::post('/teams/invite/{token}/accept', [TeamInvitationController::class, 'accept'])
+        ->name('teams.invitation.accept');
+
+    // Team CRUD - {id} routes must come after specific routes
     Route::get('/teams/{id}', [TeamController::class, 'show'])->name('teams.show');
     Route::get('/teams/{id}/edit', [TeamController::class, 'edit'])->name('teams.edit');
     Route::put('/teams/{id}', [TeamController::class, 'update'])->name('teams.update');

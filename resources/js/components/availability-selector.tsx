@@ -3,7 +3,13 @@ import { Check, HelpCircle, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -22,7 +28,9 @@ export function AvailabilitySelector({
     currentStatus,
     onUpdate,
 }: AvailabilitySelectorProps) {
-    const [status, setStatus] = useState<AvailabilityStatus>(currentStatus?.status ?? 'pending');
+    const [status, setStatus] = useState<AvailabilityStatus>(
+        currentStatus?.status ?? 'pending',
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = () => {
@@ -57,7 +65,12 @@ export function AvailabilitySelector({
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <RadioGroup value={status} onValueChange={(value) => setStatus(value as AvailabilityStatus)}>
+                <RadioGroup
+                    value={status}
+                    onValueChange={(value) =>
+                        setStatus(value as AvailabilityStatus)
+                    }
+                >
                     <div className="flex items-center space-x-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
                         <RadioGroupItem value="available" id="available" />
                         <Label
@@ -112,12 +125,17 @@ export function AvailabilitySelector({
                     disabled={!hasChanged || isSubmitting}
                     className="w-full"
                 >
-                    {isSubmitting ? 'Actualizando...' : 'Actualizar Disponibilidad'}
+                    {isSubmitting
+                        ? 'Actualizando...'
+                        : 'Actualizar Disponibilidad'}
                 </Button>
 
                 {currentStatus?.confirmed_at && (
                     <p className="text-center text-sm text-muted-foreground">
-                        Última actualización: {new Date(currentStatus.confirmed_at).toLocaleDateString('es-ES')}
+                        Última actualización:{' '}
+                        {new Date(
+                            currentStatus.confirmed_at,
+                        ).toLocaleDateString('es-ES')}
                     </p>
                 )}
             </CardContent>

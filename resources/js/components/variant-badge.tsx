@@ -37,4 +37,3 @@ export function VariantBadge({ variant }: VariantBadgeProps) {
         </Badge>
     );
 }
-

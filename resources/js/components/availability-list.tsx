@@ -11,7 +11,10 @@ interface AvailabilityListProps {
     teamName: string;
 }
 
-export function AvailabilityList({ availability, teamName }: AvailabilityListProps) {
+export function AvailabilityList({
+    availability,
+    teamName,
+}: AvailabilityListProps) {
     const getStatusConfig = (status: AvailabilityStatus) => {
         switch (status) {
             case 'available':
@@ -59,7 +62,10 @@ export function AvailabilityList({ availability, teamName }: AvailabilityListPro
         },
     );
 
-    const renderGroup = (status: AvailabilityStatus, items: MatchAvailability[]) => {
+    const renderGroup = (
+        status: AvailabilityStatus,
+        items: MatchAvailability[],
+    ) => {
         if (items.length === 0) return null;
 
         const config = getStatusConfig(status);
@@ -88,11 +94,15 @@ export function AvailabilityList({ availability, teamName }: AvailabilityListPro
                                         size="sm"
                                         className="h-6 w-6"
                                     />
-                                    <span className="text-sm">{item.user.name}</span>
+                                    <span className="text-sm">
+                                        {item.user.name}
+                                    </span>
                                 </>
                             )}
                             {!item.user && (
-                                <span className="text-sm text-muted-foreground">Jugador Desconocido</span>
+                                <span className="text-sm text-muted-foreground">
+                                    Jugador Desconocido
+                                </span>
                             )}
                         </div>
                     ))}
@@ -104,7 +114,9 @@ export function AvailabilityList({ availability, teamName }: AvailabilityListPro
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">{teamName} - Disponibilidad de Jugadores</CardTitle>
+                <CardTitle className="text-lg">
+                    {teamName} - Disponibilidad de Jugadores
+                </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 {renderGroup('available', grouped.available)}

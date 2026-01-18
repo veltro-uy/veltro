@@ -31,11 +31,11 @@ export function validateEmail(email: string): string | null {
     if (!email || email.trim() === '') {
         return 'El campo correo electrónico es obligatorio.';
     }
-    
+
     if (!isValidEmail(email)) {
         return 'El campo correo electrónico debe ser una dirección de correo electrónico válida.';
     }
-    
+
     return null;
 }
 
@@ -45,15 +45,18 @@ export function validateEmail(email: string): string | null {
  * @param minLength - Minimum password length (default: 8)
  * @returns Error message in Spanish if invalid, null if valid
  */
-export function validatePassword(password: string, minLength: number = 8): string | null {
+export function validatePassword(
+    password: string,
+    minLength: number = 8,
+): string | null {
     if (!password || password.trim() === '') {
         return 'El campo contraseña es obligatorio.';
     }
-    
+
     if (password.length < minLength) {
         return `El campo contraseña debe tener al menos ${minLength} caracteres.`;
     }
-    
+
     return null;
 }
 
@@ -65,16 +68,16 @@ export function validatePassword(password: string, minLength: number = 8): strin
  */
 export function validatePasswordConfirmation(
     password: string,
-    passwordConfirmation: string
+    passwordConfirmation: string,
 ): string | null {
     if (!passwordConfirmation || passwordConfirmation.trim() === '') {
         return 'El campo confirmación de contraseña es obligatorio.';
     }
-    
+
     if (password !== passwordConfirmation) {
         return 'La confirmación del campo contraseña no coincide.';
     }
-    
+
     return null;
 }
 
@@ -88,22 +91,22 @@ export function validatePasswordConfirmation(
 export function validateName(
     name: string,
     minLength: number = 2,
-    maxLength: number = 255
+    maxLength: number = 255,
 ): string | null {
     if (!name || name.trim() === '') {
         return 'El campo nombre es obligatorio.';
     }
-    
+
     const trimmedName = name.trim();
-    
+
     if (trimmedName.length < minLength) {
         return `El campo nombre debe tener al menos ${minLength} caracteres.`;
     }
-    
+
     if (trimmedName.length > maxLength) {
         return `El campo nombre no debe ser mayor que ${maxLength} caracteres.`;
     }
-    
+
     return null;
 }
 
@@ -130,15 +133,14 @@ export interface FieldValidator {
  */
 export function validateFields(
     validators: Record<string, FieldValidator>,
-    values: Record<string, string>
+    values: Record<string, string>,
 ): Record<string, string | null> {
     const errors: Record<string, string | null> = {};
-    
+
     for (const [field, validator] of Object.entries(validators)) {
         const value = values[field] || '';
         errors[field] = validator(value);
     }
-    
+
     return errors;
 }
-
