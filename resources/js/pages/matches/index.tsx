@@ -1,12 +1,11 @@
-import { Head, Link } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
 import {
-	Plus,
 	Search,
 	Trophy,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CreateMatchModal } from "@/components/create-match-modal";
 import { MatchCard } from "@/components/match-card";
-import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -50,9 +49,10 @@ interface Match {
 interface Props {
 	myMatches: Match[];
 	availableMatches: Match[];
+	teams: Team[];
 }
 
-export default function Index({ myMatches, availableMatches }: Props) {
+export default function Index({ myMatches, availableMatches, teams }: Props) {
 	const [activeView, setActiveView] = useState<"my-matches" | "find-matches">(
 		"my-matches",
 	);
@@ -80,12 +80,7 @@ export default function Index({ myMatches, availableMatches }: Props) {
 							Encuentra rivales y gestiona los partidos de tu equipo
 						</p>
 					</div>
-					<Button asChild>
-						<Link href={matches.create().url}>
-							<Plus className="mr-2 h-4 w-4" />
-							Publicar Partido
-						</Link>
-					</Button>
+					<CreateMatchModal teams={teams} />
 				</div>
 
 				<div className="flex items-center justify-between gap-4">
@@ -139,12 +134,7 @@ export default function Index({ myMatches, availableMatches }: Props) {
 											Publica un partido disponible o busca partidos disponibles
 										</p>
 									</div>
-									<Button asChild>
-										<Link href={matches.create().url}>
-											<Plus className="mr-2 h-4 w-4" />
-											Publicar Partido
-										</Link>
-									</Button>
+									<CreateMatchModal teams={teams} />
 								</CardContent>
 							</Card>
 						) : (

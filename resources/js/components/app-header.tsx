@@ -2,7 +2,6 @@ import { Link, usePage } from "@inertiajs/react";
 import {
 	BookOpen,
 	Folder,
-	LayoutGrid,
 	Menu,
 	Search,
 	Trophy,
@@ -39,7 +38,6 @@ import {
 import { UserMenuContent } from "@/components/user-menu-content";
 import { useInitials } from "@/hooks/use-initials";
 import { cn, isSameUrl, resolveUrl } from "@/lib/utils";
-import { dashboard } from "@/routes";
 import matches from "@/routes/matches";
 import teams from "@/routes/teams";
 import type { BreadcrumbItem, NavItem, SharedData } from "@/types";
@@ -47,11 +45,6 @@ import AppLogo from "./app-logo";
 import AppLogoIcon from "./app-logo-icon";
 
 const mainNavItems: NavItem[] = [
-	{
-		title: "Dashboard",
-		href: dashboard(),
-		icon: LayoutGrid,
-	},
 	{
 		title: "Teams",
 		href: teams.index(),
@@ -152,7 +145,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
 					</div>
 
 					<Link
-						href={dashboard()}
+						href={teams.index()}
 						prefetch
 						className="flex items-center space-x-2"
 					>
