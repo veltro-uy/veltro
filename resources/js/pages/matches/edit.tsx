@@ -65,6 +65,11 @@ export default function Edit({ match }: Props) {
         notes: match.notes || '',
     });
 
+    // Get current datetime for min attribute (format: YYYY-MM-DDTHH:MM)
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Adjust for timezone
+    const minDateTime = now.toISOString().slice(0, 16);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         put(matches.update(match.id).url, {
@@ -110,6 +115,7 @@ export default function Edit({ match }: Props) {
                                     onChange={(e) =>
                                         setData('scheduled_at', e.target.value)
                                     }
+                                    min={minDateTime}
                                 />
                                 {errors.scheduled_at && (
                                     <p className="text-sm text-destructive">

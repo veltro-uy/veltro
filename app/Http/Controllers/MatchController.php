@@ -89,12 +89,12 @@ final class MatchController extends Controller
     {
         $match = $this->matchService->getMatchDetails($id);
 
-        if (!$match) {
+        if (! $match) {
             abort(404);
         }
 
         $user = Auth::user();
-        
+
         // Load team members (leaders only) for leader checks to avoid N+1 queries
         $match->loadMissing([
             'homeTeam.teamMembers' => function ($query) {
@@ -111,7 +111,7 @@ final class MatchController extends Controller
                 },
             ]);
         }
-        
+
         // Check if user is a leader of either team (uses loaded data)
         $isHomeLeader = $match->isHomeTeamLeader($user->id);
         $isAwayLeader = $match->away_team_id ? $match->isAwayTeamLeader($user->id) : false;
@@ -141,7 +141,7 @@ final class MatchController extends Controller
                 ->where('team_id', $match->home_team_id)
                 ->with('user:id,name')
                 ->get();
-            
+
             if ($match->away_team_id) {
                 $awayLineup = $match->lineups()
                     ->where('team_id', $match->away_team_id)
@@ -157,7 +157,7 @@ final class MatchController extends Controller
 
         // Get opposing team leaders with phone numbers
         $opposingLeaders = $this->matchService->getOpposingTeamLeaders($match, $user->id);
-        
+
         // Determine which leaders to show based on user's team
         $opposingTeamLeaders = collect();
         if ($isHomeLeader && $match->away_team_id) {
@@ -171,7 +171,7 @@ final class MatchController extends Controller
         // Format opposing team leaders for Inertia (ensure user relationship is loaded)
         $formattedOpposingLeaders = $opposingTeamLeaders->map(function ($leader) {
             // Ensure user is loaded
-            if (!$leader->relationLoaded('user')) {
+            if (! $leader->relationLoaded('user')) {
                 $leader->load('user:id,name,phone_number');
             }
 
@@ -297,7 +297,7 @@ final class MatchController extends Controller
         $match = FootballMatch::with(['homeTeam'])->findOrFail($id);
         $user = Auth::user();
 
-        if (!$match->isHomeTeamLeader($user->id)) {
+        if (! $match->isHomeTeamLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -319,12 +319,12 @@ final class MatchController extends Controller
         $match = FootballMatch::findOrFail($id);
         $user = Auth::user();
 
-        if (!$match->isHomeTeamLeader($user->id)) {
+        if (! $match->isHomeTeamLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
         $validated = $request->validate([
-            'scheduled_at' => ['required', 'date'],
+            'scheduled_at' => ['required', 'date', 'after_or_equal:now'],
             'location' => ['required', 'string', 'max:255'],
             'location_coords' => ['nullable', 'string', 'max:255'],
             'match_type' => ['required', 'in:friendly,competitive'],
@@ -427,7 +427,7 @@ final class MatchController extends Controller
         $match = FootballMatch::findOrFail($id);
         $user = Auth::user();
 
-        if (!$match->isTeamLeader($user->id)) {
+        if (! $match->isTeamLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -462,7 +462,7 @@ final class MatchController extends Controller
         $match = FootballMatch::findOrFail($id);
         $user = Auth::user();
 
-        if (!$match->isTeamLeader($user->id)) {
+        if (! $match->isTeamLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 

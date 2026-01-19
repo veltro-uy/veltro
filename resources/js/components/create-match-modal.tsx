@@ -46,6 +46,11 @@ export function CreateMatchModal({ teams, trigger }: Props) {
         notes: '',
     });
 
+    // Get current datetime for min attribute (format: YYYY-MM-DDTHH:MM)
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Adjust for timezone
+    const minDateTime = now.toISOString().slice(0, 16);
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         post(matches.store().url, {
@@ -138,6 +143,7 @@ export function CreateMatchModal({ teams, trigger }: Props) {
                             onChange={(e) =>
                                 setData('scheduled_at', e.target.value)
                             }
+                            min={minDateTime}
                             required
                         />
                         {errors.scheduled_at && (
