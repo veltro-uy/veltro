@@ -13,7 +13,11 @@ test('authenticated user can upload avatar', function () {
     $user = User::factory()->create();
     $disk = config('filesystems.default');
 
-    $file = UploadedFile::fake()->create('avatar.jpg', 1000, 'image/jpeg');
+    // Create a valid 1x1 pixel image
+    $file = UploadedFile::fake()->createWithContent(
+        'avatar.jpg',
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+    );
 
     $response = $this->actingAs($user)
         ->post('/settings/avatar', [
@@ -67,7 +71,11 @@ test('old avatar is deleted when uploading new one', function () {
     // Create the old avatar file
     Storage::disk($disk)->put('avatars/old-avatar.jpg', 'old content');
 
-    $file = UploadedFile::fake()->create('new-avatar.jpg', 1000, 'image/jpeg');
+    // Create a valid 1x1 pixel image
+    $file = UploadedFile::fake()->createWithContent(
+        'new-avatar.jpg',
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+    );
 
     $response = $this->actingAs($user)
         ->post('/settings/avatar', [
@@ -107,7 +115,10 @@ test('authenticated user can delete avatar', function () {
 });
 
 test('guests cannot upload avatar', function () {
-    $file = UploadedFile::fake()->create('avatar.jpg', 1000, 'image/jpeg');
+    $file = UploadedFile::fake()->createWithContent(
+        'avatar.jpg',
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+    );
 
     $response = $this->post('/settings/avatar', [
         'avatar' => $file,

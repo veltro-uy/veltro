@@ -48,13 +48,13 @@ test('user profile returns correct statistics', function () {
     // Create teams for the user
     $team1 = Team::create([
         'name' => 'Team 1',
-        'variant' => 'futbol_11',
+        'variant' => 'football_11',
         'created_by' => $user->id,
     ]);
 
     $team2 = Team::create([
         'name' => 'Team 2',
-        'variant' => 'futbol_11',
+        'variant' => 'football_11',
         'created_by' => $user->id,
     ]);
 
@@ -85,13 +85,13 @@ test('user profile returns only active teams', function () {
 
     $activeTeam = Team::create([
         'name' => 'Active Team',
-        'variant' => 'futbol_11',
+        'variant' => 'football_11',
         'created_by' => $user->id,
     ]);
 
     $inactiveTeam = Team::create([
         'name' => 'Inactive Team',
-        'variant' => 'futbol_11',
+        'variant' => 'football_11',
         'created_by' => $user->id,
     ]);
 
