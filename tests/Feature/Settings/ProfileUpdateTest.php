@@ -134,3 +134,96 @@ test('profile page shows correct hasPassword prop for users with password', func
         ->where('hasPassword', true)
     );
 });
+
+test('user can update bio', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'bio' => 'This is my new bio',
+        ]);
+
+    $response->assertSessionHasNoErrors();
+
+    $user->refresh();
+    expect($user->bio)->toBe('This is my new bio');
+});
+
+test('user can update location', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'location' => 'Montevideo, Uruguay',
+        ]);
+
+    $response->assertSessionHasNoErrors();
+
+    $user->refresh();
+    expect($user->location)->toBe('Montevideo, Uruguay');
+});
+
+test('user can update date of birth', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'date_of_birth' => '1990-01-01',
+        ]);
+
+    $response->assertSessionHasNoErrors();
+
+    $user->refresh();
+    expect($user->date_of_birth->format('Y-m-d'))->toBe('1990-01-01');
+});
+
+test('bio cannot exceed 500 characters', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'bio' => str_repeat('a', 501),
+        ]);
+
+    $response->assertSessionHasErrors('bio');
+});
+
+test('location cannot exceed 100 characters', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'location' => str_repeat('a', 101),
+        ]);
+
+    $response->assertSessionHasErrors('location');
+});
+
+test('date of birth must be in the past', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'date_of_birth' => now()->addDay()->format('Y-m-d'),
+        ]);
+
+    $response->assertSessionHasErrors('date_of_birth');
+});

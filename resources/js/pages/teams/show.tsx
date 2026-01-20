@@ -2,6 +2,7 @@ import { InviteTeamMemberModal } from '@/components/invite-team-member-modal';
 import { JoinRequestDialog } from '@/components/join-request-dialog';
 import { MemberManagementDropdown } from '@/components/member-management-dropdown';
 import { TeamAvatar } from '@/components/team-avatar';
+import { UserNameLink } from '@/components/user-name-link';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -304,9 +305,11 @@ export default function Show({ team, isMember, canManage }: Props) {
                                                     size="md"
                                                 />
                                                 <div className="min-w-0 flex-1 space-y-1">
-                                                    <p className="truncate font-medium">
-                                                        {member.user.name}
-                                                    </p>
+                                                    <div className="truncate font-medium">
+                                                        <UserNameLink
+                                                            user={member.user}
+                                                        />
+                                                    </div>
                                                     <div className="flex flex-wrap gap-1">
                                                         <Badge
                                                             variant={

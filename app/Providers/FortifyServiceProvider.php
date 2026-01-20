@@ -117,5 +117,15 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('settings-write', function (Request $request) {
             return Limit::perMinute(6)->by($request->user()?->id ?? $request->ip());
         });
+
+        // Profile views rate limiting (public endpoint)
+        RateLimiter::for('profile-view', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
+        });
+
+        // Avatar upload rate limiting (prevent abuse)
+        RateLimiter::for('avatar-upload', function (Request $request) {
+            return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+        });
     }
 }

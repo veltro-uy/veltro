@@ -9,6 +9,7 @@
 /resources/js/wayfinder
 /storage/*.key
 /storage/pail
+/storage/app/public/avatars
 /vendor
 .DS_Store
 .env

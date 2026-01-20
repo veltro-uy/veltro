@@ -3,6 +3,7 @@ import { Check, HelpCircle, Loader2, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
+import { UserNameLink } from '@/components/user-name-link';
 
 import type { AvailabilityStatus, MatchAvailability } from '@/types';
 
@@ -95,7 +96,7 @@ export function AvailabilityList({
                                         className="h-6 w-6"
                                     />
                                     <span className="text-sm">
-                                        {item.user.name}
+                                        <UserNameLink user={item.user} />
                                     </span>
                                 </>
                             )}
