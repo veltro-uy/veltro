@@ -35,7 +35,12 @@ export interface User {
     name: string;
     email: string;
     avatar_url?: string;
+    avatar_path?: string;
     phone_number?: string;
+    bio?: string;
+    location?: string;
+    date_of_birth?: string;
+    age?: number;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     created_at: string;
@@ -69,4 +74,39 @@ export interface AvailabilityStats {
     pending: number;
     total: number;
     minimum: number;
+}
+
+export interface UserStatistics {
+    teams_count: number;
+    matches_played: number;
+    member_since: string;
+}
+
+export interface UserProfile extends User {
+    statistics: UserStatistics;
+    teams: Team[];
+}
+
+export interface Team {
+    id: number;
+    name: string;
+    variant: string;
+    logo_url?: string;
+    max_members?: number;
+    created_at: string;
+    updated_at: string;
+    team_members?: TeamMember[];
+    [key: string]: unknown;
+}
+
+export interface TeamMember {
+    id: number;
+    user_id: number;
+    team_id: number;
+    role: string;
+    position?: string | null;
+    status: string;
+    joined_at?: string;
+    user?: User;
+    [key: string]: unknown;
 }

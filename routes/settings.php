@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
@@ -18,6 +19,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])
         ->middleware('throttle:settings-write')
         ->name('profile.destroy');
+
+    Route::post('settings/avatar', [AvatarController::class, 'store'])
+        ->middleware('throttle:avatar-upload')
+        ->name('avatar.store');
+    Route::delete('settings/avatar', [AvatarController::class, 'destroy'])
+        ->middleware('throttle:settings-write')
+        ->name('avatar.destroy');
 
     Route::get('settings/password', [PasswordController::class, 'edit'])
         ->middleware('throttle:settings-read')

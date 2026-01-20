@@ -21,6 +21,7 @@ import { AvailabilityStatsComponent } from "@/components/availability-stats";
 import { CreateMatchRequestDialog } from "@/components/create-match-request-dialog";
 import { MatchEventsManager } from "@/components/match-events-manager";
 import { TeamAvatar } from "@/components/team-avatar";
+import { UserNameLink } from "@/components/user-name-link";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -796,7 +797,9 @@ export default function Show({
 													<div className="flex items-center gap-3">
 														<UserAvatar name={leader.user.name} size="sm" />
 														<div>
-															<p className="font-medium">{leader.user.name}</p>
+															<p className="font-medium">
+																<UserNameLink user={leader.user} />
+															</p>
 															<div className="mt-1 flex items-center gap-2">
 																<Badge variant="outline" className="text-xs">
 																	{leader.role === "captain"

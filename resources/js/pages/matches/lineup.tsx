@@ -16,6 +16,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { UserAvatar } from '@/components/user-avatar';
+import { UserNameLink } from '@/components/user-name-link';
 import AppLayout from '@/layouts/app-layout';
 import matches from '@/routes/matches';
 import type { BreadcrumbItem } from '@/types';
@@ -196,7 +197,7 @@ export default function Lineup({
                                             htmlFor={`player-${member.user_id}`}
                                             className="cursor-pointer font-medium"
                                         >
-                                            {member.user.name}
+                                            <UserNameLink user={member.user} />
                                         </Label>
                                     </div>
                                     {isSelected && (

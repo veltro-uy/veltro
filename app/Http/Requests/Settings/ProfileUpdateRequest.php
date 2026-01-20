@@ -35,6 +35,25 @@ class ProfileUpdateRequest extends FormRequest
                 'max:20',
                 'regex:/^[\+]?[0-9\s\-\(\)]+$/',
             ],
+
+            'bio' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+
+            'location' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'date_of_birth' => [
+                'nullable',
+                'date',
+                'before:today',
+                'after:'.now()->subYears(100)->format('Y-m-d'),
+            ],
         ];
     }
 }

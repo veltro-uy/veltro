@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -20,6 +21,11 @@ Route::middleware('throttle:oauth')->group(function () {
     Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 });
+
+// Public user profile endpoint
+Route::get('/api/users/{user}', [UserController::class, 'show'])
+    ->middleware('throttle:profile-view')
+    ->name('users.show');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/teams.php';
