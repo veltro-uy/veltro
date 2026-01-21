@@ -1,5 +1,4 @@
 import { TeamAvatar } from '@/components/team-avatar';
-import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogContent,
@@ -9,7 +8,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserAvatar } from '@/components/user-avatar';
 import { VariantBadge } from '@/components/variant-badge';
-import type { Team, UserProfile, UserStatistics } from '@/types';
+import type { Team, UserProfile } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, MapPin, Users } from 'lucide-react';

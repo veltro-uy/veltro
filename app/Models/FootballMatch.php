@@ -187,7 +187,7 @@ final class FootballMatch extends Model
     {
         $homeLeader = $this->isHomeTeamLeader($userId);
         $awayLeader = $this->away_team_id ? $this->isAwayTeamLeader($userId) : false;
-        
+
         return $homeLeader || $awayLeader;
     }
 
@@ -197,7 +197,7 @@ final class FootballMatch extends Model
      */
     public function isHomeTeamLeader(int $userId): bool
     {
-        if (!$this->relationLoaded('homeTeam')) {
+        if (! $this->relationLoaded('homeTeam')) {
             return $this->homeTeam->isLeader($userId);
         }
 
@@ -219,11 +219,11 @@ final class FootballMatch extends Model
      */
     public function isAwayTeamLeader(int $userId): bool
     {
-        if (!$this->away_team_id) {
+        if (! $this->away_team_id) {
             return false;
         }
 
-        if (!$this->relationLoaded('awayTeam') || !$this->awayTeam) {
+        if (! $this->relationLoaded('awayTeam') || ! $this->awayTeam) {
             return $this->awayTeam->isLeader($userId);
         }
 
@@ -270,7 +270,7 @@ final class FootballMatch extends Model
             ->where('team_id', $teamId)
             ->where('is_starter', true)
             ->count();
-            
+
         return $lineupCount >= $this->getMinimumPlayers();
     }
 
@@ -279,7 +279,7 @@ final class FootballMatch extends Model
      */
     public function getWinnerTeamId(): ?int
     {
-        if (!$this->isCompleted() || $this->home_score === null || $this->away_score === null) {
+        if (! $this->isCompleted() || $this->home_score === null || $this->away_score === null) {
             return null;
         }
 
@@ -330,6 +330,7 @@ final class FootballMatch extends Model
     public function hasEnoughConfirmedPlayers(int $teamId): bool
     {
         $availableCount = $this->getAvailablePlayersCount($teamId);
+
         return $availableCount >= $this->getMinimumPlayers();
     }
 
@@ -338,6 +339,6 @@ final class FootballMatch extends Model
      */
     public function needsPlayerAlert(int $teamId): bool
     {
-        return !$this->hasEnoughConfirmedPlayers($teamId);
+        return ! $this->hasEnoughConfirmedPlayers($teamId);
     }
 }

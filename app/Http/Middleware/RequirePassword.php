@@ -19,7 +19,7 @@ class RequirePassword
         $user = $request->user();
 
         // Check if the user has a password set
-        if ($user && !$user->hasPassword()) {
+        if ($user && ! $user->hasPassword()) {
             // Redirect to password settings with a flag indicating setup is needed
             return redirect()
                 ->route('user-password.edit')
@@ -33,4 +33,3 @@ class RequirePassword
         return $passwordConfirmMiddleware->handle($request, $next);
     }
 }
-

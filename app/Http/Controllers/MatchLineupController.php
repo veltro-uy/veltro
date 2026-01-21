@@ -34,13 +34,13 @@ final class MatchLineupController extends Controller
         $isHomeLeader = $match->isHomeTeamLeader($user->id);
         $isAwayLeader = $match->away_team_id ? $match->isAwayTeamLeader($user->id) : false;
 
-        if (!$isHomeLeader && !$isAwayLeader) {
+        if (! $isHomeLeader && ! $isAwayLeader) {
             abort(403, 'No autorizado');
         }
 
         // Get the team the user can manage
         $team = $isHomeLeader ? $match->homeTeam : $match->awayTeam;
-        
+
         // Get current lineup for this team
         $currentLineup = $match->lineups()
             ->where('team_id', $team->id)
@@ -74,7 +74,7 @@ final class MatchLineupController extends Controller
 
         // Verify user is leader of the team
         $team = \App\Models\Team::findOrFail((int) $validated['team_id']);
-        if (!$team->isLeader($user->id)) {
+        if (! $team->isLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 

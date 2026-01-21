@@ -43,13 +43,14 @@ class SendAvailabilityReminders extends Command
 
         if ($matches->isEmpty()) {
             $this->info('No matches found requiring reminders.');
+
             return self::SUCCESS;
         }
 
         $remindersSent = 0;
 
         foreach ($matches as $match) {
-            $this->info("Processing match {$match->id}: {$match->homeTeam->name} vs " .
+            $this->info("Processing match {$match->id}: {$match->homeTeam->name} vs ".
                        ($match->awayTeam ? $match->awayTeam->name : 'TBD'));
 
             // Send reminders for home team
@@ -84,10 +85,10 @@ class SendAvailabilityReminders extends Command
                 ->first();
 
             // Send reminder if pending and haven't been reminded yet
-            if (!$availability || ($availability->status === 'pending' && !$availability->reminded_at)) {
+            if (! $availability || ($availability->status === 'pending' && ! $availability->reminded_at)) {
                 try {
                     // Create availability record if doesn't exist
-                    if (!$availability) {
+                    if (! $availability) {
                         $availability = MatchAvailability::create([
                             'match_id' => $match->id,
                             'user_id' => $member->user_id,

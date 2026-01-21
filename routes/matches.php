@@ -37,4 +37,3 @@ Route::middleware(['auth', 'verified', 'throttle:matches'])->group(function () {
     // Match Availability
     Route::post('/matches/{matchId}/availability', [MatchAvailabilityController::class, 'update'])->name('matches.availability.update');
 });
-

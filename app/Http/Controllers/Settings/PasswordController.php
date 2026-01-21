@@ -43,8 +43,9 @@ class PasswordController extends Controller
 
         // If this was a password setup (not update), redirect to intended URL
         $intendedUrl = session('intended_url');
-        if (!$hasPassword && $intendedUrl) {
+        if (! $hasPassword && $intendedUrl) {
             session()->forget(['needs_password_setup', 'intended_url']);
+
             return redirect($intendedUrl);
         }
 

@@ -49,7 +49,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         // OAuth users must set up a password before they can delete their account
-        if (!$user->hasPassword()) {
+        if (! $user->hasPassword()) {
             return back()->withErrors([
                 'password' => 'You must set up a password before you can delete your account.',
             ]);

@@ -68,7 +68,7 @@ final class TeamController extends Controller
     {
         $team = $this->teamService->getTeamWithDetails($id);
 
-        if (!$team) {
+        if (! $team) {
             abort(404);
         }
 
@@ -84,23 +84,6 @@ final class TeamController extends Controller
     }
 
     /**
-     * Show the form for editing the team.
-     */
-    public function edit(int $id): Response
-    {
-        $team = Team::findOrFail($id);
-        $user = Auth::user();
-
-        if (!$team->isLeader($user->id)) {
-            abort(403, 'No autorizado');
-        }
-
-        return Inertia::render('teams/edit', [
-            'team' => $team,
-        ]);
-    }
-
-    /**
      * Update the specified team.
      */
     public function update(Request $request, int $id)
@@ -108,7 +91,7 @@ final class TeamController extends Controller
         $team = Team::findOrFail($id);
         $user = Auth::user();
 
-        if (!$team->isLeader($user->id)) {
+        if (! $team->isLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -116,7 +99,43 @@ final class TeamController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_logo' => ['nullable', 'boolean'],
         ]);
+
+        // Handle logo upload
+        if ($request->hasFile('logo')) {
+            $disk = config('filesystems.default');
+
+            // Delete old logo if exists
+            if ($team->logo_path) {
+                \Storage::disk($disk)->delete($team->logo_path);
+            }
+
+            $file = $request->file('logo');
+            $filename = uniqid().'.'.$file->getClientOriginalExtension();
+            $path = "logos/{$team->id}/{$filename}";
+
+            // Resize and save the image
+            $image = \Intervention\Image\Laravel\Facades\Image::read($file);
+            $image->cover(400, 400);
+
+            \Storage::disk($disk)->put(
+                $path,
+                (string) $image->encode()
+            );
+
+            $validated['logo_path'] = $path;
+        } elseif ($request->input('remove_logo')) {
+            // Handle logo removal
+            $disk = config('filesystems.default');
+
+            if ($team->logo_path) {
+                \Storage::disk($disk)->delete($team->logo_path);
+            }
+
+            $validated['logo_path'] = null;
+        }
 
         $team = $this->teamService->updateTeam($team, $validated);
 
@@ -132,7 +151,7 @@ final class TeamController extends Controller
         $team = Team::findOrFail($id);
         $user = Auth::user();
 
-        if (!$team->isCaptain($user->id)) {
+        if (! $team->isCaptain($user->id)) {
             abort(403, 'Solo el capitán puede eliminar el equipo');
         }
 
@@ -169,7 +188,7 @@ final class TeamController extends Controller
         $user = Auth::user();
 
         // Check if user is a member
-        if (!$team->hasMember($user->id)) {
+        if (! $team->hasMember($user->id)) {
             return back()->with('error', 'No eres miembro de este equipo');
         }
 
@@ -192,7 +211,7 @@ final class TeamController extends Controller
         $team = Team::findOrFail($teamId);
         $user = Auth::user();
 
-        if (!$team->isLeader($user->id)) {
+        if (! $team->isLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -214,7 +233,7 @@ final class TeamController extends Controller
         $team = Team::findOrFail($teamId);
         $user = Auth::user();
 
-        if (!$team->isCaptain($user->id)) {
+        if (! $team->isCaptain($user->id)) {
             abort(403, 'Solo el capitán puede actualizar roles de miembros');
         }
 
@@ -235,7 +254,7 @@ final class TeamController extends Controller
         $team = Team::findOrFail($teamId);
         $user = Auth::user();
 
-        if (!$team->isLeader($user->id)) {
+        if (! $team->isLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -256,7 +275,7 @@ final class TeamController extends Controller
         $team = Team::findOrFail($teamId);
         $user = Auth::user();
 
-        if (!$team->isCaptain($user->id)) {
+        if (! $team->isCaptain($user->id)) {
             abort(403, 'Solo el capitán puede transferir la capitanía');
         }
 
@@ -265,7 +284,7 @@ final class TeamController extends Controller
         ]);
 
         // Check if new captain is a member
-        if (!$team->hasMember($validated['new_captain_id'])) {
+        if (! $team->hasMember($validated['new_captain_id'])) {
             return back()->with('error', 'El nuevo capitán debe ser miembro del equipo');
         }
 

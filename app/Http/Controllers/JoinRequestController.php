@@ -61,11 +61,11 @@ final class JoinRequestController extends Controller
         $joinRequest = JoinRequest::findOrFail($id);
         $user = Auth::user();
 
-        if (!$joinRequest->team->isLeader($user->id)) {
+        if (! $joinRequest->team->isLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
-        if (!$joinRequest->isPending()) {
+        if (! $joinRequest->isPending()) {
             return back()->with('error', 'Esta solicitud ya ha sido procesada');
         }
 
@@ -82,11 +82,11 @@ final class JoinRequestController extends Controller
         $joinRequest = JoinRequest::findOrFail($id);
         $user = Auth::user();
 
-        if (!$joinRequest->team->isLeader($user->id)) {
+        if (! $joinRequest->team->isLeader($user->id)) {
             abort(403, 'No autorizado');
         }
 
-        if (!$joinRequest->isPending()) {
+        if (! $joinRequest->isPending()) {
             return back()->with('error', 'Esta solicitud ya ha sido procesada');
         }
 
@@ -107,7 +107,7 @@ final class JoinRequestController extends Controller
             abort(403, 'No autorizado');
         }
 
-        if (!$joinRequest->isPending()) {
+        if (! $joinRequest->isPending()) {
             return back()->with('error', 'Esta solicitud ya ha sido procesada');
         }
 

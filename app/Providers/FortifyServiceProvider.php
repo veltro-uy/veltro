@@ -127,5 +127,10 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('avatar-upload', function (Request $request) {
             return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
         });
+
+        // Team logo upload rate limiting (prevent abuse)
+        RateLimiter::for('logo-upload', function (Request $request) {
+            return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+        });
     }
 }

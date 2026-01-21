@@ -1,8 +1,8 @@
+import { EditTeamModal } from '@/components/edit-team-modal';
 import { InviteTeamMemberModal } from '@/components/invite-team-member-modal';
 import { JoinRequestDialog } from '@/components/join-request-dialog';
 import { MemberManagementDropdown } from '@/components/member-management-dropdown';
 import { TeamAvatar } from '@/components/team-avatar';
-import { UserNameLink } from '@/components/user-name-link';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -23,13 +23,14 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
+import { UserNameLink } from '@/components/user-name-link';
 import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
 import joinRequests from '@/routes/join-requests';
 import teams from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Edit, LogOut, Shield, Star, Users } from 'lucide-react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { LogOut, Shield, Star, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -65,10 +66,13 @@ interface Team {
     name: string;
     variant: string;
     logo_url?: string;
+    logo_path?: string;
     description?: string;
     team_members: TeamMember[];
     pending_join_requests: JoinRequest[];
     max_members?: number;
+    created_at: string;
+    updated_at: string;
 }
 
 const getMaxMembersForVariant = (variant: string): number => {
@@ -234,14 +238,7 @@ export default function Show({ team, isMember, canManage }: Props) {
                                 teamName={team.name}
                             />
                         )}
-                        {isMember && canManage && (
-                            <Button asChild>
-                                <Link href={teams.edit(team.id).url}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Editar Equipo
-                                </Link>
-                            </Button>
-                        )}
+                        {isMember && canManage && <EditTeamModal team={team} />}
                         {isMember && !isCaptain && (
                             <Button
                                 variant="destructive"

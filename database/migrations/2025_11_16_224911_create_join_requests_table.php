@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamp('reviewed_at')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'team_id', 'status']);
             $table->index(['team_id', 'status']);
             $table->index(['user_id', 'status']);

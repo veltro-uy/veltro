@@ -21,8 +21,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
     public function __construct(
         public FootballMatch $match,
         public Team $team
-    ) {
-    }
+    ) {}
 
     /**
      * Get the notification's delivery channels.
