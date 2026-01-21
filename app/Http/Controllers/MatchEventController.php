@@ -35,7 +35,7 @@ final class MatchEventController extends Controller
 
             // Verify user is a leader of the team
             $team = \App\Models\Team::findOrFail((int) $validated['team_id']);
-            if (!$team->isLeader($user->id)) {
+            if (! $team->isLeader($user->id)) {
                 abort(403, 'No autorizado');
             }
 

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamp('joined_at')->useCurrent();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'team_id']);
             $table->index(['team_id', 'status']);
             $table->index(['user_id', 'status']);

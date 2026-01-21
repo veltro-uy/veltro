@@ -92,6 +92,8 @@ export interface Team {
     name: string;
     variant: string;
     logo_url?: string;
+    logo_path?: string;
+    description?: string;
     max_members?: number;
     created_at: string;
     updated_at: string;

@@ -20,7 +20,7 @@ final class TeamService
     {
         return DB::transaction(function () use ($user, $data) {
             // Set default max_members based on variant if not provided
-            if (!isset($data['max_members'])) {
+            if (! isset($data['max_members'])) {
                 $data['max_members'] = match ($data['variant']) {
                     'football_11' => 25,
                     'football_7' => 15,
@@ -53,6 +53,7 @@ final class TeamService
     public function updateTeam(Team $team, array $data): Team
     {
         $team->update($data);
+
         return $team->load(['teamMembers.user', 'creator']);
     }
 
@@ -107,6 +108,7 @@ final class TeamService
 
         if ($member) {
             $member->update(['role' => $role]);
+
             return $member->fresh();
         }
 
@@ -124,6 +126,7 @@ final class TeamService
 
         if ($member) {
             $member->update(['position' => $position]);
+
             return $member->fresh();
         }
 
@@ -266,11 +269,11 @@ final class TeamService
     {
         $query = Team::query()->with(['teamMembers.user', 'creator']);
 
-        if (!empty($filters['name'])) {
-            $query->where('name', 'like', '%' . $filters['name'] . '%');
+        if (! empty($filters['name'])) {
+            $query->where('name', 'like', '%'.$filters['name'].'%');
         }
 
-        if (!empty($filters['variant'])) {
+        if (! empty($filters['variant'])) {
             $query->where('variant', $filters['variant']);
         }
 
@@ -285,7 +288,7 @@ final class TeamService
         return Team::with([
             'teamMembers.user',
             'creator',
-            'pendingJoinRequests.user'
+            'pendingJoinRequests.user',
         ])->find($teamId);
     }
 

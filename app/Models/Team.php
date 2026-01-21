@@ -7,8 +7,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Team extends Model
 {
@@ -23,9 +23,19 @@ final class Team extends Model
         'name',
         'variant',
         'logo_url',
+        'logo_path',
         'description',
         'created_by',
         'max_members',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'logo_url',
     ];
 
     /**
@@ -39,6 +49,26 @@ final class Team extends Model
             'founded_date' => 'date',
             'require_approval' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the team's logo URL.
+     */
+    public function getLogoUrlAttribute(): ?string
+    {
+        if ($this->logo_path) {
+            $disk = config('filesystems.default');
+
+            // For S3 and S3-compatible storage (Cloudflare R2), use full URL
+            if ($disk !== 'public') {
+                return \Storage::disk($disk)->url($this->logo_path);
+            }
+
+            // For local public disk, use asset helper
+            return asset('storage/'.$this->logo_path);
+        }
+
+        return null;
     }
 
     /**

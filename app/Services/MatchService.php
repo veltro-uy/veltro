@@ -23,7 +23,7 @@ final class MatchService
         $team = Team::findOrFail($teamId);
 
         // Verify user is a leader of the team
-        if (!$team->isLeader($user->id)) {
+        if (! $team->isLeader($user->id)) {
             throw new \Exception('Only team leaders can create match availability');
         }
 
@@ -54,6 +54,7 @@ final class MatchService
         }
 
         $match->update($data);
+
         return $match->fresh();
     }
 
@@ -63,7 +64,7 @@ final class MatchService
     public function cancelMatch(FootballMatch $match, int $userId): bool
     {
         // Only home team leader can cancel before confirmation
-        if (!$match->isHomeTeamLeader($userId)) {
+        if (! $match->isHomeTeamLeader($userId)) {
             throw new \Exception('Only the home team leader can cancel this match');
         }
 
@@ -74,9 +75,10 @@ final class MatchService
         return DB::transaction(function () use ($match) {
             // Delete all pending requests
             $match->matchRequests()->where('status', 'pending')->delete();
-            
+
             // Update match status
             $match->update(['status' => 'cancelled']);
+
             return true;
         });
     }
@@ -90,12 +92,12 @@ final class MatchService
         $team = Team::findOrFail($teamId);
 
         // Verify user is a leader of the requesting team
-        if (!$team->isLeader($userId)) {
+        if (! $team->isLeader($userId)) {
             throw new \Exception('Only team leaders can request matches');
         }
 
         // Verify match is available
-        if (!$match->isAvailable()) {
+        if (! $match->isAvailable()) {
             throw new \Exception('This match is no longer available');
         }
 
@@ -131,12 +133,12 @@ final class MatchService
             $match = $matchRequest->match;
 
             // Verify reviewer is home team leader
-            if (!$match->isHomeTeamLeader($reviewerId)) {
+            if (! $match->isHomeTeamLeader($reviewerId)) {
                 throw new \Exception('Only the home team leader can accept requests');
             }
 
             // Verify match is still available
-            if (!$match->isAvailable()) {
+            if (! $match->isAvailable()) {
                 throw new \Exception('This match is no longer available');
             }
 
@@ -176,7 +178,7 @@ final class MatchService
         $match = $matchRequest->match;
 
         // Verify reviewer is home team leader
-        if (!$match->isHomeTeamLeader($reviewerId)) {
+        if (! $match->isHomeTeamLeader($reviewerId)) {
             throw new \Exception('Only the home team leader can reject requests');
         }
 
@@ -195,7 +197,7 @@ final class MatchService
     public function setLineup(FootballMatch $match, int $teamId, array $players): bool
     {
         // Verify match is confirmed
-        if (!$match->isConfirmed() && !$match->isInProgress()) {
+        if (! $match->isConfirmed() && ! $match->isInProgress()) {
             throw new \Exception('Can only set lineup for confirmed matches');
         }
 
@@ -233,7 +235,7 @@ final class MatchService
     public function updateScore(FootballMatch $match, int $homeScore, int $awayScore): FootballMatch
     {
         // Verify match is in progress or confirmed
-        if (!$match->isInProgress() && !$match->isConfirmed()) {
+        if (! $match->isInProgress() && ! $match->isConfirmed()) {
             throw new \Exception('Can only update score for in-progress or confirmed matches');
         }
 
@@ -254,6 +256,7 @@ final class MatchService
         }
 
         $match->update($updates);
+
         return $match->fresh();
     }
 
@@ -263,7 +266,7 @@ final class MatchService
     public function recordEvent(FootballMatch $match, int $teamId, array $eventData): MatchEvent
     {
         // Verify match is in progress
-        if (!$match->isInProgress()) {
+        if (! $match->isInProgress()) {
             throw new \Exception('Can only record events for in-progress matches');
         }
 
@@ -288,7 +291,7 @@ final class MatchService
     public function completeMatch(FootballMatch $match): FootballMatch
     {
         // Verify match is in progress
-        if (!$match->isInProgress()) {
+        if (! $match->isInProgress()) {
             throw new \Exception('Can only complete in-progress matches');
         }
 
@@ -386,7 +389,7 @@ final class MatchService
         $awayLeaders = collect();
 
         // Only return leaders if match is confirmed and user is a leader of one of the teams
-        if (!$match->isConfirmed() || !$match->isTeamLeader($userId)) {
+        if (! $match->isConfirmed() || ! $match->isTeamLeader($userId)) {
             return [
                 'home_leaders' => $homeLeaders,
                 'away_leaders' => $awayLeaders,
@@ -458,11 +461,11 @@ final class MatchService
 
         // Verify user is a leader of the team
         if ($event->team_id === $match->home_team_id) {
-            if (!$match->isHomeTeamLeader($userId)) {
+            if (! $match->isHomeTeamLeader($userId)) {
                 throw new \Exception('Only team leaders can delete events');
             }
         } else {
-            if (!$match->isAwayTeamLeader($userId)) {
+            if (! $match->isAwayTeamLeader($userId)) {
                 throw new \Exception('Only team leaders can delete events');
             }
         }
@@ -470,4 +473,3 @@ final class MatchService
         return $event->delete();
     }
 }
-

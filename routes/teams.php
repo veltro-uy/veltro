@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\JoinRequestController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TeamInvitationController;
+use App\Http\Controllers\TeamLogoController;
 use Illuminate\Support\Facades\Route;
 
 // Public invitation routes (no auth required to view)
@@ -32,9 +33,16 @@ Route::middleware(['auth', 'verified', 'throttle:teams'])->group(function () {
 
     // Team CRUD - {id} routes must come after specific routes
     Route::get('/teams/{id}', [TeamController::class, 'show'])->name('teams.show');
-    Route::get('/teams/{id}/edit', [TeamController::class, 'edit'])->name('teams.edit');
     Route::put('/teams/{id}', [TeamController::class, 'update'])->name('teams.update');
     Route::delete('/teams/{id}', [TeamController::class, 'destroy'])->name('teams.destroy');
+
+    // Team Logo
+    Route::post('/teams/{teamId}/logo', [TeamLogoController::class, 'store'])
+        ->middleware('throttle:logo-upload')
+        ->name('teams.logo.store');
+    Route::delete('/teams/{teamId}/logo', [TeamLogoController::class, 'destroy'])
+        ->middleware('throttle:settings-write')
+        ->name('teams.logo.destroy');
 
     // Team Members
     Route::post('/teams/{teamId}/leave', [TeamController::class, 'leaveTeam'])
@@ -60,4 +68,3 @@ Route::middleware(['auth', 'verified', 'throttle:teams'])->group(function () {
     Route::get('/join-requests/my-requests', [JoinRequestController::class, 'myRequests'])
         ->name('join-requests.my-requests');
 });
-

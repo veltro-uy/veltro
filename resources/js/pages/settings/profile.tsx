@@ -253,9 +253,7 @@ export default function Profile({
                                         maxLength={500}
                                         placeholder="Cuéntanos sobre ti..."
                                         onChange={(e) =>
-                                            setBioLength(
-                                                e.target.value.length,
-                                            )
+                                            setBioLength(e.target.value.length)
                                         }
                                     />
 

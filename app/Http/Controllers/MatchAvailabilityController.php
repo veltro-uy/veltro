@@ -29,7 +29,7 @@ class MatchAvailabilityController extends Controller
 
         // Verify user is a member of this team
         $team = Team::findOrFail($teamId);
-        if (!$team->hasMember($user->id)) {
+        if (! $team->hasMember($user->id)) {
             abort(403, 'You are not a member of this team.');
         }
 
