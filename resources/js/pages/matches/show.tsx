@@ -1,6 +1,5 @@
-import { AvailabilityList } from '@/components/availability-list';
+import { AvailabilityPanel } from '@/components/availability-panel';
 import { AvailabilitySelector } from '@/components/availability-selector';
-import { AvailabilityStatsComponent } from '@/components/availability-stats';
 import { CreateMatchRequestDialog } from '@/components/create-match-request-dialog';
 import { MatchEventsManager } from '@/components/match-events-manager';
 import { TeamAvatar } from '@/components/team-avatar';
@@ -976,49 +975,28 @@ export default function Show({
                                 />
                             )}
 
-                        {/* Estadísticas de Disponibilidad - Equipo Local */}
+                        {/* Panel de Disponibilidad Consolidado */}
                         {(match.status === 'confirmed' ||
                             match.status === 'available') &&
                             homeAvailabilityStats && (
-                                <AvailabilityStatsComponent
-                                    stats={homeAvailabilityStats}
-                                    teamName={match.home_team.name}
-                                    isLeader={isHomeLeader}
-                                />
-                            )}
-
-                        {/* Estadísticas de Disponibilidad - Equipo Visitante */}
-                        {match.away_team &&
-                            awayAvailabilityStats &&
-                            (match.status === 'confirmed' ||
-                                match.status === 'available') && (
-                                <AvailabilityStatsComponent
-                                    stats={awayAvailabilityStats}
-                                    teamName={match.away_team.name}
-                                    isLeader={isAwayLeader}
-                                />
-                            )}
-
-                        {/* Lista de Disponibilidad - Equipo Local */}
-                        {isHomeLeader &&
-                            homeAvailability.length > 0 &&
-                            (match.status === 'confirmed' ||
-                                match.status === 'available') && (
-                                <AvailabilityList
-                                    availability={homeAvailability}
-                                    teamName={match.home_team.name}
-                                />
-                            )}
-
-                        {/* Lista de Disponibilidad - Equipo Visitante */}
-                        {isAwayLeader &&
-                            awayAvailability.length > 0 &&
-                            match.away_team &&
-                            (match.status === 'confirmed' ||
-                                match.status === 'available') && (
-                                <AvailabilityList
-                                    availability={awayAvailability}
-                                    teamName={match.away_team.name}
+                                <AvailabilityPanel
+                                    homeTeam={{
+                                        team: match.home_team,
+                                        stats: homeAvailabilityStats,
+                                        availability: homeAvailability,
+                                        isLeader: isHomeLeader,
+                                    }}
+                                    awayTeam={
+                                        match.away_team && awayAvailabilityStats
+                                            ? {
+                                                  team: match.away_team,
+                                                  stats: awayAvailabilityStats,
+                                                  availability:
+                                                      awayAvailability,
+                                                  isLeader: isAwayLeader,
+                                              }
+                                            : undefined
+                                    }
                                 />
                             )}
 

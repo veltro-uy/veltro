@@ -1,17 +1,10 @@
 import { router } from '@inertiajs/react';
-import { Check, HelpCircle, X } from 'lucide-react';
+import { Check, HelpCircle, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import type { AvailabilityStatus, MatchAvailability } from '@/types';
 
@@ -20,6 +13,25 @@ interface AvailabilitySelectorProps {
     teamId: number;
     currentStatus?: MatchAvailability;
     onUpdate?: () => void;
+}
+
+function formatRelativeTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'hace un momento';
+    if (diffMins < 60) return `hace ${diffMins}m`;
+    if (diffHours < 24) return `hace ${diffHours}h`;
+    if (diffDays < 7) return `hace ${diffDays}d`;
+
+    return date.toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'short',
+    });
 }
 
 export function AvailabilitySelector({
@@ -33,19 +45,28 @@ export function AvailabilitySelector({
     );
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = () => {
+    const handleStatusChange = (newStatus: string) => {
+        if (!newStatus || newStatus === status) return;
+
+        const previousStatus = status;
+        setStatus(newStatus as AvailabilityStatus);
         setIsSubmitting(true);
 
         router.post(
             `/matches/${matchId}/availability`,
             {
-                status,
+                status: newStatus,
                 team_id: teamId,
             },
             {
                 preserveScroll: true,
                 onSuccess: () => {
+                    toast.success('Disponibilidad actualizada');
                     onUpdate?.();
+                },
+                onError: () => {
+                    setStatus(previousStatus);
+                    toast.error('Error al actualizar disponibilidad');
                 },
                 onFinish: () => {
                     setIsSubmitting(false);
@@ -54,88 +75,63 @@ export function AvailabilitySelector({
         );
     };
 
-    const hasChanged = status !== (currentStatus?.status ?? 'pending');
-
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Confirma tu Disponibilidad</CardTitle>
-                <CardDescription>
-                    Informa a tu equipo si podrás asistir al partido
-                </CardDescription>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-base">Tu Disponibilidad</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <RadioGroup
-                    value={status}
-                    onValueChange={(value) =>
-                        setStatus(value as AvailabilityStatus)
-                    }
-                >
-                    <div className="flex items-center space-x-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
-                        <RadioGroupItem value="available" id="available" />
-                        <Label
-                            htmlFor="available"
-                            className="flex flex-1 cursor-pointer items-center gap-2"
-                        >
-                            <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                            <div>
-                                <div className="font-medium">Disponible</div>
-                                <div className="text-sm text-muted-foreground">
-                                    Estaré presente
-                                </div>
-                            </div>
-                        </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900 dark:bg-yellow-950">
-                        <RadioGroupItem value="maybe" id="maybe" />
-                        <Label
-                            htmlFor="maybe"
-                            className="flex flex-1 cursor-pointer items-center gap-2"
-                        >
-                            <HelpCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                            <div>
-                                <div className="font-medium">Tal vez</div>
-                                <div className="text-sm text-muted-foreground">
-                                    No estoy seguro aún
-                                </div>
-                            </div>
-                        </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-                        <RadioGroupItem value="unavailable" id="unavailable" />
-                        <Label
-                            htmlFor="unavailable"
-                            className="flex flex-1 cursor-pointer items-center gap-2"
-                        >
-                            <X className="h-5 w-5 text-red-600 dark:text-red-400" />
-                            <div>
-                                <div className="font-medium">No Disponible</div>
-                                <div className="text-sm text-muted-foreground">
-                                    No podré asistir
-                                </div>
-                            </div>
-                        </Label>
-                    </div>
-                </RadioGroup>
-
-                <Button
-                    onClick={handleSubmit}
-                    disabled={!hasChanged || isSubmitting}
+            <CardContent className="space-y-3">
+                <ToggleGroup
+                    type="single"
+                    value={status === 'pending' ? '' : status}
+                    onValueChange={handleStatusChange}
+                    disabled={isSubmitting}
                     className="w-full"
+                    variant="outline"
                 >
-                    {isSubmitting
-                        ? 'Actualizando...'
-                        : 'Actualizar Disponibilidad'}
-                </Button>
+                    <ToggleGroupItem
+                        value="available"
+                        className="flex-1 gap-1.5 data-[state=on]:border-green-500 data-[state=on]:bg-green-100 data-[state=on]:text-green-700 dark:data-[state=on]:border-green-600 dark:data-[state=on]:bg-green-950 dark:data-[state=on]:text-green-400"
+                        aria-label="Disponible"
+                    >
+                        <Check className="h-4 w-4" />
+                        <span className="hidden sm:inline">Voy</span>
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                        value="maybe"
+                        className="flex-1 gap-1.5 data-[state=on]:border-yellow-500 data-[state=on]:bg-yellow-100 data-[state=on]:text-yellow-700 dark:data-[state=on]:border-yellow-600 dark:data-[state=on]:bg-yellow-950 dark:data-[state=on]:text-yellow-400"
+                        aria-label="Tal vez"
+                    >
+                        <HelpCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">Quizás</span>
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                        value="unavailable"
+                        className="flex-1 gap-1.5 data-[state=on]:border-red-500 data-[state=on]:bg-red-100 data-[state=on]:text-red-700 dark:data-[state=on]:border-red-600 dark:data-[state=on]:bg-red-950 dark:data-[state=on]:text-red-400"
+                        aria-label="No disponible"
+                    >
+                        <X className="h-4 w-4" />
+                        <span className="hidden sm:inline">No voy</span>
+                    </ToggleGroupItem>
+                </ToggleGroup>
 
-                {currentStatus?.confirmed_at && (
-                    <p className="text-center text-sm text-muted-foreground">
-                        Última actualización:{' '}
-                        {new Date(
-                            currentStatus.confirmed_at,
-                        ).toLocaleDateString('es-ES')}
+                {isSubmitting && (
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Actualizando...</span>
+                    </div>
+                )}
+
+                {!isSubmitting && currentStatus?.confirmed_at && (
+                    <p className="text-center text-xs text-muted-foreground">
+                        Actualizado{' '}
+                        {formatRelativeTime(currentStatus.confirmed_at)}
+                    </p>
+                )}
+
+                {!isSubmitting && status === 'pending' && (
+                    <p className="text-center text-xs text-muted-foreground">
+                        Selecciona tu disponibilidad
                     </p>
                 )}
             </CardContent>
