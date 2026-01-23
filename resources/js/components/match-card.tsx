@@ -125,20 +125,45 @@ export function MatchCard({ match }: MatchCardProps) {
             </CardHeader>
 
             <CardContent className="space-y-3">
-                {/* Countdown Section */}
-                {!hasStarted &&
-                    countdown &&
-                    match.status !== 'completed' &&
-                    match.status !== 'cancelled' && (
-                        <div className="flex items-center justify-center gap-2 rounded-lg border bg-primary/5 p-2">
+                {/* Status Section - Always visible for consistent layout */}
+                <div className="flex items-center justify-center gap-2 rounded-lg border p-2">
+                    {match.status === 'completed' ? (
+                        <>
+                            <Trophy className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-xs font-semibold text-muted-foreground">
+                                Partido finalizado
+                            </p>
+                        </>
+                    ) : match.status === 'cancelled' ? (
+                        <>
+                            <Clock className="h-4 w-4 text-destructive" />
+                            <p className="text-xs font-semibold text-destructive">
+                                Partido cancelado
+                            </p>
+                        </>
+                    ) : hasStarted ? (
+                        <>
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            <p className="text-xs font-semibold text-orange-500">
+                                En juego
+                            </p>
+                        </>
+                    ) : countdown ? (
+                        <>
                             <Clock className="h-4 w-4 text-primary" />
-                            <div className="text-center">
-                                <p className="text-xs font-semibold text-primary">
-                                    Comienza en {countdown}
-                                </p>
-                            </div>
-                        </div>
+                            <p className="text-xs font-semibold text-primary">
+                                Comienza en {countdown}
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-xs font-semibold text-muted-foreground">
+                                Programado
+                            </p>
+                        </>
                     )}
+                </div>
 
                 {/* Match Details Section */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
