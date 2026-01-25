@@ -1,7 +1,8 @@
 import { AvailabilityPanel } from '@/components/availability-panel';
 import { AvailabilitySelector } from '@/components/availability-selector';
 import { CreateMatchRequestDialog } from '@/components/create-match-request-dialog';
-import { MatchEventsManager } from '@/components/match-events-manager';
+import { GoalScorersList } from '@/components/goal-scorers-list';
+import { RecordGoalDialog } from '@/components/record-goal-dialog';
 import { TeamAvatar } from '@/components/team-avatar';
 import {
     AlertDialog,
@@ -241,6 +242,10 @@ export default function Show({
 
     const [countdown, setCountdown] = useState<string>('');
     const [matchHasStarted, setMatchHasStarted] = useState(false);
+    const [recordGoalDialog, setRecordGoalDialog] = useState<{
+        open: boolean;
+        team: 'home' | 'away' | null;
+    }>({ open: false, team: null });
 
     // Check if match time has been reached and calculate countdown
     useEffect(() => {
@@ -445,28 +450,45 @@ export default function Show({
                         {/* Enfrentamiento */}
                         <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-[1fr,auto,1fr]">
                             {/* Equipo Local */}
-                            <Link
-                                href={`/teams/${match.home_team.id}`}
-                                className="group flex flex-col items-center gap-3 rounded-lg p-4 transition-colors hover:bg-muted/50 md:flex-row md:justify-end"
-                            >
-                                <TeamAvatar
-                                    name={match.home_team.name}
-                                    logoUrl={match.home_team.logo_url}
-                                    size="lg"
-                                    className="h-20 w-20"
-                                />
-                                <div className="text-center md:text-right">
-                                    <h2 className="text-2xl font-bold">
-                                        {match.home_team.name}
-                                    </h2>
-                                    <div className="mt-1 flex items-center justify-center gap-1 md:justify-end">
-                                        <Shield className="h-4 w-4 text-muted-foreground" />
-                                        <p className="text-sm text-muted-foreground">
-                                            Local
-                                        </p>
+                            <div className="flex flex-col items-center md:items-end">
+                                <Link
+                                    href={`/teams/${match.home_team.id}`}
+                                    className="group flex flex-col items-center gap-3 rounded-lg p-4 transition-colors hover:bg-muted/50 md:flex-row md:justify-end"
+                                >
+                                    <TeamAvatar
+                                        name={match.home_team.name}
+                                        logoUrl={match.home_team.logo_url}
+                                        size="lg"
+                                        className="h-20 w-20"
+                                    />
+                                    <div className="text-center md:text-right">
+                                        <h2 className="text-2xl font-bold">
+                                            {match.home_team.name}
+                                        </h2>
+                                        <div className="mt-1 flex items-center justify-center gap-1 md:justify-end">
+                                            <Shield className="h-4 w-4 text-muted-foreground" />
+                                            <p className="text-sm text-muted-foreground">
+                                                Local
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            </Link>
+                                </Link>
+                                {match.status === 'completed' && (
+                                    <GoalScorersList
+                                        events={events}
+                                        teamId={match.home_team_id}
+                                        isLeader={isHomeLeader}
+                                        alignment="right"
+                                        matchStatus={match.status}
+                                        onRecordGoal={() =>
+                                            setRecordGoalDialog({
+                                                open: true,
+                                                team: 'home',
+                                            })
+                                        }
+                                    />
+                                )}
+                            </div>
 
                             {/* Marcador Integrado */}
                             <div className="flex flex-col items-center justify-center gap-3">
@@ -643,41 +665,59 @@ export default function Show({
                             </div>
 
                             {/* Equipo Visitante */}
-                            {match.away_team ? (
-                                <Link
-                                    href={`/teams/${match.away_team.id}`}
-                                    className="group flex flex-col items-center gap-3 rounded-lg p-4 transition-colors hover:bg-muted/50 md:flex-row"
-                                >
-                                    <TeamAvatar
-                                        name={match.away_team.name}
-                                        logoUrl={match.away_team.logo_url}
-                                        size="lg"
-                                        className="h-20 w-20"
-                                    />
-                                    <div className="text-center md:text-left">
-                                        <h2 className="text-2xl font-bold">
-                                            {match.away_team.name}
-                                        </h2>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Visitante
-                                        </p>
+                            <div className="flex flex-col items-center md:items-start">
+                                {match.away_team ? (
+                                    <Link
+                                        href={`/teams/${match.away_team.id}`}
+                                        className="group flex flex-col items-center gap-3 rounded-lg p-4 transition-colors hover:bg-muted/50 md:flex-row"
+                                    >
+                                        <TeamAvatar
+                                            name={match.away_team.name}
+                                            logoUrl={match.away_team.logo_url}
+                                            size="lg"
+                                            className="h-20 w-20"
+                                        />
+                                        <div className="text-center md:text-left">
+                                            <h2 className="text-2xl font-bold">
+                                                {match.away_team.name}
+                                            </h2>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                Visitante
+                                            </p>
+                                        </div>
+                                    </Link>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed bg-muted/30 p-6 md:flex-row">
+                                        <div className="rounded-full bg-muted p-4">
+                                            <Users className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                        <div className="text-center md:text-left">
+                                            <h3 className="text-lg font-semibold">
+                                                Buscando Rival
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Esperando solicitudes de equipos
+                                            </p>
+                                        </div>
                                     </div>
-                                </Link>
-                            ) : (
-                                <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed bg-muted/30 p-6 md:flex-row">
-                                    <div className="rounded-full bg-muted p-4">
-                                        <Users className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                    <div className="text-center md:text-left">
-                                        <h3 className="text-lg font-semibold">
-                                            Buscando Rival
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Esperando solicitudes de equipos
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                                {match.status === 'completed' &&
+                                    match.away_team && (
+                                        <GoalScorersList
+                                            events={events}
+                                            teamId={match.away_team.id}
+                                            isLeader={isAwayLeader}
+                                            alignment="left"
+                                            matchStatus={match.status}
+                                            onRecordGoal={() =>
+                                                setRecordGoalDialog({
+                                                    open: true,
+                                                    team: 'away',
+                                                })
+                                            }
+                                        />
+                                    )}
+                            </div>
                         </div>
 
                         {/* Información del Partido */}
@@ -751,22 +791,34 @@ export default function Show({
                     </div>
                 </div>
 
+                {/* Dialog para registrar goles */}
+                <RecordGoalDialog
+                    matchId={match.id}
+                    teamId={
+                        recordGoalDialog.team === 'home'
+                            ? match.home_team_id
+                            : (match.away_team?.id ?? 0)
+                    }
+                    teamName={
+                        recordGoalDialog.team === 'home'
+                            ? match.home_team.name
+                            : (match.away_team?.name ?? '')
+                    }
+                    availablePlayers={
+                        recordGoalDialog.team === 'home'
+                            ? homeLineup
+                            : awayLineup
+                    }
+                    open={recordGoalDialog.open}
+                    onOpenChange={(open) =>
+                        setRecordGoalDialog((prev) => ({ ...prev, open }))
+                    }
+                />
+
                 {/* Contenido Principal */}
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Columna Izquierda - Contenido Principal */}
                     <div className="space-y-6 lg:col-span-2">
-                        {/* Eventos del Partido (Solo Completados) */}
-                        {match.status === 'completed' && (
-                            <MatchEventsManager
-                                match={match}
-                                homeLineup={homeLineup}
-                                awayLineup={awayLineup}
-                                events={events}
-                                isHomeLeader={isHomeLeader}
-                                isAwayLeader={isAwayLeader}
-                            />
-                        )}
-
                         {/* Solicitudes de Partido */}
                         {isHomeLeader &&
                             match.status === 'available' &&
@@ -944,20 +996,6 @@ export default function Show({
                                     </CardContent>
                                 </Card>
                             )}
-
-                        {/* Notas Adicionales */}
-                        {match.notes && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Notas del Partido</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-                                        {match.notes}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
                     </div>
 
                     {/* Columna Derecha - Barra Lateral */}

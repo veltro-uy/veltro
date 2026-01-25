@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -26,6 +27,13 @@ Route::middleware('throttle:oauth')->group(function () {
 Route::get('/api/users/{user}', [UserController::class, 'show'])
     ->middleware('throttle:profile-view')
     ->name('users.show');
+
+// Onboarding routes (must be outside 'onboarding' middleware to prevent redirect loops)
+Route::middleware(['auth', 'verified', 'throttle:settings-write'])->group(function () {
+    Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::post('/onboarding', [OnboardingController::class, 'update'])->name('onboarding.update');
+    Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/teams.php';

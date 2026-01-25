@@ -8,7 +8,7 @@ use App\Http\Controllers\MatchEventController;
 use App\Http\Controllers\MatchLineupController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified', 'throttle:matches'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:matches', 'onboarding'])->group(function () {
     // Matches
     Route::get('/matches', [MatchController::class, 'index'])->name('matches.index');
     Route::post('/matches', [MatchController::class, 'store'])->name('matches.store');

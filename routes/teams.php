@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/teams/invite/{token}', [TeamInvitationController::class, 'show'])
     ->name('teams.invitation.show');
 
-Route::middleware(['auth', 'verified', 'throttle:teams'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:teams', 'onboarding'])->group(function () {
     // Teams
     Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
     Route::get('/teams/create', [TeamController::class, 'create'])->name('teams.create');
