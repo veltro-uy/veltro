@@ -20,8 +20,9 @@ test('new users can register', function () {
     // Verify the user exists
     expect($user)->not->toBeNull();
 
-    // Verify the user's email so they can access the matches page
+    // Verify the user's email and complete onboarding so they can access the matches page
     $user->email_verified_at = now();
+    $user->onboarding_completed = true;
     $user->save();
 
     // Authenticate as the user (Fortify may not auto-login when email verification is enabled)

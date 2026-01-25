@@ -7,7 +7,7 @@ use App\Http\Controllers\Settings\TwoFactorAuthenticationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'onboarding'])->group(function () {
     Route::redirect('settings', '/settings/profile')->middleware('throttle:settings-read');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])

@@ -30,6 +30,7 @@ class User extends Authenticatable
         'google_id',
         'google_token',
         'google_avatar_url',
+        'onboarding_completed',
     ];
 
     /**
@@ -66,7 +67,16 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'date_of_birth' => 'date',
+            'onboarding_completed' => 'boolean',
         ];
+    }
+
+    /**
+     * Determine if the user has completed onboarding.
+     */
+    public function hasCompletedOnboarding(): bool
+    {
+        return $this->onboarding_completed ?? false;
     }
 
     /**

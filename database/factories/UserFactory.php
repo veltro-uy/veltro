@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'two_factor_secret' => Str::random(10),
             'two_factor_recovery_codes' => Str::random(10),
             'two_factor_confirmed_at' => now(),
+            'onboarding_completed' => true,
         ];
     }
 
@@ -53,6 +54,26 @@ class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the model has not completed onboarding.
+     */
+    public function withoutOnboarding(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'onboarding_completed' => false,
+        ]);
+    }
+
+    /**
+     * Indicate that the model has completed onboarding.
+     */
+    public function onboarded(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'onboarding_completed' => true,
         ]);
     }
 }
