@@ -12,7 +12,7 @@ import type { Team, UserProfile } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar, MapPin, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface UserProfileModalProps {
     userId: number;
@@ -29,13 +29,7 @@ export function UserProfileModal({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isOpen && userId) {
-            fetchProfile();
-        }
-    }, [isOpen, userId]);
-
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         setLoading(true);
         setError(null);
 
@@ -59,7 +53,13 @@ export function UserProfileModal({
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId]);
+
+    useEffect(() => {
+        if (isOpen && userId) {
+            fetchProfile();
+        }
+    }, [isOpen, userId, fetchProfile]);
 
     const formatMemberSince = (dateString: string) => {
         try {

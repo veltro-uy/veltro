@@ -1,5 +1,5 @@
 import { Bell, Check, Loader2, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { NotificationItem } from '@/components/notification-item';
 import { Button } from '@/components/ui/button';
@@ -22,15 +22,15 @@ export function NotificationList() {
         clearRead,
     } = useNotifications();
 
-    const [hasOpened, setHasOpened] = useState(false);
+    const hasOpenedRef = useRef(false);
     const hasUnread = notifications.some((n) => !n.read_at);
 
     useEffect(() => {
-        if (!hasOpened && notifications.length === 0) {
+        if (!hasOpenedRef.current && notifications.length === 0) {
+            hasOpenedRef.current = true;
             void fetchNotifications();
-            setHasOpened(true);
         }
-    }, [hasOpened, notifications.length, fetchNotifications]);
+    }, [notifications.length, fetchNotifications]);
 
     const handleLoadMore = () => void loadMore();
     const handleMarkAllAsRead = () => void markAllAsRead();

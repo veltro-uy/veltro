@@ -54,7 +54,7 @@ export function RecordGoalDialog({
     onOpenChange,
 }: RecordGoalDialogProps) {
     const remainingGoals = teamScore - registeredGoals;
-    const { data, setData, post, processing, reset } = useForm({
+    const { data, setData, processing, reset } = useForm({
         match_id: matchId,
         team_id: teamId.toString(),
         user_id: '',
