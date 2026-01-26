@@ -17,7 +17,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import matchEvents from '@/routes/match-events';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 
 interface User {
@@ -35,6 +36,8 @@ interface RecordGoalDialogProps {
     matchId: number;
     teamId: number;
     teamName: string;
+    teamScore: number;
+    registeredGoals: number;
     availablePlayers: LineupPlayer[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -44,10 +47,13 @@ export function RecordGoalDialog({
     matchId,
     teamId,
     teamName,
+    teamScore,
+    registeredGoals,
     availablePlayers,
     open,
     onOpenChange,
 }: RecordGoalDialogProps) {
+    const remainingGoals = teamScore - registeredGoals;
     const { data, setData, post, processing, reset } = useForm({
         match_id: matchId,
         team_id: teamId.toString(),
@@ -57,9 +63,24 @@ export function RecordGoalDialog({
         description: '',
     });
 
+    // Update team_id whenever teamId prop changes or dialog opens
+    useEffect(() => {
+        if (open && teamId) {
+            setData('team_id', teamId.toString());
+        }
+    }, [open, teamId, setData]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(matchEvents.store().url, {
+
+        // Prepare data, converting 'unassigned' to empty string
+        const submitData = {
+            ...data,
+            user_id: data.user_id === 'unassigned' ? '' : data.user_id,
+        };
+
+        router.post(matchEvents.store().url, submitData, {
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success('¡Gol registrado exitosamente!');
                 onOpenChange(false);
@@ -87,11 +108,27 @@ export function RecordGoalDialog({
                         <DialogTitle>Registrar Gol</DialogTitle>
                         <DialogDescription>
                             Registrar un gol para {teamName}
+                            <span className="mt-2 block text-sm">
+                                Marcador: {teamScore} goles | Registrados:{' '}
+                                {registeredGoals} |
+                                <span
+                                    className={
+                                        remainingGoals > 0
+                                            ? 'font-semibold text-green-600 dark:text-green-500'
+                                            : 'font-semibold text-red-600 dark:text-red-500'
+                                    }
+                                >
+                                    {' '}
+                                    {remainingGoals > 0
+                                        ? `Disponibles: ${remainingGoals}`
+                                        : 'No hay goles disponibles'}
+                                </span>
+                            </span>
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="user_id">Jugador</Label>
+                            <Label htmlFor="user_id">Jugador (Opcional)</Label>
                             {availablePlayers.length > 0 ? (
                                 <Select
                                     value={data.user_id}
@@ -103,6 +140,9 @@ export function RecordGoalDialog({
                                         <SelectValue placeholder="Seleccionar jugador que anotó" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="unassigned">
+                                            Sin asignar
+                                        </SelectItem>
                                         {availablePlayers.map((player) => (
                                             <SelectItem
                                                 key={player.user_id}
@@ -156,8 +196,15 @@ export function RecordGoalDialog({
                         >
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={processing}>
-                            {processing ? 'Registrando...' : 'Registrar Gol'}
+                        <Button
+                            type="submit"
+                            disabled={processing || remainingGoals <= 0}
+                        >
+                            {processing
+                                ? 'Registrando...'
+                                : remainingGoals <= 0
+                                  ? 'Límite alcanzado'
+                                  : 'Registrar Gol'}
                         </Button>
                     </DialogFooter>
                 </form>

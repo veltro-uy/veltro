@@ -10,8 +10,14 @@ use App\Models\MatchLineup;
 use App\Models\MatchRequest;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\MatchCancelledNotification;
+use App\Notifications\MatchRequestAcceptedNotification;
+use App\Notifications\MatchRequestReceivedNotification;
+use App\Notifications\MatchRequestRejectedNotification;
+use App\Notifications\MatchScoreUpdatedNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 final class MatchService
 {
@@ -76,6 +82,15 @@ final class MatchService
             // Delete all pending requests
             $match->matchRequests()->where('status', 'pending')->delete();
 
+            // Notify away team if match was confirmed
+            if ($match->away_team_id) {
+                $awayTeamLeaders = $match->awayTeam->getLeaders()->get()->pluck('user');
+                Notification::send(
+                    $awayTeamLeaders,
+                    new MatchCancelledNotification($match, $match->homeTeam)
+                );
+            }
+
             // Update match status
             $match->update(['status' => 'cancelled']);
 
@@ -116,12 +131,21 @@ final class MatchService
             throw new \Exception('You already have a pending request for this match');
         }
 
-        return MatchRequest::create([
+        $matchRequest = MatchRequest::create([
             'match_id' => $matchId,
             'requesting_team_id' => $teamId,
             'status' => 'pending',
             'message' => $message,
         ]);
+
+        // Notify home team leaders
+        $homeTeamLeaders = $match->homeTeam->getLeaders()->get()->pluck('user');
+        Notification::send(
+            $homeTeamLeaders,
+            new MatchRequestReceivedNotification($match, $team, $matchRequest)
+        );
+
+        return $matchRequest;
     }
 
     /**
@@ -156,6 +180,13 @@ final class MatchService
                 'confirmed_at' => now(),
             ]);
 
+            // Get other pending requests before rejecting them
+            $rejectedRequests = MatchRequest::where('match_id', $match->id)
+                ->where('id', '!=', $matchRequest->id)
+                ->where('status', 'pending')
+                ->with('requestingTeam')
+                ->get();
+
             // Reject all other pending requests
             MatchRequest::where('match_id', $match->id)
                 ->where('id', '!=', $matchRequest->id)
@@ -165,6 +196,19 @@ final class MatchService
                     'reviewed_at' => now(),
                     'reviewed_by' => $reviewerId,
                 ]);
+
+            // Notify requesting team leaders about acceptance
+            $requestingTeamLeaders = $matchRequest->requestingTeam->getLeaders()->get()->pluck('user');
+            Notification::send(
+                $requestingTeamLeaders,
+                new MatchRequestAcceptedNotification($match, $matchRequest)
+            );
+
+            // Notify other rejected teams
+            foreach ($rejectedRequests as $rejected) {
+                $leaders = $rejected->requestingTeam->getLeaders()->get()->pluck('user');
+                Notification::send($leaders, new MatchRequestRejectedNotification($match, $rejected));
+            }
 
             return $match->fresh(['homeTeam', 'awayTeam', 'creator']);
         });
@@ -187,6 +231,13 @@ final class MatchService
             'reviewed_at' => now(),
             'reviewed_by' => $reviewerId,
         ]);
+
+        // Notify requesting team leaders
+        $requestingTeamLeaders = $matchRequest->requestingTeam->getLeaders()->get()->pluck('user');
+        Notification::send(
+            $requestingTeamLeaders,
+            new MatchRequestRejectedNotification($match, $matchRequest)
+        );
 
         return $matchRequest->fresh();
     }
@@ -232,7 +283,7 @@ final class MatchService
     /**
      * Update match score.
      */
-    public function updateScore(FootballMatch $match, int $homeScore, int $awayScore): FootballMatch
+    public function updateScore(FootballMatch $match, int $homeScore, int $awayScore, ?int $userId = null): FootballMatch
     {
         // Verify match is in progress or confirmed
         if (! $match->isInProgress() && ! $match->isConfirmed()) {
@@ -257,6 +308,29 @@ final class MatchService
 
         $match->update($updates);
 
+        // Notify opposing team leaders if userId is provided
+        if ($userId && $match->away_team_id) {
+            // Determine which team the user belongs to
+            $isHomeTeamLeader = $match->isHomeTeamLeader($userId);
+            $isAwayTeamLeader = $match->isAwayTeamLeader($userId);
+
+            if ($isHomeTeamLeader) {
+                // Notify away team leaders
+                $awayTeamLeaders = $match->awayTeam->getLeaders()->get()->pluck('user');
+                Notification::send(
+                    $awayTeamLeaders,
+                    new MatchScoreUpdatedNotification($match, $match->homeTeam)
+                );
+            } elseif ($isAwayTeamLeader) {
+                // Notify home team leaders
+                $homeTeamLeaders = $match->homeTeam->getLeaders()->get()->pluck('user');
+                Notification::send(
+                    $homeTeamLeaders,
+                    new MatchScoreUpdatedNotification($match, $match->awayTeam)
+                );
+            }
+        }
+
         return $match->fresh();
     }
 
@@ -265,14 +339,27 @@ final class MatchService
      */
     public function recordEvent(FootballMatch $match, int $teamId, array $eventData): MatchEvent
     {
-        // Verify match is in progress
-        if (! $match->isInProgress()) {
-            throw new \Exception('Can only record events for in-progress matches');
+        // Verify match is in progress or completed
+        if (! $match->isInProgress() && ! $match->isCompleted()) {
+            throw new \Exception('Can only record events for in-progress or completed matches');
         }
 
         // Verify team is part of the match
         if ($match->home_team_id !== $teamId && $match->away_team_id !== $teamId) {
             throw new \Exception('Team is not part of this match');
+        }
+
+        // If recording a goal, verify it doesn't exceed the team's score
+        if ($eventData['event_type'] === 'goal') {
+            $teamScore = $match->home_team_id === $teamId ? $match->home_score : $match->away_score;
+            $existingGoals = $match->events()
+                ->where('team_id', $teamId)
+                ->where('event_type', 'goal')
+                ->count();
+
+            if ($existingGoals >= $teamScore) {
+                throw new \Exception("No se pueden registrar más goles. El equipo ya tiene {$existingGoals} goles registrados para un marcador de {$teamScore}.");
+            }
         }
 
         return MatchEvent::create([

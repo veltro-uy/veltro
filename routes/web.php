@@ -38,3 +38,4 @@ Route::middleware(['auth', 'verified', 'throttle:settings-write'])->group(functi
 require __DIR__.'/settings.php';
 require __DIR__.'/teams.php';
 require __DIR__.'/matches.php';
+require __DIR__.'/notifications.php';

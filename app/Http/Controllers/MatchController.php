@@ -445,7 +445,8 @@ final class MatchController extends Controller
             $this->matchService->updateScore(
                 $match,
                 $validated['home_score'],
-                $validated['away_score']
+                $validated['away_score'],
+                $user->id
             );
 
             return back()->with('success', '¡Marcador actualizado exitosamente!');
