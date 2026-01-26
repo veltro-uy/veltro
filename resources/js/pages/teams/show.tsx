@@ -28,7 +28,7 @@ import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
 import joinRequests from '@/routes/join-requests';
 import teams from '@/routes/teams';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, User } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { LogOut, Shield, Star, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -41,11 +41,7 @@ interface TeamMember {
     role: string;
     position?: string | null;
     status: string;
-    user: {
-        id: number;
-        name: string;
-        email: string;
-    };
+    user: User;
 }
 
 interface JoinRequest {
@@ -54,11 +50,7 @@ interface JoinRequest {
     team_id: number;
     status: string;
     message?: string;
-    user: {
-        id: number;
-        name: string;
-        email: string;
-    };
+    user: User;
 }
 
 interface Team {
@@ -299,6 +291,9 @@ export default function Show({ team, isMember, canManage }: Props) {
                                             <div className="flex min-w-0 flex-1 items-center gap-3">
                                                 <UserAvatar
                                                     name={member.user.name}
+                                                    avatarUrl={
+                                                        member.user.avatar_url
+                                                    }
                                                     size="md"
                                                 />
                                                 <div className="min-w-0 flex-1 space-y-1">
@@ -424,6 +419,10 @@ export default function Show({ team, isMember, canManage }: Props) {
                                                             name={
                                                                 request.user
                                                                     .name
+                                                            }
+                                                            avatarUrl={
+                                                                request.user
+                                                                    .avatar_url
                                                             }
                                                             size="md"
                                                         />

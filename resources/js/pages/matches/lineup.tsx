@@ -171,6 +171,11 @@ export default function Lineup({
                         <CardDescription>
                             Selected {selectedPlayers.length} / {minimumPlayers}{' '}
                             minimum players
+                            {selectedPlayers.length < minimumPlayers && (
+                                <span className="mt-1 block text-amber-600 dark:text-amber-500">
+                                    ⚠️ Below minimum recommended players
+                                </span>
+                            )}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -240,9 +245,7 @@ export default function Lineup({
                         <div className="flex gap-3 pt-4">
                             <Button
                                 onClick={handleSubmit}
-                                disabled={
-                                    selectedPlayers.length < minimumPlayers
-                                }
+                                disabled={selectedPlayers.length === 0}
                             >
                                 <Check className="mr-2 h-4 w-4" />
                                 Save Lineup

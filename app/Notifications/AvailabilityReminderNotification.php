@@ -30,7 +30,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     /**
@@ -60,16 +60,37 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
     }
 
     /**
+     * Get the database representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toDatabase(object $notifiable): array
+    {
+        $opponent = $this->match->home_team_id === $this->team->id
+            ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'TBD')
+            : $this->match->homeTeam->name;
+
+        return [
+            'type' => 'availability_reminder',
+            'title' => 'Confirm Your Availability',
+            'message' => "Match against {$opponent} is in 48 hours",
+            'action_url' => route('matches.show', $this->match->id),
+            'icon' => 'Clock',
+            'related_model' => [
+                'match_id' => $this->match->id,
+                'team_id' => $this->team->id,
+            ],
+            'created_at' => now()->toISOString(),
+        ];
+    }
+
+    /**
      * Get the array representation of the notification.
      *
      * @return array<string, mixed>
      */
     public function toArray(object $notifiable): array
     {
-        return [
-            'match_id' => $this->match->id,
-            'team_id' => $this->team->id,
-            'scheduled_at' => $this->match->scheduled_at->toISOString(),
-        ];
+        return $this->toDatabase($notifiable);
     }
 }

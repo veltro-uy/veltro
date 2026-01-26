@@ -247,6 +247,21 @@ export default function Show({
         team: 'home' | 'away' | null;
     }>({ open: false, team: null });
 
+    // Calculate registered goals for each team
+    const homeRegisteredGoals = events.filter(
+        (e) =>
+            Number(e.team_id) === Number(match.home_team.id) &&
+            e.event_type === 'goal',
+    ).length;
+    const awayRegisteredGoals = match.away_team
+        ? events.filter(
+              (e) =>
+                  match.away_team &&
+                  Number(e.team_id) === Number(match.away_team.id) &&
+                  e.event_type === 'goal',
+          ).length
+        : 0;
+
     // Check if match time has been reached and calculate countdown
     useEffect(() => {
         const updateCountdown = () => {
@@ -473,10 +488,11 @@ export default function Show({
                                         </div>
                                     </div>
                                 </Link>
-                                {match.status === 'completed' && (
+                                {(match.status === 'in_progress' ||
+                                    match.status === 'completed') && (
                                     <GoalScorersList
                                         events={events}
-                                        teamId={match.home_team_id}
+                                        teamId={match.home_team.id}
                                         isLeader={isHomeLeader}
                                         alignment="right"
                                         matchStatus={match.status}
@@ -636,25 +652,39 @@ export default function Show({
                                         {/* Update Score Button */}
                                         {isLeader &&
                                             match.status !== 'completed' && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={handleUpdateScore}
-                                                    disabled={
-                                                        scoreProcessing ||
-                                                        !matchHasStarted ||
-                                                        (scoreData.home_score ===
-                                                            match.home_score &&
-                                                            scoreData.away_score ===
-                                                                match.away_score)
-                                                    }
-                                                    className="text-xs"
-                                                >
-                                                    {scoreProcessing
-                                                        ? 'Actualizando...'
-                                                        : !matchHasStarted
-                                                          ? 'Partido No Iniciado'
-                                                          : 'Actualizar Marcador'}
-                                                </Button>
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={
+                                                            handleUpdateScore
+                                                        }
+                                                        disabled={
+                                                            scoreProcessing ||
+                                                            !matchHasStarted ||
+                                                            (scoreData.home_score ===
+                                                                match.home_score &&
+                                                                scoreData.away_score ===
+                                                                    match.away_score)
+                                                        }
+                                                        className="text-xs"
+                                                    >
+                                                        {scoreProcessing
+                                                            ? 'Actualizando...'
+                                                            : !matchHasStarted
+                                                              ? 'Partido No Iniciado'
+                                                              : 'Actualizar Marcador'}
+                                                    </Button>
+                                                    {matchHasStarted && (
+                                                        <p className="text-center text-xs text-muted-foreground">
+                                                            Usa "Registrar Gol"
+                                                            debajo de cada
+                                                            equipo
+                                                            <br />
+                                                            para detalles de
+                                                            goleadores
+                                                        </p>
+                                                    )}
+                                                </>
                                             )}
                                     </>
                                 ) : (
@@ -701,7 +731,8 @@ export default function Show({
                                         </div>
                                     </div>
                                 )}
-                                {match.status === 'completed' &&
+                                {(match.status === 'in_progress' ||
+                                    match.status === 'completed') &&
                                     match.away_team && (
                                         <GoalScorersList
                                             events={events}
@@ -796,13 +827,23 @@ export default function Show({
                     matchId={match.id}
                     teamId={
                         recordGoalDialog.team === 'home'
-                            ? match.home_team_id
+                            ? match.home_team.id
                             : (match.away_team?.id ?? 0)
                     }
                     teamName={
                         recordGoalDialog.team === 'home'
                             ? match.home_team.name
                             : (match.away_team?.name ?? '')
+                    }
+                    teamScore={
+                        recordGoalDialog.team === 'home'
+                            ? (match.home_score ?? 0)
+                            : (match.away_score ?? 0)
+                    }
+                    registeredGoals={
+                        recordGoalDialog.team === 'home'
+                            ? homeRegisteredGoals
+                            : awayRegisteredGoals
                     }
                     availablePlayers={
                         recordGoalDialog.team === 'home'

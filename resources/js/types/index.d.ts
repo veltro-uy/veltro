@@ -113,3 +113,58 @@ export interface TeamMember {
     user?: User;
     [key: string]: unknown;
 }
+
+export type NotificationType =
+    | 'match_request_received'
+    | 'match_request_accepted'
+    | 'match_request_rejected'
+    | 'match_cancelled'
+    | 'match_score_updated'
+    | 'availability_reminder'
+    | 'team_invitation';
+
+export interface NotificationData {
+    type: NotificationType;
+    title: string;
+    message: string;
+    action_url: string;
+    icon: string;
+    related_model: {
+        match_id?: number;
+        team_id?: number;
+        match_request_id?: number;
+        invited_by_id?: number;
+    };
+    created_at: string;
+}
+
+export interface Notification {
+    id: string;
+    type: string;
+    notifiable_type: string;
+    notifiable_id: number;
+    data: NotificationData;
+    read_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PaginatedNotifications {
+    current_page: number;
+    data: Notification[];
+    first_page_url: string;
+    from: number | null;
+    last_page: number;
+    last_page_url: string;
+    links: {
+        url: string | null;
+        label: string;
+        active: boolean;
+    }[];
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number | null;
+    total: number;
+}

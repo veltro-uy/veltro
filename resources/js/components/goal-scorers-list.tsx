@@ -37,8 +37,12 @@ export function GoalScorersList({
     matchStatus,
     onRecordGoal,
 }: GoalScorersListProps) {
+    // Ensure type consistency by converting both to numbers for comparison
     const goals = events
-        .filter((e) => e.team_id === teamId && e.event_type === 'goal')
+        .filter(
+            (e) =>
+                Number(e.team_id) === Number(teamId) && e.event_type === 'goal',
+        )
         .sort((a, b) => (a.minute || 0) - (b.minute || 0));
 
     const handleDeleteEvent = (eventId: number) => {
@@ -74,47 +78,56 @@ export function GoalScorersList({
                     )}
                 >
                     <Target className="h-3 w-3 flex-shrink-0 text-green-600" />
-                    <span className="truncate">
-                        {goal.user?.name || 'Jugador Desconocido'}
+                    <span
+                        className={cn(
+                            'truncate',
+                            !goal.user && 'text-muted-foreground italic',
+                        )}
+                    >
+                        {goal.user?.name || 'Sin asignar'}
                     </span>
                     <span className="text-muted-foreground">
                         {goal.minute}'
                     </span>
-                    {isLeader && matchStatus === 'completed' && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteEvent(goal.id);
-                            }}
-                        >
-                            <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
-                    )}
+                    {isLeader &&
+                        (matchStatus === 'in_progress' ||
+                            matchStatus === 'completed') && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleDeleteEvent(goal.id);
+                                }}
+                            >
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                        )}
                 </div>
             ))}
 
-            {isLeader && matchStatus === 'completed' && (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                        'mt-1 h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground',
-                        alignment === 'right' && 'ml-auto',
-                    )}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onRecordGoal?.();
-                    }}
-                >
-                    <Pencil className="h-3 w-3" />
-                    <span>Registrar Gol</span>
-                </Button>
-            )}
+            {isLeader &&
+                (matchStatus === 'in_progress' ||
+                    matchStatus === 'completed') && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                            'mt-1 h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground',
+                            alignment === 'right' && 'ml-auto',
+                        )}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onRecordGoal?.();
+                        }}
+                    >
+                        <Pencil className="h-3 w-3" />
+                        <span>Registrar Gol</span>
+                    </Button>
+                )}
         </div>
     );
 }
