@@ -146,7 +146,7 @@ export function NotificationItem({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 flex-shrink-0 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                            className="h-8 w-8 flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted"
                             onClick={handleDelete}
                         >
                             <Trash2 className="h-4 w-4" />

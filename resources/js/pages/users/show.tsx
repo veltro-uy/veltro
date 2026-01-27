@@ -2,14 +2,19 @@ import { AddCommentForm } from '@/components/add-comment-form';
 import { ProfileCommendations } from '@/components/profile-commendations';
 import { ProfileComments } from '@/components/profile-comments';
 import { TeamAvatar } from '@/components/team-avatar';
-import { UserAvatar } from '@/components/user-avatar';
-import { VariantBadge } from '@/components/variant-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { UserAvatar } from '@/components/user-avatar';
+import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
 import { edit } from '@/routes/profile';
-import { Head, Link } from '@inertiajs/react';
 import type {
     BreadcrumbItem,
     CommendationStats,
@@ -17,6 +22,7 @@ import type {
     UserProfile,
     UserStatistics,
 } from '@/types';
+import { Head, Link } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -25,8 +31,8 @@ import {
     MapPin,
     MessageCircle,
     Settings,
-    Trophy,
     TrendingUp,
+    Trophy,
     Users,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -77,7 +83,7 @@ export default function Show({
                 <div className="relative">
                     {/* Background Accent */}
                     <div className="absolute inset-0 -z-10 h-32 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent md:h-40" />
-                    
+
                     <Card className="border-none shadow-lg">
                         <CardContent className="p-6">
                             <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-6">
@@ -92,9 +98,9 @@ export default function Show({
                                         />
                                     </div>
                                     {is_own_profile && (
-                                        <Badge 
-                                            variant="secondary" 
-                                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs"
+                                        <Badge
+                                            variant="secondary"
+                                            className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs whitespace-nowrap"
                                         >
                                             Tu perfil
                                         </Badge>
@@ -107,17 +113,23 @@ export default function Show({
                                         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
                                             {user.name}
                                         </h1>
-                                        
+
                                         {/* Meta Badges */}
                                         <div className="flex flex-wrap items-center gap-2">
                                             {user.location && (
-                                                <Badge variant="outline" className="gap-1 text-xs">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1 text-xs"
+                                                >
                                                     <MapPin className="h-3 w-3" />
                                                     {user.location}
                                                 </Badge>
                                             )}
                                             {user.age && (
-                                                <Badge variant="outline" className="gap-1 text-xs">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1 text-xs"
+                                                >
                                                     <Calendar className="h-3 w-3" />
                                                     {user.age} años
                                                 </Badge>
@@ -126,19 +138,29 @@ export default function Show({
                                             <Badge className="gap-1.5 bg-primary/10 text-primary hover:bg-primary/20">
                                                 <Trophy className="h-3.5 w-3.5" />
                                                 <span className="font-semibold">
-                                                    {statistics.matches_played} {statistics.matches_played === 1 ? 'partido' : 'partidos'}
+                                                    {statistics.matches_played}{' '}
+                                                    {statistics.matches_played ===
+                                                    1
+                                                        ? 'partido'
+                                                        : 'partidos'}
                                                 </span>
                                             </Badge>
-                                            <Badge variant="outline" className="gap-1 text-xs">
+                                            <Badge
+                                                variant="outline"
+                                                className="gap-1 text-xs"
+                                            >
                                                 <TrendingUp className="h-3 w-3" />
-                                                Desde {formatMemberSince(statistics.member_since)}
+                                                Desde{' '}
+                                                {formatMemberSince(
+                                                    statistics.member_since,
+                                                )}
                                             </Badge>
                                         </div>
                                     </div>
 
                                     {/* Bio */}
                                     {user.bio && (
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                        <p className="text-sm leading-relaxed text-muted-foreground">
                                             {user.bio}
                                         </p>
                                     )}
@@ -146,7 +168,11 @@ export default function Show({
                                     {/* Quick Actions */}
                                     {is_own_profile && (
                                         <div className="pt-1">
-                                            <Button asChild variant="default" size="sm">
+                                            <Button
+                                                asChild
+                                                variant="default"
+                                                size="sm"
+                                            >
                                                 <Link href={edit().url}>
                                                     <Settings className="mr-2 h-4 w-4" />
                                                     Editar Perfil
@@ -172,7 +198,10 @@ export default function Show({
                                             Equipos
                                         </CardTitle>
                                         <CardDescription className="mt-1">
-                                            {teams.length} {teams.length === 1 ? 'equipo' : 'equipos'}
+                                            {teams.length}{' '}
+                                            {teams.length === 1
+                                                ? 'equipo'
+                                                : 'equipos'}
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -191,8 +220,8 @@ export default function Show({
                                                 size="md"
                                                 className="h-12 w-12 transition-transform group-hover:scale-105"
                                             />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="truncate font-semibold group-hover:text-primary transition-colors">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate font-semibold transition-colors group-hover:text-primary">
                                                     {team.name}
                                                 </div>
                                                 <VariantBadge
@@ -231,23 +260,25 @@ export default function Show({
                                 <MessageCircle className="h-5 w-5 text-primary" />
                                 Comentarios
                                 {currentCommentsCount > 0 && (
-                                    <Badge variant="secondary" className="ml-1 text-xs">
+                                    <Badge
+                                        variant="secondary"
+                                        className="ml-1 text-xs"
+                                    >
                                         {currentCommentsCount}
                                     </Badge>
                                 )}
                             </h2>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                {is_own_profile 
+                                {is_own_profile
                                     ? currentCommentsCount > 0
                                         ? `${currentCommentsCount} ${currentCommentsCount === 1 ? 'comentario' : 'comentarios'} en tu perfil`
                                         : 'Aún no tienes comentarios en tu perfil'
-                                    : currentCommentsCount > 0 
-                                        ? `${currentCommentsCount} ${currentCommentsCount === 1 ? 'comentario' : 'comentarios'} en el perfil`
-                                        : 'Sé el primero en dejar un comentario'
-                                }
+                                    : currentCommentsCount > 0
+                                      ? `${currentCommentsCount} ${currentCommentsCount === 1 ? 'comentario' : 'comentarios'} en el perfil`
+                                      : 'Sé el primero en dejar un comentario'}
                             </p>
                         </div>
-                        
+
                         {/* Comment Form - Only show if NOT own profile */}
                         {!is_own_profile && (
                             <Card>
@@ -255,7 +286,9 @@ export default function Show({
                                     <AddCommentForm
                                         userId={user.id}
                                         onCommentAdded={() => {
-                                            setCurrentCommentsCount((prev) => prev + 1);
+                                            setCurrentCommentsCount(
+                                                (prev) => prev + 1,
+                                            );
                                         }}
                                     />
                                 </CardContent>
@@ -277,10 +310,9 @@ export default function Show({
                                 <CardContent className="flex flex-col items-center justify-center p-12 text-center">
                                     <MessageCircle className="h-12 w-12 text-muted-foreground/30" />
                                     <p className="mt-3 text-sm font-medium text-muted-foreground">
-                                        {is_own_profile 
+                                        {is_own_profile
                                             ? 'Aún no hay comentarios en tu perfil'
-                                            : 'No hay comentarios todavía'
-                                        }
+                                            : 'No hay comentarios todavía'}
                                     </p>
                                 </CardContent>
                             </Card>

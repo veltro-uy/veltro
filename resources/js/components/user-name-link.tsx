@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
-import { Link } from '@inertiajs/react';
 import type { User } from '@/types';
+import { Link } from '@inertiajs/react';
 
 interface UserNameLinkProps {
     user: User | { id: number; name: string };
