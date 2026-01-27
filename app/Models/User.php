@@ -189,4 +189,71 @@ class User extends Authenticatable
             'member_since' => $this->created_at->toIso8601String(),
         ];
     }
+
+    /**
+     * Get commendations received by the user.
+     */
+    public function commendationsReceived()
+    {
+        return $this->hasMany(UserCommendation::class, 'to_user_id');
+    }
+
+    /**
+     * Get commendations given by the user.
+     */
+    public function commendationsGiven()
+    {
+        return $this->hasMany(UserCommendation::class, 'from_user_id');
+    }
+
+    /**
+     * Get comments on this user's profile.
+     */
+    public function profileComments()
+    {
+        return $this->hasMany(ProfileComment::class, 'profile_user_id');
+    }
+
+    /**
+     * Get comments written by this user.
+     */
+    public function writtenComments()
+    {
+        return $this->hasMany(ProfileComment::class, 'user_id');
+    }
+
+    /**
+     * Get commendation statistics for the user.
+     *
+     * @return array<string, int>
+     */
+    public function getCommendationStats(): array
+    {
+        $commendations = $this->commendationsReceived()
+            ->selectRaw('category, COUNT(*) as count')
+            ->groupBy('category')
+            ->pluck('count', 'category');
+
+        return [
+            'friendly' => $commendations->get('friendly', 0),
+            'skilled' => $commendations->get('skilled', 0),
+            'teamwork' => $commendations->get('teamwork', 0),
+            'leadership' => $commendations->get('leadership', 0),
+            'total' => $commendations->sum(),
+        ];
+    }
+
+    /**
+     * Check if this user has played with another user.
+     */
+    public function hasPlayedWith(int $userId): bool
+    {
+        return MatchAvailability::where('user_id', $this->id)
+            ->whereIn('match_id', function ($query) use ($userId) {
+                $query->select('match_id')
+                    ->from('match_availability')
+                    ->where('user_id', $userId);
+            })
+            ->exists();
+    }
 }

@@ -86,6 +86,42 @@ export interface UserStatistics {
 export interface UserProfile extends User {
     statistics: UserStatistics;
     teams: Team[];
+    commendation_stats: CommendationStats;
+    comments_count: number;
+    can_commend?: boolean;
+}
+
+export interface UserCommendation {
+    id: number;
+    from_user_id: number;
+    to_user_id: number;
+    category: CommendationCategory;
+    created_at: string;
+    from_user?: User;
+}
+
+export type CommendationCategory =
+    | 'friendly'
+    | 'skilled'
+    | 'teamwork'
+    | 'leadership';
+
+export interface CommendationStats {
+    friendly: number;
+    skilled: number;
+    teamwork: number;
+    leadership: number;
+    total: number;
+}
+
+export interface ProfileComment {
+    id: number;
+    user_id: number;
+    profile_user_id: number;
+    comment: string;
+    created_at: string;
+    updated_at: string;
+    author?: User;
 }
 
 export interface Team {
@@ -121,7 +157,9 @@ export type NotificationType =
     | 'match_cancelled'
     | 'match_score_updated'
     | 'availability_reminder'
-    | 'team_invitation';
+    | 'team_invitation'
+    | 'commendation_received'
+    | 'profile_comment';
 
 export interface NotificationData {
     type: NotificationType;
