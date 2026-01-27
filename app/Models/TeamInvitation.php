@@ -16,10 +16,19 @@ class TeamInvitation extends Model
         'email',
         'token',
         'role',
+    ];
+
+    /**
+     * The attributes that should be guarded from mass assignment.
+     * These fields should only be set explicitly in code.
+     *
+     * @var array<int, string>
+     */
+    protected $guarded = [
         'status',
-        'expires_at',
         'accepted_by',
         'accepted_at',
+        'expires_at',
     ];
 
     protected $casts = [

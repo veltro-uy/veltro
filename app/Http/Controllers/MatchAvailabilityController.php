@@ -20,22 +20,31 @@ class MatchAvailabilityController extends Controller
     {
         $request->validate([
             'status' => 'required|in:available,maybe,unavailable',
-            'team_id' => 'required|exists:teams,id',
         ]);
 
         $match = FootballMatch::findOrFail($matchId);
         $user = Auth::user();
-        $teamId = $request->input('team_id');
 
-        // Verify user is a member of this team
-        $team = Team::findOrFail($teamId);
-        if (! $team->hasMember($user->id)) {
-            abort(403, 'You are not a member of this team.');
+        // Determine which team the user belongs to that's playing in this match
+        // This prevents IDOR - users cannot manipulate team_id parameter
+        $teamId = null;
+
+        if ($match->home_team_id) {
+            $homeTeam = Team::find($match->home_team_id);
+            if ($homeTeam && $homeTeam->hasMember($user->id)) {
+                $teamId = $match->home_team_id;
+            }
         }
 
-        // Verify this team is playing in the match
-        if ($match->home_team_id !== $teamId && $match->away_team_id !== $teamId) {
-            abort(403, 'This team is not playing in this match.');
+        if (! $teamId && $match->away_team_id) {
+            $awayTeam = Team::find($match->away_team_id);
+            if ($awayTeam && $awayTeam->hasMember($user->id)) {
+                $teamId = $match->away_team_id;
+            }
+        }
+
+        if (! $teamId) {
+            abort(403, 'You are not a member of any team playing in this match.');
         }
 
         // Update or create availability
@@ -52,7 +61,8 @@ class MatchAvailabilityController extends Controller
         );
 
         // Check if team needs alert for minimum players
-        if ($match->needsPlayerAlert($teamId) && $team->isLeader($user->id)) {
+        $team = Team::find($teamId);
+        if ($team && $match->needsPlayerAlert($teamId) && $team->isLeader($user->id)) {
             $minimumPlayers = $match->getMinimumPlayers();
             $availableCount = $match->getAvailablePlayersCount($teamId);
 

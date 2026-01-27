@@ -257,6 +257,24 @@ final class MatchService
             throw new \Exception('Team is not part of this match');
         }
 
+        // Get team to validate player membership
+        $team = Team::findOrFail($teamId);
+
+        // Validate that all players belong to the team
+        $playerIds = array_column($players, 'user_id');
+        if (! empty($playerIds)) {
+            $validPlayerIds = $team->activeMembers()
+                ->whereIn('user_id', $playerIds)
+                ->pluck('user_id')
+                ->toArray();
+
+            $invalidPlayerIds = array_diff($playerIds, $validPlayerIds);
+
+            if (! empty($invalidPlayerIds)) {
+                throw new \Exception('Some players are not members of this team. Invalid player IDs: '.implode(', ', $invalidPlayerIds));
+            }
+        }
+
         return DB::transaction(function () use ($match, $teamId, $players) {
             // Delete existing lineup for this team
             MatchLineup::where('match_id', $match->id)
