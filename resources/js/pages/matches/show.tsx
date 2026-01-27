@@ -1047,7 +1047,6 @@ export default function Show({
                             userTeamId && (
                                 <AvailabilitySelector
                                     matchId={match.id}
-                                    teamId={userTeamId}
                                     currentStatus={
                                         userAvailability ?? undefined
                                     }
