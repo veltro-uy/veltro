@@ -1,9 +1,9 @@
-import { UserAvatar } from '@/components/user-avatar';
-import { UserNameLink } from '@/components/user-name-link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { usePage } from '@inertiajs/react';
+import { UserAvatar } from '@/components/user-avatar';
+import { UserNameLink } from '@/components/user-name-link';
 import type { ProfileComment, SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Loader2, Trash2 } from 'lucide-react';
@@ -196,7 +196,7 @@ export function ProfileComments({
                                     </Button>
                                 )}
                             </div>
-                            <p className="whitespace-pre-wrap text-sm">
+                            <p className="text-sm whitespace-pre-wrap">
                                 {comment.comment}
                             </p>
                         </div>

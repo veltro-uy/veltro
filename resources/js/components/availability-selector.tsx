@@ -10,7 +10,6 @@ import type { AvailabilityStatus, MatchAvailability } from '@/types';
 
 interface AvailabilitySelectorProps {
     matchId: number;
-    teamId: number;
     currentStatus?: MatchAvailability;
     onUpdate?: () => void;
 }
@@ -36,7 +35,6 @@ function formatRelativeTime(dateString: string): string {
 
 export function AvailabilitySelector({
     matchId,
-    teamId,
     currentStatus,
     onUpdate,
 }: AvailabilitySelectorProps) {
@@ -56,7 +54,6 @@ export function AvailabilitySelector({
             `/matches/${matchId}/availability`,
             {
                 status: newStatus,
-                team_id: teamId,
             },
             {
                 preserveScroll: true,

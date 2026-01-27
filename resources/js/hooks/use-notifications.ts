@@ -56,38 +56,42 @@ export function useNotifications(): UseNotificationsReturn {
     }, [isAuthenticated]);
 
     // Fetch notifications with pagination
-    const fetchNotifications = useCallback(async (page = 1) => {
-        if (!isAuthenticated) return;
+    const fetchNotifications = useCallback(
+        async (page = 1) => {
+            if (!isAuthenticated) return;
 
-        setIsLoading(true);
-        try {
-            const response = await fetch(`/notifications?page=${page}`, {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-            // Only parse JSON for successful responses with correct content type
-            if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType?.includes('application/json')) {
-                    const data: PaginatedNotifications = await response.json();
-                    if (page === 1) {
-                        setNotifications(data.data);
-                    } else {
-                        setNotifications((prev) => [...prev, ...data.data]);
+            setIsLoading(true);
+            try {
+                const response = await fetch(`/notifications?page=${page}`, {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                // Only parse JSON for successful responses with correct content type
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType?.includes('application/json')) {
+                        const data: PaginatedNotifications =
+                            await response.json();
+                        if (page === 1) {
+                            setNotifications(data.data);
+                        } else {
+                            setNotifications((prev) => [...prev, ...data.data]);
+                        }
+                        setCurrentPage(data.current_page);
+                        setHasMore(data.current_page < data.last_page);
                     }
-                    setCurrentPage(data.current_page);
-                    setHasMore(data.current_page < data.last_page);
                 }
+            } catch (error) {
+                console.error('Failed to fetch notifications:', error);
+                toast.error('Error al cargar notificaciones');
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
-            toast.error('Error al cargar notificaciones');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [isAuthenticated]);
+        },
+        [isAuthenticated],
+    );
 
     // Load more notifications
     const loadMore = useCallback(async () => {

@@ -190,13 +190,6 @@ final class TeamService
                 throw new \Exception('Team is at maximum capacity');
             }
 
-            // Delete any old accepted/rejected join requests for this user/team to avoid unique constraint violation
-            JoinRequest::where('user_id', $joinRequest->user_id)
-                ->where('team_id', $joinRequest->team_id)
-                ->where('id', '!=', $joinRequest->id)
-                ->whereIn('status', ['accepted', 'rejected'])
-                ->delete();
-
             // Update join request
             $joinRequest->update([
                 'status' => 'accepted',
@@ -219,13 +212,6 @@ final class TeamService
     public function rejectJoinRequest(JoinRequest $joinRequest, int $reviewerId): JoinRequest
     {
         return DB::transaction(function () use ($joinRequest, $reviewerId) {
-            // Delete any old accepted/rejected join requests for this user/team to avoid unique constraint violation
-            JoinRequest::where('user_id', $joinRequest->user_id)
-                ->where('team_id', $joinRequest->team_id)
-                ->where('id', '!=', $joinRequest->id)
-                ->whereIn('status', ['accepted', 'rejected'])
-                ->delete();
-
             $joinRequest->update([
                 'status' => 'rejected',
                 'reviewed_by' => $reviewerId,

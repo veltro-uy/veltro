@@ -99,43 +99,7 @@ final class TeamController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'remove_logo' => ['nullable', 'boolean'],
         ]);
-
-        // Handle logo upload
-        if ($request->hasFile('logo')) {
-            $disk = config('filesystems.default');
-
-            // Delete old logo if exists
-            if ($team->logo_path) {
-                \Storage::disk($disk)->delete($team->logo_path);
-            }
-
-            $file = $request->file('logo');
-            $filename = uniqid().'.'.$file->getClientOriginalExtension();
-            $path = "logos/{$team->id}/{$filename}";
-
-            // Resize and save the image
-            $image = \Intervention\Image\Laravel\Facades\Image::read($file);
-            $image->cover(400, 400);
-
-            \Storage::disk($disk)->put(
-                $path,
-                (string) $image->encode()
-            );
-
-            $validated['logo_path'] = $path;
-        } elseif ($request->input('remove_logo')) {
-            // Handle logo removal
-            $disk = config('filesystems.default');
-
-            if ($team->logo_path) {
-                \Storage::disk($disk)->delete($team->logo_path);
-            }
-
-            $validated['logo_path'] = null;
-        }
 
         $team = $this->teamService->updateTeam($team, $validated);
 

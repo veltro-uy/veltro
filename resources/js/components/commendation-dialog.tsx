@@ -7,12 +7,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { usePage } from '@inertiajs/react';
 import type {
     CommendationCategory,
     CommendationStats,
     SharedData,
 } from '@/types';
+import { usePage } from '@inertiajs/react';
 import { Crown, SmilePlus, Trophy, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -199,8 +199,9 @@ export function CommendationDialog({
                 <div className="space-y-2">
                     {categories.map((category) => {
                         const Icon = category.icon;
-                        const isExisting =
-                            existingCommendations.includes(category.key);
+                        const isExisting = existingCommendations.includes(
+                            category.key,
+                        );
                         const isSelected = selectedCategories.includes(
                             category.key,
                         );

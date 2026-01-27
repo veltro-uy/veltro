@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { usePage } from '@inertiajs/react';
 import type { ProfileComment, SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -106,9 +106,7 @@ export function AddCommentForm({
                     <Button
                         type="submit"
                         size="sm"
-                        disabled={
-                            !comment.trim() || isOverLimit || submitting
-                        }
+                        disabled={!comment.trim() || isOverLimit || submitting}
                     >
                         {submitting ? (
                             <>

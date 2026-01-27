@@ -151,6 +151,11 @@ final class TeamInvitationController extends Controller
                 ->with('info', 'Ya eres miembro de este equipo');
         }
 
+        // Check if team is at capacity
+        if ($invitation->team->isFull()) {
+            return back()->with('error', 'El equipo ha alcanzado su capacidad máxima y no puede aceptar más miembros');
+        }
+
         DB::transaction(function () use ($invitation, $user) {
             // Add user to team
             TeamMember::create([

@@ -37,7 +37,6 @@ test('authenticated user can update their availability status', function () {
     $this->actingAs($this->user)
         ->post(route('matches.availability.update', $this->match->id), [
             'status' => 'available',
-            'team_id' => $this->team->id,
         ])
         ->assertRedirect()
         ->assertSessionHasNoErrors();
@@ -63,7 +62,6 @@ test('user can change their availability status', function () {
     $this->actingAs($this->user)
         ->post(route('matches.availability.update', $this->match->id), [
             'status' => 'available',
-            'team_id' => $this->team->id,
         ])
         ->assertRedirect();
 
@@ -77,47 +75,16 @@ test('availability update requires valid status', function () {
     $this->actingAs($this->user)
         ->post(route('matches.availability.update', $this->match->id), [
             'status' => 'invalid-status',
-            'team_id' => $this->team->id,
         ])
         ->assertSessionHasErrors('status');
 });
 
-test('availability update requires team_id', function () {
-    $this->actingAs($this->user)
-        ->post(route('matches.availability.update', $this->match->id), [
-            'status' => 'available',
-        ])
-        ->assertSessionHasErrors('team_id');
-});
-
-test('user cannot update availability for team they are not member of', function () {
+test('user cannot update availability if not member of any team in match', function () {
     $otherUser = User::factory()->create();
-    $otherTeam = Team::create([
-        'name' => 'Other Team',
-        'variant' => 'football_11',
-        'created_by' => $otherUser->id,
-    ]);
 
-    $this->actingAs($this->user)
+    $this->actingAs($otherUser)
         ->post(route('matches.availability.update', $this->match->id), [
             'status' => 'available',
-            'team_id' => $otherTeam->id,
-        ])
-        ->assertForbidden();
-});
-
-test('user cannot update availability for team not playing in match', function () {
-    $unrelatedTeam = Team::create([
-        'name' => 'Unrelated Team',
-        'variant' => 'football_11',
-        'created_by' => $this->user->id,
-    ]);
-    $unrelatedTeam->teamMembers()->create(['user_id' => $this->user->id, 'role' => 'player']);
-
-    $this->actingAs($this->user)
-        ->post(route('matches.availability.update', $this->match->id), [
-            'status' => 'available',
-            'team_id' => $unrelatedTeam->id,
         ])
         ->assertForbidden();
 });
@@ -125,7 +92,6 @@ test('user cannot update availability for team not playing in match', function (
 test('guest cannot update availability', function () {
     $this->post(route('matches.availability.update', $this->match->id), [
         'status' => 'available',
-        'team_id' => $this->team->id,
     ])->assertRedirect(route('login'));
 });
 
@@ -151,7 +117,6 @@ test('team captain sees warning when not enough players are available', function
     $this->actingAs($this->user)
         ->post(route('matches.availability.update', $this->match->id), [
             'status' => 'available',
-            'team_id' => $this->team->id,
         ])
         ->assertSessionHas('warning');
 });
@@ -168,7 +133,6 @@ test('confirmed_at is set when status is updated', function () {
     $this->actingAs($this->user)
         ->post(route('matches.availability.update', $this->match->id), [
             'status' => 'available',
-            'team_id' => $this->team->id,
         ]);
 
     expect($availability->fresh()->confirmed_at)->not->toBeNull();
@@ -178,7 +142,6 @@ test('availability status accepts all valid options', function (string $status) 
     $this->actingAs($this->user)
         ->post(route('matches.availability.update', $this->match->id), [
             'status' => $status,
-            'team_id' => $this->team->id,
         ])
         ->assertRedirect()
         ->assertSessionHasNoErrors();
