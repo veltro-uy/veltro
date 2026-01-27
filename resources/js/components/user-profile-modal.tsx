@@ -1,3 +1,6 @@
+import { AddCommentForm } from '@/components/add-comment-form';
+import { ProfileCommendations } from '@/components/profile-commendations';
+import { ProfileComments } from '@/components/profile-comments';
 import { TeamAvatar } from '@/components/team-avatar';
 import {
     Dialog,
@@ -11,7 +14,7 @@ import { VariantBadge } from '@/components/variant-badge';
 import type { Team, UserProfile } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, MapPin, MessageCircle, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UserProfileModalProps {
@@ -43,6 +46,9 @@ export function UserProfileModal({
                 ...data.user,
                 statistics: data.statistics,
                 teams: data.teams,
+                commendation_stats: data.commendation_stats,
+                comments_count: data.comments_count,
+                can_commend: data.can_commend,
             });
         } catch (err) {
             setError(
@@ -166,6 +172,53 @@ export function UserProfileModal({
                                     Miembro desde
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Commendations Section */}
+                        {profile.commendation_stats && (
+                            <ProfileCommendations
+                                userId={profile.id}
+                                stats={profile.commendation_stats}
+                                canCommend={profile.can_commend}
+                                onStatsUpdate={(newStats) => {
+                                    setProfile({
+                                        ...profile,
+                                        commendation_stats: newStats,
+                                    });
+                                }}
+                            />
+                        )}
+
+                        {/* Comments Section */}
+                        <div className="space-y-3">
+                            <h3 className="flex items-center gap-2 font-semibold">
+                                <MessageCircle className="h-4 w-4" />
+                                Comentarios ({profile.comments_count || 0})
+                            </h3>
+                            <AddCommentForm
+                                userId={profile.id}
+                                onCommentAdded={() => {
+                                    // Refresh comments count
+                                    setProfile({
+                                        ...profile,
+                                        comments_count:
+                                            (profile.comments_count || 0) + 1,
+                                    });
+                                }}
+                            />
+                            <ProfileComments
+                                userId={profile.id}
+                                onCommentDeleted={() => {
+                                    // Decrement comments count
+                                    setProfile({
+                                        ...profile,
+                                        comments_count: Math.max(
+                                            0,
+                                            (profile.comments_count || 0) - 1,
+                                        ),
+                                    });
+                                }}
+                            />
                         </div>
 
                         {/* Teams List */}
