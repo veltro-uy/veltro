@@ -20,9 +20,21 @@ class UserCommendationController extends Controller
      */
     public function index(User $user): JsonResponse
     {
-        return response()->json([
+        $response = [
             'stats' => $user->getCommendationStats(),
-        ]);
+        ];
+
+        // If user is authenticated, include which commendations they've given to this user
+        if (Auth::check()) {
+            $givenCommendations = UserCommendation::where('from_user_id', Auth::id())
+                ->where('to_user_id', $user->id)
+                ->pluck('category')
+                ->toArray();
+
+            $response['given_commendations'] = $givenCommendations;
+        }
+
+        return response()->json($response);
     }
 
     /**

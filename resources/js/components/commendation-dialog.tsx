@@ -7,6 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import type {
     CommendationCategory,
     CommendationStats,
@@ -21,14 +22,18 @@ interface CommendationDialogProps {
     userId: number;
     isOpen: boolean;
     onClose: () => void;
+    initialExistingCommendations?: CommendationCategory[] | null;
     onSuccess?: (stats: CommendationStats) => void;
+    onCommendationsUpdate?: (commendations: CommendationCategory[]) => void;
 }
 
 export function CommendationDialog({
     userId,
     isOpen,
     onClose,
+    initialExistingCommendations,
     onSuccess,
+    onCommendationsUpdate,
 }: CommendationDialogProps) {
     const { auth } = usePage<SharedData>().props;
     const [selectedCategories, setSelectedCategories] = useState<
@@ -36,7 +41,7 @@ export function CommendationDialog({
     >([]);
     const [existingCommendations, setExistingCommendations] = useState<
         CommendationCategory[]
-    >([]);
+    >(initialExistingCommendations || []);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -74,31 +79,43 @@ export function CommendationDialog({
     const fetchExistingCommendations = useCallback(async () => {
         if (!isOpen || !auth?.user) return;
 
-        setLoading(true);
+        // Only show loading if we don't have initial data
+        if (initialExistingCommendations === null) {
+            setLoading(true);
+        }
+
         try {
             const response = await fetch(`/api/users/${userId}/commendations`);
             if (!response.ok) {
                 throw new Error('Error al cargar reconocimientos');
             }
-            await response.json();
+            const data = await response.json();
 
-            // Fetch user's given commendations to this user
-            // We need to check which categories the current user has already given
-            // This would require another endpoint or we can just try to commend and handle the error
-            // For simplicity, we'll just track locally during this session
+            // Set the commendations that the current user has already given
+            if (data.given_commendations) {
+                const commendations =
+                    data.given_commendations as CommendationCategory[];
+                setExistingCommendations(commendations);
+                onCommendationsUpdate?.(commendations);
+            }
         } catch (error) {
             console.error('Error fetching commendations:', error);
         } finally {
             setLoading(false);
         }
-    }, [userId, isOpen, auth]);
+    }, [userId, isOpen, auth, initialExistingCommendations, onCommendationsUpdate]);
 
     useEffect(() => {
         if (isOpen) {
-            fetchExistingCommendations();
+            // If we have initial data, use it; otherwise fetch
+            if (initialExistingCommendations !== null) {
+                setExistingCommendations(initialExistingCommendations);
+            } else {
+                fetchExistingCommendations();
+            }
             setSelectedCategories([]);
         }
-    }, [isOpen, fetchExistingCommendations]);
+    }, [isOpen, initialExistingCommendations, fetchExistingCommendations]);
 
     const toggleCategory = (category: CommendationCategory) => {
         if (existingCommendations.includes(category)) {
@@ -160,11 +177,8 @@ export function CommendationDialog({
                     `${succeeded.length} reconocimiento(s) enviado(s) exitosamente`,
                 );
 
-                // Add successful categories to existing commendations
-                setExistingCommendations((prev) => [
-                    ...prev,
-                    ...selectedCategories.slice(0, succeeded.length),
-                ]);
+                // Refetch existing commendations to ensure state is accurate
+                await fetchExistingCommendations();
                 setSelectedCategories([]);
 
                 if (failed.length === 0) {
@@ -197,51 +211,75 @@ export function CommendationDialog({
                 </DialogHeader>
 
                 <div className="space-y-2">
-                    {categories.map((category) => {
-                        const Icon = category.icon;
-                        const isExisting = existingCommendations.includes(
-                            category.key,
-                        );
-                        const isSelected = selectedCategories.includes(
-                            category.key,
-                        );
-
-                        return (
-                            <button
-                                key={category.key}
-                                onClick={() => toggleCategory(category.key)}
-                                disabled={isExisting || loading || submitting}
-                                className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                                    isExisting
-                                        ? 'cursor-not-allowed border-muted bg-muted/50 opacity-50'
-                                        : isSelected
-                                          ? 'border-primary bg-primary/10'
-                                          : 'hover:bg-muted/50'
-                                }`}
-                            >
-                                <div className="flex items-start gap-3">
-                                    <Icon
-                                        className={`mt-0.5 h-5 w-5 ${category.color}`}
-                                    />
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">
-                                                {category.label}
-                                            </span>
-                                            {isExisting && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    (Ya reconocido)
-                                                </span>
-                                            )}
+                    {loading ? (
+                        // Show skeleton loading states
+                        <>
+                            {['skeleton-1', 'skeleton-2', 'skeleton-3', 'skeleton-4'].map(
+                                (key) => (
+                                    <div
+                                        key={key}
+                                        className="w-full rounded-lg border p-3"
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <Skeleton className="mt-0.5 h-5 w-5 rounded-full" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton className="h-4 w-32" />
+                                                <Skeleton className="h-3 w-full" />
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            {category.description}
-                                        </p>
                                     </div>
-                                </div>
-                            </button>
-                        );
-                    })}
+                                ),
+                            )}
+                        </>
+                    ) : (
+                        // Show actual category buttons
+                        categories.map((category) => {
+                            const Icon = category.icon;
+                            const isExisting = existingCommendations.includes(
+                                category.key,
+                            );
+                            const isSelected = selectedCategories.includes(
+                                category.key,
+                            );
+
+                            return (
+                                <button
+                                    key={category.key}
+                                    type="button"
+                                    onClick={() => toggleCategory(category.key)}
+                                    disabled={isExisting || submitting}
+                                    className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                                        isExisting
+                                            ? 'cursor-not-allowed border-muted bg-muted/50 opacity-50'
+                                            : isSelected
+                                              ? 'border-primary bg-primary/10'
+                                              : 'hover:bg-muted/50'
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <Icon
+                                            className={`mt-0.5 h-5 w-5 ${category.color}`}
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium">
+                                                    {category.label}
+                                                </span>
+                                                {isExisting && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        (Ya reconocido)
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">
+                                                {category.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })
+                    )}
                 </div>
 
                 <DialogFooter>

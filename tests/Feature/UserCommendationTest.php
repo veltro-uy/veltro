@@ -251,3 +251,66 @@ test('guest cannot create commendation', function () {
 
     $response->assertStatus(401);
 });
+
+test('authenticated user can see which commendations they have given', function () {
+    $user1 = User::factory()->create();
+    $user2 = User::factory()->create();
+
+    // User1 has given two commendations to user2
+    UserCommendation::create([
+        'from_user_id' => $user1->id,
+        'to_user_id' => $user2->id,
+        'category' => 'friendly',
+    ]);
+
+    UserCommendation::create([
+        'from_user_id' => $user1->id,
+        'to_user_id' => $user2->id,
+        'category' => 'skilled',
+    ]);
+
+    // Another user has also given a commendation to user2
+    $user3 = User::factory()->create();
+    UserCommendation::create([
+        'from_user_id' => $user3->id,
+        'to_user_id' => $user2->id,
+        'category' => 'teamwork',
+    ]);
+
+    // When user1 requests commendation stats for user2
+    $response = $this->actingAs($user1)->getJson("/api/users/{$user2->id}/commendations");
+
+    $response->assertStatus(200)
+        ->assertJsonStructure([
+            'stats',
+            'given_commendations',
+        ])
+        ->assertJson([
+            'stats' => [
+                'friendly' => 1,
+                'skilled' => 1,
+                'teamwork' => 1,
+                'leadership' => 0,
+                'total' => 3,
+            ],
+            'given_commendations' => ['friendly', 'skilled'],
+        ]);
+});
+
+test('guest can see stats but not given commendations', function () {
+    $user = User::factory()->create();
+
+    UserCommendation::create([
+        'from_user_id' => User::factory()->create()->id,
+        'to_user_id' => $user->id,
+        'category' => 'friendly',
+    ]);
+
+    $response = $this->getJson("/api/users/{$user->id}/commendations");
+
+    $response->assertStatus(200)
+        ->assertJsonStructure([
+            'stats',
+        ])
+        ->assertJsonMissing(['given_commendations']);
+});
