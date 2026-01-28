@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { CommendationStats } from '@/types';
+import type { CommendationCategory, CommendationStats } from '@/types';
 import { Award, Crown, SmilePlus, Trophy, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { CommendationDialog } from './commendation-dialog';
 
 interface ProfileCommendationsProps {
@@ -19,6 +19,42 @@ export function ProfileCommendations({
     onStatsUpdate,
 }: ProfileCommendationsProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [existingCommendations, setExistingCommendations] = useState<
+        CommendationCategory[] | null
+    >(null);
+    const [isPrefetching, setIsPrefetching] = useState(false);
+
+    const prefetchCommendations = useCallback(async () => {
+        // Only prefetch if we haven't already and user can commend
+        if (existingCommendations !== null || isPrefetching || !canCommend) {
+            return;
+        }
+
+        setIsPrefetching(true);
+        try {
+            const response = await fetch(`/api/users/${userId}/commendations`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.given_commendations) {
+                    setExistingCommendations(
+                        data.given_commendations as CommendationCategory[],
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Error prefetching commendations:', error);
+        } finally {
+            setIsPrefetching(false);
+        }
+    }, [userId, existingCommendations, isPrefetching, canCommend]);
+
+    const handleOpenDialog = () => {
+        // Prefetch if not already done
+        if (existingCommendations === null) {
+            prefetchCommendations();
+        }
+        setDialogOpen(true);
+    };
 
     const categories = [
         {
@@ -59,7 +95,8 @@ export function ProfileCommendations({
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setDialogOpen(true)}
+                            onClick={handleOpenDialog}
+                            onMouseEnter={prefetchCommendations}
                         >
                             <Award className="mr-2 h-4 w-4" />
                             Reconocer
@@ -103,10 +140,14 @@ export function ProfileCommendations({
                     userId={userId}
                     isOpen={dialogOpen}
                     onClose={() => setDialogOpen(false)}
+                    initialExistingCommendations={existingCommendations}
                     onSuccess={(newStats) => {
                         if (onStatsUpdate) {
                             onStatsUpdate(newStats);
                         }
+                    }}
+                    onCommendationsUpdate={(commendations) => {
+                        setExistingCommendations(commendations);
                     }}
                 />
             )}
