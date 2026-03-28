@@ -405,10 +405,21 @@ final class MatchService
             throw new \Exception('Cannot complete match before it has started');
         }
 
+        // Tournament matches cannot end in a draw
+        if ($match->isTournamentMatch() && $match->home_score === $match->away_score) {
+            throw new \Exception('Tournament matches cannot end in a draw. Please update the score to reflect a winner.');
+        }
+
         $match->update([
             'status' => 'completed',
             'completed_at' => now(),
         ]);
+
+        // If this is a tournament match, advance the winner
+        if ($match->isTournamentMatch()) {
+            $tournamentService = app(TournamentService::class);
+            $tournamentService->advanceWinner($match);
+        }
 
         return $match->fresh();
     }
