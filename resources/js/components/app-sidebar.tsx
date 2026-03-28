@@ -14,7 +14,7 @@ import matches from '@/routes/matches';
 import teams from '@/routes/teams';
 import type { NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Trophy, Users } from 'lucide-react';
+import { Award, Trophy, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -27,6 +27,11 @@ const mainNavItems: NavItem[] = [
         title: 'Partidos',
         href: matches.index(),
         icon: Trophy,
+    },
+    {
+        title: 'Torneos',
+        href: '/tournaments',
+        icon: Award,
     },
 ];
 

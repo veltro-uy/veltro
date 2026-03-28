@@ -206,3 +206,98 @@ export interface PaginatedNotifications {
     to: number | null;
     total: number;
 }
+
+export type TournamentVisibility = 'public' | 'invite_only';
+
+export type TournamentStatus =
+    | 'draft'
+    | 'registration_open'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled';
+
+export type TournamentTeamStatus =
+    | 'pending'
+    | 'approved'
+    | 'rejected'
+    | 'withdrawn';
+
+export interface Tournament {
+    id: number;
+    name: string;
+    description?: string;
+    logo_url?: string;
+    logo_path?: string;
+    organizer_id: number;
+    organizer?: User;
+    visibility: TournamentVisibility;
+    status: TournamentStatus;
+    variant: string;
+    max_teams: number;
+    min_teams: number;
+    registered_teams_count?: number;
+    registration_deadline?: string;
+    starts_at?: string;
+    ends_at?: string;
+    created_at: string;
+    updated_at: string;
+    tournament_teams?: TournamentTeam[];
+    rounds?: TournamentRound[];
+    [key: string]: unknown;
+}
+
+export interface TournamentTeam {
+    id: number;
+    tournament_id: number;
+    team_id: number;
+    team?: Team;
+    status: TournamentTeamStatus;
+    seed?: number;
+    registered_by: number;
+    registered_at: string;
+    approved_at?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TournamentRound {
+    id: number;
+    tournament_id: number;
+    round_number: number;
+    name: string;
+    starts_at?: string;
+    created_at: string;
+    updated_at: string;
+    matches?: FootballMatch[];
+}
+
+export interface FootballMatch {
+    id: number;
+    home_team_id: number;
+    away_team_id?: number;
+    tournament_id?: number;
+    tournament?: Tournament;
+    tournament_round_id?: number;
+    tournament_round?: TournamentRound;
+    bracket_position?: number;
+    variant: string;
+    scheduled_at: string;
+    location: string;
+    location_coords?: string;
+    match_type: string;
+    status: string;
+    home_score?: number;
+    away_score?: number;
+    notes?: string;
+    created_by: number;
+    confirmed_at?: string;
+    started_at?: string;
+    completed_at?: string;
+    created_at: string;
+    updated_at: string;
+    home_team?: Team;
+    away_team?: Team;
+    creator?: User;
+    availability?: MatchAvailability[];
+    [key: string]: unknown;
+}
