@@ -28,6 +28,9 @@ final class FootballMatch extends Model
     protected $fillable = [
         'home_team_id',
         'away_team_id',
+        'tournament_id',
+        'tournament_round_id',
+        'bracket_position',
         'variant',
         'scheduled_at',
         'location',
@@ -82,6 +85,22 @@ final class FootballMatch extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the tournament this match belongs to.
+     */
+    public function tournament(): BelongsTo
+    {
+        return $this->belongsTo(Tournament::class);
+    }
+
+    /**
+     * Get the tournament round this match belongs to.
+     */
+    public function tournamentRound(): BelongsTo
+    {
+        return $this->belongsTo(TournamentRound::class);
     }
 
     /**
@@ -340,5 +359,50 @@ final class FootballMatch extends Model
     public function needsPlayerAlert(int $teamId): bool
     {
         return ! $this->hasEnoughConfirmedPlayers($teamId);
+    }
+
+    /**
+     * Check if this is a tournament match.
+     */
+    public function isTournamentMatch(): bool
+    {
+        return $this->tournament_id !== null;
+    }
+
+    /**
+     * Get the next match in the tournament bracket.
+     */
+    public function getNextMatch(): ?FootballMatch
+    {
+        if (! $this->isTournamentMatch() || ! $this->isCompleted()) {
+            return null;
+        }
+
+        $winnerId = $this->getWinnerTeamId();
+        if (! $winnerId) {
+            return null; // Draw or no winner yet
+        }
+
+        // Find the next round match that should contain this winner
+        $tournamentRound = $this->tournamentRound;
+        if (! $tournamentRound) {
+            return null;
+        }
+
+        $nextRound = TournamentRound::where('tournament_id', $this->tournament_id)
+            ->where('round_number', $tournamentRound->round_number + 1)
+            ->first();
+
+        if (! $nextRound) {
+            return null; // This was the final
+        }
+
+        // The next match position is half of current position (integer division)
+        $nextPosition = intdiv($this->bracket_position, 2);
+
+        return FootballMatch::where('tournament_id', $this->tournament_id)
+            ->where('tournament_round_id', $nextRound->id)
+            ->where('bracket_position', $nextPosition)
+            ->first();
     }
 }
