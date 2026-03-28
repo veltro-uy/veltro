@@ -110,6 +110,10 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
         });
 
+        RateLimiter::for('tournaments', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
+        });
+
         RateLimiter::for('settings-read', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?? $request->ip());
         });
