@@ -1169,7 +1169,7 @@ export default function Show({
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleCancelMatch}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
                         >
                             Cancelar Partido
                         </AlertDialogAction>

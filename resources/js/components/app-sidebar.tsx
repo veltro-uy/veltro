@@ -14,10 +14,15 @@ import matches from '@/routes/matches';
 import teams from '@/routes/teams';
 import type { NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Award, Trophy, Users } from 'lucide-react';
+import { Award, Home, Trophy, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
+    {
+        title: 'Inicio',
+        href: '/dashboard',
+        icon: Home,
+    },
     {
         title: 'Equipos',
         href: teams.index(),
@@ -39,12 +44,12 @@ const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="sidebar">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={teams.index()} prefetch>
+                            <Link href="/dashboard" prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

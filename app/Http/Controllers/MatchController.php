@@ -50,6 +50,7 @@ final class MatchController extends Controller
             'myMatches' => $myMatches,
             'availableMatches' => $availableMatches,
             'teams' => $teams,
+            'hasTeams' => $user->teams()->exists(),
         ]);
     }
 

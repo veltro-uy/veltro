@@ -19,7 +19,7 @@ class OnboardingController extends Controller
 
         // If already completed, redirect to teams
         if ($user->hasCompletedOnboarding()) {
-            return redirect()->route('teams.index');
+            return redirect()->route('dashboard');
         }
 
         return Inertia::render('onboarding/phone-number', [

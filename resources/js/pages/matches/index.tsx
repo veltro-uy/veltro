@@ -7,8 +7,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import AppLayout from '@/layouts/app-layout';
 import matches from '@/routes/matches';
 import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { Calendar, History, Search, Trophy } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Calendar, History, Search, Trophy, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,9 +45,15 @@ interface Props {
     myMatches: Match[];
     availableMatches: Match[];
     teams: Team[];
+    hasTeams: boolean;
 }
 
-export default function Index({ myMatches, availableMatches, teams }: Props) {
+export default function Index({
+    myMatches,
+    availableMatches,
+    teams,
+    hasTeams,
+}: Props) {
     const [activeView, setActiveView] = useState<'my-matches' | 'find-matches'>(
         'my-matches',
     );
@@ -199,18 +205,37 @@ export default function Index({ myMatches, availableMatches, teams }: Props) {
                             <Card className="flex flex-col items-center justify-center py-12">
                                 <CardContent className="flex flex-col items-center gap-4 pt-6">
                                     <div className="rounded-full bg-muted p-4">
-                                        <Trophy className="h-8 w-8 text-muted-foreground" />
+                                        {hasTeams ? (
+                                            <Trophy className="h-8 w-8 text-muted-foreground" />
+                                        ) : (
+                                            <Users className="h-8 w-8 text-muted-foreground" />
+                                        )}
                                     </div>
                                     <div className="text-center">
                                         <h3 className="text-lg font-semibold">
-                                            Aún no hay partidos
+                                            {hasTeams
+                                                ? 'Aún no hay partidos'
+                                                : 'Únete a un equipo para ver partidos'}
                                         </h3>
                                         <p className="text-sm text-muted-foreground">
-                                            Publica un partido disponible o
-                                            busca partidos disponibles
+                                            {hasTeams
+                                                ? 'Publica un partido disponible o busca partidos disponibles'
+                                                : 'Necesitas ser parte de un equipo para crear y gestionar partidos'}
                                         </p>
                                     </div>
-                                    <CreateMatchModal teams={teams} />
+                                    {hasTeams ? (
+                                        <CreateMatchModal teams={teams} />
+                                    ) : (
+                                        <Link href="/teams">
+                                            <Button
+                                                variant="outline"
+                                                className="gap-2"
+                                            >
+                                                <Users className="h-4 w-4" />
+                                                Descubrir Equipos
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </CardContent>
                             </Card>
                         ) : matchesTab === 'upcoming' ? (

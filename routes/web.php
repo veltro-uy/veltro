@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileCommentController;
 use App\Http\Controllers\UserCommendationController;
@@ -10,15 +11,19 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
-    // Redirect authenticated users to teams page
+    // Redirect authenticated users to dashboard
     if (auth()->check() && auth()->user()->hasVerifiedEmail()) {
-        return redirect()->route('teams.index');
+        return redirect()->route('dashboard');
     }
 
     return Inertia::render('landing-page', [
         'canRegister' => Features::enabled(Features::registration()),
     ]);
 })->middleware('throttle:public')->name('home');
+
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified', 'onboarding', 'throttle:dashboard'])
+    ->name('dashboard');
 
 Route::middleware('throttle:oauth')->group(function () {
     Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
