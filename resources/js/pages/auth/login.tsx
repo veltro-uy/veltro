@@ -173,7 +173,7 @@ export default function Login({
                                         tabIndex={1}
                                         autoComplete="email"
                                         placeholder="correo@ejemplo.com"
-                                        error={Boolean(emailError)}
+                                        aria-invalid={Boolean(emailError)}
                                         onChange={handleEmailChange}
                                     />
                                     <InputError message={emailError} />
@@ -202,7 +202,7 @@ export default function Login({
                                         tabIndex={2}
                                         autoComplete="current-password"
                                         placeholder="Contraseña"
-                                        error={Boolean(passwordError)}
+                                        aria-invalid={Boolean(passwordError)}
                                         onChange={handlePasswordChange}
                                     />
                                     <InputError message={passwordError} />

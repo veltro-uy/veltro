@@ -62,7 +62,7 @@ export default function PhoneNumber({ user }: Props) {
                             onChange={(e) =>
                                 setData('phone_number', e.target.value)
                             }
-                            error={Boolean(errors.phone_number)}
+                            aria-invalid={Boolean(errors.phone_number)}
                         />
                         <InputError message={errors.phone_number} />
                         <p className="text-sm text-muted-foreground">

@@ -223,7 +223,7 @@ export default function Register() {
                                         autoComplete="name"
                                         name="name"
                                         placeholder="Nombre completo"
-                                        error={Boolean(nameError)}
+                                        aria-invalid={Boolean(nameError)}
                                         onChange={(e) =>
                                             handleFieldChange(
                                                 'name',
@@ -246,7 +246,7 @@ export default function Register() {
                                         autoComplete="email"
                                         name="email"
                                         placeholder="correo@ejemplo.com"
-                                        error={Boolean(emailError)}
+                                        aria-invalid={Boolean(emailError)}
                                         onChange={(e) =>
                                             handleFieldChange(
                                                 'email',
@@ -267,7 +267,7 @@ export default function Register() {
                                         autoComplete="new-password"
                                         name="password"
                                         placeholder="Contraseña"
-                                        error={Boolean(passwordError)}
+                                        aria-invalid={Boolean(passwordError)}
                                         onChange={(e) =>
                                             handleFieldChange(
                                                 'password',
@@ -290,7 +290,7 @@ export default function Register() {
                                         autoComplete="new-password"
                                         name="password_confirmation"
                                         placeholder="Confirmar contraseña"
-                                        error={Boolean(
+                                        aria-invalid={Boolean(
                                             passwordConfirmationError,
                                         )}
                                         onChange={(e) =>

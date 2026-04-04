@@ -103,7 +103,13 @@ export function CommendationDialog({
         } finally {
             setLoading(false);
         }
-    }, [userId, isOpen, auth, initialExistingCommendations, onCommendationsUpdate]);
+    }, [
+        userId,
+        isOpen,
+        auth,
+        initialExistingCommendations,
+        onCommendationsUpdate,
+    ]);
 
     useEffect(() => {
         if (isOpen) {
@@ -214,22 +220,25 @@ export function CommendationDialog({
                     {loading ? (
                         // Show skeleton loading states
                         <>
-                            {['skeleton-1', 'skeleton-2', 'skeleton-3', 'skeleton-4'].map(
-                                (key) => (
-                                    <div
-                                        key={key}
-                                        className="w-full rounded-lg border p-3"
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <Skeleton className="mt-0.5 h-5 w-5 rounded-full" />
-                                            <div className="flex-1 space-y-2">
-                                                <Skeleton className="h-4 w-32" />
-                                                <Skeleton className="h-3 w-full" />
-                                            </div>
+                            {[
+                                'skeleton-1',
+                                'skeleton-2',
+                                'skeleton-3',
+                                'skeleton-4',
+                            ].map((key) => (
+                                <div
+                                    key={key}
+                                    className="w-full rounded-lg border p-3"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <Skeleton className="mt-0.5 h-5 w-5 rounded-full" />
+                                        <div className="flex-1 space-y-2">
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-3 w-full" />
                                         </div>
                                     </div>
-                                ),
-                            )}
+                                </div>
+                            ))}
                         </>
                     ) : (
                         // Show actual category buttons
