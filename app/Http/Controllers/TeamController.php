@@ -75,11 +75,13 @@ final class TeamController extends Controller
         $user = Auth::user();
         $isMember = $team->hasMember($user->id);
         $canManage = $team->isLeader($user->id);
+        $statistics = $this->teamService->getTeamStatistics($team);
 
         return Inertia::render('teams/show', [
             'team' => $team,
             'isMember' => $isMember,
             'canManage' => $canManage,
+            'statistics' => $statistics,
         ]);
     }
 

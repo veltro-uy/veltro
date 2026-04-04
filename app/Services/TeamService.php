@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\FootballMatch;
 use App\Models\JoinRequest;
+use App\Models\MatchEvent;
 use App\Models\Team;
 use App\Models\TeamMember;
 use App\Models\User;
+use App\Notifications\JoinRequestAcceptedNotification;
+use App\Notifications\JoinRequestRejectedNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -184,7 +188,7 @@ final class TeamService
      */
     public function acceptJoinRequest(JoinRequest $joinRequest, int $reviewerId): TeamMember
     {
-        return DB::transaction(function () use ($joinRequest, $reviewerId) {
+        $member = DB::transaction(function () use ($joinRequest, $reviewerId) {
             // Check if team is full
             if ($joinRequest->team->isFull()) {
                 throw new \Exception('Team is at maximum capacity');
@@ -204,6 +208,11 @@ final class TeamService
                 'player'
             );
         });
+
+        // Notify the requester
+        $joinRequest->user->notify(new JoinRequestAcceptedNotification($joinRequest));
+
+        return $member;
     }
 
     /**
@@ -211,7 +220,7 @@ final class TeamService
      */
     public function rejectJoinRequest(JoinRequest $joinRequest, int $reviewerId): JoinRequest
     {
-        return DB::transaction(function () use ($joinRequest, $reviewerId) {
+        $joinRequest = DB::transaction(function () use ($joinRequest, $reviewerId) {
             $joinRequest->update([
                 'status' => 'rejected',
                 'reviewed_by' => $reviewerId,
@@ -220,6 +229,11 @@ final class TeamService
 
             return $joinRequest->fresh();
         });
+
+        // Notify the requester
+        $joinRequest->user->notify(new JoinRequestRejectedNotification($joinRequest));
+
+        return $joinRequest;
     }
 
     /**
@@ -301,5 +315,108 @@ final class TeamService
             ->where('status', 'pending')
             ->with(['user', 'team'])
             ->get();
+    }
+
+    /**
+     * Get statistics for a team from completed matches.
+     *
+     * @return array<string, mixed>
+     */
+    public function getTeamStatistics(Team $team): array
+    {
+        $teamId = $team->id;
+
+        // Get all completed matches for this team
+        $matches = FootballMatch::where('status', 'completed')
+            ->where(fn ($q) => $q->where('home_team_id', $teamId)->orWhere('away_team_id', $teamId))
+            ->orderByDesc('completed_at')
+            ->get(['id', 'home_team_id', 'away_team_id', 'home_score', 'away_score', 'completed_at']);
+
+        $matchesPlayed = $matches->count();
+        $wins = 0;
+        $draws = 0;
+        $losses = 0;
+        $goalsScored = 0;
+        $goalsConceded = 0;
+
+        foreach ($matches as $match) {
+            $isHome = $match->home_team_id === $teamId;
+            $scored = $isHome ? ($match->home_score ?? 0) : ($match->away_score ?? 0);
+            $conceded = $isHome ? ($match->away_score ?? 0) : ($match->home_score ?? 0);
+
+            $goalsScored += $scored;
+            $goalsConceded += $conceded;
+
+            if ($scored > $conceded) {
+                $wins++;
+            } elseif ($scored === $conceded) {
+                $draws++;
+            } else {
+                $losses++;
+            }
+        }
+
+        // Cards from match_events
+        $completedMatchIds = $matches->pluck('id');
+
+        $cardCounts = MatchEvent::where('team_id', $teamId)
+            ->whereIn('match_id', $completedMatchIds)
+            ->whereIn('event_type', ['yellow_card', 'red_card'])
+            ->selectRaw("
+                SUM(CASE WHEN event_type = 'yellow_card' THEN 1 ELSE 0 END) as yellow_cards,
+                SUM(CASE WHEN event_type = 'red_card' THEN 1 ELSE 0 END) as red_cards
+            ")
+            ->first();
+
+        // Top scorer
+        $topScorer = MatchEvent::where('team_id', $teamId)
+            ->whereIn('match_id', $completedMatchIds)
+            ->where('event_type', 'goal')
+            ->whereNotNull('user_id')
+            ->selectRaw('user_id, COUNT(*) as goals')
+            ->groupBy('user_id')
+            ->orderByDesc('goals')
+            ->first();
+
+        $topScorerData = null;
+        if ($topScorer) {
+            $topScorerUser = User::select('id', 'name', 'avatar_path', 'google_avatar_url')
+                ->find($topScorer->user_id);
+            if ($topScorerUser) {
+                $topScorerData = [
+                    'user' => $topScorerUser,
+                    'goals' => (int) $topScorer->goals,
+                ];
+            }
+        }
+
+        // Recent form: last 5 completed matches
+        $recentForm = $matches->take(5)->map(function ($match) use ($teamId) {
+            $isHome = $match->home_team_id === $teamId;
+            $scored = $isHome ? ($match->home_score ?? 0) : ($match->away_score ?? 0);
+            $conceded = $isHome ? ($match->away_score ?? 0) : ($match->home_score ?? 0);
+
+            if ($scored > $conceded) {
+                return 'W';
+            }
+            if ($scored === $conceded) {
+                return 'D';
+            }
+
+            return 'L';
+        })->values()->toArray();
+
+        return [
+            'matches_played' => $matchesPlayed,
+            'wins' => $wins,
+            'draws' => $draws,
+            'losses' => $losses,
+            'goals_scored' => $goalsScored,
+            'goals_conceded' => $goalsConceded,
+            'yellow_cards' => (int) ($cardCounts->yellow_cards ?? 0),
+            'red_cards' => (int) ($cardCounts->red_cards ?? 0),
+            'top_scorer' => $topScorerData,
+            'recent_form' => $recentForm,
+        ];
     }
 }

@@ -145,6 +145,84 @@ export default function Show({
                                                         : 'partidos'}
                                                 </span>
                                             </Badge>
+                                            {statistics.goals > 0 && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1 text-xs"
+                                                >
+                                                    {statistics.goals}{' '}
+                                                    {statistics.goals === 1
+                                                        ? 'gol'
+                                                        : 'goles'}
+                                                </Badge>
+                                            )}
+                                            {statistics.assists > 0 && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1 text-xs"
+                                                >
+                                                    {statistics.assists}{' '}
+                                                    {statistics.assists === 1
+                                                        ? 'asistencia'
+                                                        : 'asistencias'}
+                                                </Badge>
+                                            )}
+                                            {statistics.matches_played > 0 && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1 text-xs"
+                                                >
+                                                    <TrendingUp className="h-3 w-3" />
+                                                    {statistics.win_rate}%
+                                                    victorias
+                                                </Badge>
+                                            )}
+                                            {(statistics.yellow_cards > 0 ||
+                                                statistics.red_cards > 0) && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1.5 text-xs"
+                                                >
+                                                    {statistics.yellow_cards >
+                                                        0 && (
+                                                        <span className="flex items-center gap-0.5">
+                                                            <span className="inline-block h-3 w-2 rounded-sm bg-yellow-400" />
+                                                            {
+                                                                statistics.yellow_cards
+                                                            }
+                                                        </span>
+                                                    )}
+                                                    {statistics.red_cards >
+                                                        0 && (
+                                                        <span className="flex items-center gap-0.5">
+                                                            <span className="inline-block h-3 w-2 rounded-sm bg-red-500" />
+                                                            {
+                                                                statistics.red_cards
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </Badge>
+                                            )}
+                                            {statistics.favorite_position && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1 text-xs"
+                                                >
+                                                    {statistics.favorite_position ===
+                                                    'goalkeeper'
+                                                        ? 'Arquero'
+                                                        : statistics.favorite_position ===
+                                                            'defender'
+                                                          ? 'Defensor'
+                                                          : statistics.favorite_position ===
+                                                              'midfielder'
+                                                            ? 'Mediocampista'
+                                                            : statistics.favorite_position ===
+                                                                'forward'
+                                                              ? 'Delantero'
+                                                              : statistics.favorite_position}
+                                                </Badge>
+                                            )}
                                             <Badge
                                                 variant="outline"
                                                 className="gap-1 text-xs"

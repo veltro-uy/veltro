@@ -28,9 +28,9 @@ import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
 import joinRequests from '@/routes/join-requests';
 import teams from '@/routes/teams';
-import type { BreadcrumbItem, User } from '@/types';
+import type { BreadcrumbItem, TeamStatistics, User } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { LogOut, Shield, Star, Users } from 'lucide-react';
+import { BarChart3, LogOut, Shield, Star, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -93,9 +93,10 @@ interface Props {
     team: Team;
     isMember: boolean;
     canManage: boolean;
+    statistics: TeamStatistics;
 }
 
-export default function Show({ team, isMember, canManage }: Props) {
+export default function Show({ team, isMember, canManage, statistics }: Props) {
     const { flash, auth } = usePage<{
         flash: { success?: string; error?: string };
         auth: { user: { id: number } };
@@ -394,6 +395,166 @@ export default function Show({ team, isMember, canManage }: Props) {
                             </CardContent>
                         </Card>
 
+                        {/* Team Statistics */}
+                        {statistics.matches_played > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <BarChart3 className="h-5 w-5" />
+                                        Estadísticas
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/* W/D/L Record */}
+                                    <div className="grid grid-cols-3 gap-3 text-center">
+                                        <div className="rounded-lg bg-green-500/10 p-3">
+                                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                                {statistics.wins}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                Victorias
+                                            </div>
+                                        </div>
+                                        <div className="rounded-lg bg-muted/50 p-3">
+                                            <div className="text-2xl font-bold text-muted-foreground">
+                                                {statistics.draws}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                Empates
+                                            </div>
+                                        </div>
+                                        <div className="rounded-lg bg-red-500/10 p-3">
+                                            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                                                {statistics.losses}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                Derrotas
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Goals + Cards */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <div className="text-sm text-muted-foreground">
+                                                Goles
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                {statistics.goals_scored}{' '}
+                                                <span className="font-normal text-muted-foreground">
+                                                    /{' '}
+                                                    {
+                                                        statistics.goals_conceded
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                a favor / en contra
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-sm text-muted-foreground">
+                                                Tarjetas
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1">
+                                                    <div className="h-4 w-3 rounded-sm bg-yellow-400" />
+                                                    <span className="font-semibold">
+                                                        {
+                                                            statistics.yellow_cards
+                                                        }
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <div className="h-4 w-3 rounded-sm bg-red-500" />
+                                                    <span className="font-semibold">
+                                                        {statistics.red_cards}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Top Scorer */}
+                                    {statistics.top_scorer && (
+                                        <div className="flex items-center gap-3 rounded-lg border p-3">
+                                            <UserAvatar
+                                                name={
+                                                    statistics.top_scorer.user
+                                                        .name
+                                                }
+                                                avatarUrl={
+                                                    statistics.top_scorer.user
+                                                        .avatar_url
+                                                }
+                                                size="sm"
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <div className="text-xs text-muted-foreground">
+                                                    Goleador
+                                                </div>
+                                                <div className="truncate font-medium">
+                                                    <UserNameLink
+                                                        user={
+                                                            statistics
+                                                                .top_scorer.user
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                            <Badge variant="secondary">
+                                                {statistics.top_scorer.goals}{' '}
+                                                {statistics.top_scorer.goals ===
+                                                1
+                                                    ? 'gol'
+                                                    : 'goles'}
+                                            </Badge>
+                                        </div>
+                                    )}
+
+                                    {/* Recent Form */}
+                                    {statistics.recent_form.length > 0 && (
+                                        <div>
+                                            <div className="mb-2 text-sm text-muted-foreground">
+                                                Últimos partidos
+                                            </div>
+                                            <div className="flex gap-1.5">
+                                                {statistics.recent_form.map(
+                                                    (result, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white ${
+                                                                result === 'W'
+                                                                    ? 'bg-green-500'
+                                                                    : result ===
+                                                                        'D'
+                                                                      ? 'bg-neutral-400'
+                                                                      : 'bg-red-500'
+                                                            }`}
+                                                            title={
+                                                                result === 'W'
+                                                                    ? 'Victoria'
+                                                                    : result ===
+                                                                        'D'
+                                                                      ? 'Empate'
+                                                                      : 'Derrota'
+                                                            }
+                                                        >
+                                                            {result === 'W'
+                                                                ? 'V'
+                                                                : result === 'D'
+                                                                  ? 'E'
+                                                                  : 'D'}
+                                                        </div>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {/* Join Requests (only for captains/co-captains) */}
                         {canManage &&
                             team.pending_join_requests?.length > 0 && (
@@ -497,7 +658,7 @@ export default function Show({ team, isMember, canManage }: Props) {
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={handleLeaveTeam}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
                             >
                                 Abandonar Equipo
                             </AlertDialogAction>

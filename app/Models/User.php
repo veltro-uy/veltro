@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -180,13 +181,66 @@ class User extends Authenticatable
      */
     public function getStatistics(): array
     {
+        $teamsCount = $this->activeTeams()->count();
+        $memberSince = $this->created_at->toIso8601String();
+
+        // Count events by type in a single query (only completed matches)
+        $eventCounts = MatchEvent::where('user_id', $this->id)
+            ->whereHas('match', fn ($q) => $q->where('status', 'completed'))
+            ->selectRaw("
+                SUM(CASE WHEN event_type = 'goal' THEN 1 ELSE 0 END) as goals,
+                SUM(CASE WHEN event_type = 'assist' THEN 1 ELSE 0 END) as assists,
+                SUM(CASE WHEN event_type = 'yellow_card' THEN 1 ELSE 0 END) as yellow_cards,
+                SUM(CASE WHEN event_type = 'red_card' THEN 1 ELSE 0 END) as red_cards
+            ")
+            ->first();
+
+        // Matches played: completed matches where user appears in lineup
+        $matchesPlayed = MatchLineup::where('user_id', $this->id)
+            ->whereHas('match', fn ($q) => $q->where('status', 'completed'))
+            ->distinct('match_id')
+            ->count('match_id');
+
+        // Win rate
+        $winRate = 0.0;
+        if ($matchesPlayed > 0) {
+            $wins = DB::table('match_lineups')
+                ->join('matches', 'match_lineups.match_id', '=', 'matches.id')
+                ->where('match_lineups.user_id', $this->id)
+                ->where('matches.status', 'completed')
+                ->where(function ($q) {
+                    $q->where(function ($inner) {
+                        $inner->whereColumn('match_lineups.team_id', 'matches.home_team_id')
+                            ->whereColumn('matches.home_score', '>', 'matches.away_score');
+                    })->orWhere(function ($inner) {
+                        $inner->whereColumn('match_lineups.team_id', 'matches.away_team_id')
+                            ->whereColumn('matches.away_score', '>', 'matches.home_score');
+                    });
+                })
+                ->distinct('match_lineups.match_id')
+                ->count('match_lineups.match_id');
+
+            $winRate = round(($wins / $matchesPlayed) * 100, 1);
+        }
+
+        // Favorite position
+        $favoritePosition = MatchLineup::where('user_id', $this->id)
+            ->whereNotNull('position')
+            ->selectRaw('position, COUNT(*) as count')
+            ->groupBy('position')
+            ->orderByDesc('count')
+            ->value('position');
+
         return [
-            'teams_count' => $this->activeTeams()->count(),
-            'matches_played' => $this->matchAvailability()
-                ->where('status', '!=', 'pending')
-                ->distinct('match_id')
-                ->count('match_id'),
-            'member_since' => $this->created_at->toIso8601String(),
+            'teams_count' => $teamsCount,
+            'matches_played' => $matchesPlayed,
+            'member_since' => $memberSince,
+            'goals' => (int) ($eventCounts->goals ?? 0),
+            'assists' => (int) ($eventCounts->assists ?? 0),
+            'yellow_cards' => (int) ($eventCounts->yellow_cards ?? 0),
+            'red_cards' => (int) ($eventCounts->red_cards ?? 0),
+            'win_rate' => $winRate,
+            'favorite_position' => $favoritePosition,
         ];
     }
 
