@@ -9,9 +9,11 @@ use App\Models\Tournament;
 use App\Services\TournamentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Intervention\Image\Laravel\Facades\Image;
 
 final class TournamentController extends Controller
 {
@@ -93,6 +95,7 @@ final class TournamentController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'visibility' => ['required', 'in:public,invite_only'],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'max_teams' => ['required', 'integer', 'in:4,8,16,32,64'],
@@ -104,7 +107,13 @@ final class TournamentController extends Controller
 
         try {
             $user = Auth::user();
+            unset($validated['logo']);
             $tournament = $this->tournamentService->createTournament($user, $validated);
+
+            // Handle logo upload
+            if ($request->hasFile('logo')) {
+                $this->uploadLogo($tournament, $request->file('logo'));
+            }
 
             return redirect()->route('tournaments.show', $tournament->id)
                 ->with('success', 'Torneo creado exitosamente');
@@ -187,6 +196,7 @@ final class TournamentController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'visibility' => ['required', 'in:public,invite_only'],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'max_teams' => ['required', 'integer', 'in:4,8,16,32,64'],
@@ -197,7 +207,15 @@ final class TournamentController extends Controller
         ]);
 
         try {
+            unset($validated['logo']);
             $tournament = $this->tournamentService->updateTournament($tournament, $validated);
+
+            // Handle logo upload
+            if ($request->hasFile('logo')) {
+                $this->uploadLogo($tournament, $request->file('logo'));
+            } elseif ($request->boolean('remove_logo')) {
+                $this->deleteLogo($tournament);
+            }
 
             return redirect()->route('tournaments.show', $tournament->id)
                 ->with('success', 'Torneo actualizado exitosamente');
@@ -285,6 +303,41 @@ final class TournamentController extends Controller
                 ->with('success', 'Torneo cancelado');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload a logo for a tournament.
+     */
+    private function uploadLogo(Tournament $tournament, \Illuminate\Http\UploadedFile $file): void
+    {
+        $disk = config('filesystems.default');
+
+        if ($tournament->logo_path) {
+            Storage::disk($disk)->delete($tournament->logo_path);
+        }
+
+        $filename = uniqid().'.'.$file->getClientOriginalExtension();
+        $path = "tournament-logos/{$tournament->id}/{$filename}";
+
+        $image = Image::read($file);
+        $image->cover(400, 400);
+
+        Storage::disk($disk)->put($path, (string) $image->encode());
+
+        $tournament->update(['logo_path' => $path]);
+    }
+
+    /**
+     * Delete a tournament's logo.
+     */
+    private function deleteLogo(Tournament $tournament): void
+    {
+        $disk = config('filesystems.default');
+
+        if ($tournament->logo_path) {
+            Storage::disk($disk)->delete($tournament->logo_path);
+            $tournament->update(['logo_path' => null]);
         }
     }
 }

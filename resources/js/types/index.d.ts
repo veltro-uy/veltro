@@ -81,6 +81,25 @@ export interface UserStatistics {
     teams_count: number;
     matches_played: number;
     member_since: string;
+    goals: number;
+    assists: number;
+    yellow_cards: number;
+    red_cards: number;
+    win_rate: number;
+    favorite_position: string | null;
+}
+
+export interface TeamStatistics {
+    matches_played: number;
+    wins: number;
+    draws: number;
+    losses: number;
+    goals_scored: number;
+    goals_conceded: number;
+    yellow_cards: number;
+    red_cards: number;
+    top_scorer: { user: User; goals: number } | null;
+    recent_form: ('W' | 'D' | 'L')[];
 }
 
 export interface UserProfile extends User {
@@ -159,7 +178,9 @@ export type NotificationType =
     | 'availability_reminder'
     | 'team_invitation'
     | 'commendation_received'
-    | 'profile_comment';
+    | 'profile_comment'
+    | 'join_request_accepted'
+    | 'join_request_rejected';
 
 export interface NotificationData {
     type: NotificationType;
@@ -205,6 +226,18 @@ export interface PaginatedNotifications {
     prev_page_url: string | null;
     to: number | null;
     total: number;
+}
+
+export interface JoinRequest {
+    id: number;
+    user_id: number;
+    team_id: number;
+    status: 'pending' | 'accepted' | 'rejected';
+    message?: string;
+    team?: Team;
+    user?: User;
+    created_at: string;
+    updated_at: string;
 }
 
 export type TournamentVisibility = 'public' | 'invite_only';

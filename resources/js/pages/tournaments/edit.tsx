@@ -16,10 +16,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Tournament } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, Save } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { AlertCircle, ArrowLeft, ImagePlus, Save, Trash2, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 interface PageProps {
     tournament: Tournament;
@@ -44,7 +46,7 @@ interface FormData {
 }
 
 export default function TournamentEdit({ tournament }: PageProps) {
-    const { data, setData, put, processing, errors } = useForm<FormData>({
+    const [data, setDataState] = useState<FormData>({
         name: tournament.name,
         description: tournament.description || '',
         visibility: tournament.visibility,
@@ -63,10 +65,85 @@ export default function TournamentEdit({ tournament }: PageProps) {
             ? new Date(tournament.ends_at).toISOString().slice(0, 16)
             : '',
     });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [processing, setProcessing] = useState(false);
+    const [selectedLogo, setSelectedLogo] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(
+        tournament.logo_url || null,
+    );
+    const [removeLogo, setRemoveLogo] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const setData = <K extends keyof FormData>(key: K, value: FormData[K]) => {
+        setDataState((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (
+            !['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(
+                file.type,
+            )
+        ) {
+            setErrors((prev) => ({
+                ...prev,
+                logo: 'Por favor selecciona una imagen válida (JPG, PNG o WEBP)',
+            }));
+            return;
+        }
+
+        if (file.size > 2048 * 1024) {
+            setErrors((prev) => ({
+                ...prev,
+                logo: 'La imagen no debe superar los 2MB',
+            }));
+            return;
+        }
+
+        if (previewUrl && previewUrl.startsWith('blob:'))
+            URL.revokeObjectURL(previewUrl);
+        setSelectedLogo(file);
+        setPreviewUrl(URL.createObjectURL(file));
+        setRemoveLogo(false);
+        setErrors((prev) => {
+            const { logo: _, ...rest } = prev;
+            return rest;
+        });
+    };
+
+    const handleRemoveLogo = () => {
+        if (previewUrl && previewUrl.startsWith('blob:'))
+            URL.revokeObjectURL(previewUrl);
+        setSelectedLogo(null);
+        setPreviewUrl(null);
+        setRemoveLogo(true);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(`/tournaments/${tournament.id}`);
+        setProcessing(true);
+
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        Object.entries(data).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+        if (selectedLogo) {
+            formData.append('logo', selectedLogo);
+        } else if (removeLogo) {
+            formData.append('remove_logo', '1');
+        }
+
+        router.post(`/tournaments/${tournament.id}`, formData, {
+            onSuccess: () => setProcessing(false),
+            onError: (errs) => {
+                setProcessing(false);
+                setErrors(errs as Record<string, string>);
+            },
+        });
     };
 
     return (
@@ -139,6 +216,69 @@ export default function TournamentEdit({ tournament }: PageProps) {
                                         <p className="flex items-center gap-1 text-sm text-destructive">
                                             <AlertCircle className="size-3" />
                                             {errors.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Logo */}
+                                <div className="space-y-2">
+                                    <Label>Imagen del Torneo</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Avatar className="size-16 rounded-lg">
+                                            {previewUrl && (
+                                                <AvatarImage
+                                                    src={previewUrl}
+                                                    alt="Preview"
+                                                />
+                                            )}
+                                            <AvatarFallback className="rounded-lg bg-muted">
+                                                <ImagePlus className="size-6 text-muted-foreground" />
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        fileInputRef.current?.click()
+                                                    }
+                                                >
+                                                    Cambiar imagen
+                                                </Button>
+                                                {(previewUrl ||
+                                                    tournament.logo_url) &&
+                                                    !removeLogo && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-destructive"
+                                                            onClick={
+                                                                handleRemoveLogo
+                                                            }
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </Button>
+                                                    )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                JPG, PNG o WEBP. Máximo 2MB.
+                                            </p>
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                                            onChange={handleLogoSelect}
+                                            className="hidden"
+                                        />
+                                    </div>
+                                    {errors.logo && (
+                                        <p className="flex items-center gap-1 text-sm text-destructive">
+                                            <AlertCircle className="size-3" />
+                                            {errors.logo}
                                         </p>
                                     )}
                                 </div>

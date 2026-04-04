@@ -1,11 +1,18 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
 import { cn } from '@/lib/utils';
 import type { Tournament } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Calendar, Crown, TrendingUp, Trophy, Users } from 'lucide-react';
+import { ArrowRight, Calendar, Trophy, Users } from 'lucide-react';
 
 interface TournamentCardProps {
     tournament: Tournament;
@@ -13,26 +20,21 @@ interface TournamentCardProps {
 }
 
 const statusConfig = {
-    draft: {
-        label: 'Borrador',
-        variant: 'secondary' as const,
-    },
+    draft: { label: 'Borrador', variant: 'secondary' as const },
     registration_open: {
         label: 'Inscripción Abierta',
         variant: 'default' as const,
     },
-    in_progress: {
-        label: 'En Progreso',
-        variant: 'default' as const,
-    },
-    completed: {
-        label: 'Completado',
-        variant: 'outline' as const,
-    },
-    cancelled: {
-        label: 'Cancelado',
-        variant: 'destructive' as const,
-    },
+    in_progress: { label: 'En Progreso', variant: 'default' as const },
+    completed: { label: 'Completado', variant: 'outline' as const },
+    cancelled: { label: 'Cancelado', variant: 'destructive' as const },
+};
+
+const getCapacityColor = (current: number, max: number): string => {
+    const percentage = (current / max) * 100;
+    if (percentage >= 100) return 'text-destructive';
+    if (percentage >= 80) return 'text-orange-500';
+    return 'text-muted-foreground';
 };
 
 export const TournamentCard = ({
@@ -40,149 +42,89 @@ export const TournamentCard = ({
     className,
 }: TournamentCardProps) => {
     const config = statusConfig[tournament.status];
-    const registrationProgress =
-        tournament.max_teams > 0
-            ? ((tournament.registered_teams_count || 0) /
-                  tournament.max_teams) *
-              100
-            : 0;
-    const isAlmostFull = registrationProgress >= 80;
-    const isFull = registrationProgress >= 100;
+    const registeredCount = tournament.registered_teams_count || 0;
 
     return (
-        <Link href={`/tournaments/${tournament.id}`}>
-            <Card
-                className={cn(
-                    'group relative h-full transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg',
-                    className,
-                )}
-            >
-                {/* Status indicator strip - subtle */}
-                {tournament.status === 'registration_open' && (
-                    <div className="absolute inset-x-0 top-0 h-0.5 bg-blue-500" />
-                )}
-                {tournament.status === 'in_progress' && (
-                    <div className="absolute inset-x-0 top-0 h-0.5 bg-orange-500" />
-                )}
-
-                <CardHeader className="space-y-3 pb-4">
-                    <div className="flex items-start justify-between gap-3">
-                        <CardTitle className="line-clamp-2 text-lg leading-tight">
+        <Card
+            className={cn(
+                'group flex flex-col transition-all hover:border-primary/20 hover:shadow-lg',
+                className,
+            )}
+        >
+            <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                    <Avatar className="size-10 rounded-lg">
+                        {tournament.logo_url && (
+                            <AvatarImage
+                                src={tournament.logo_url}
+                                alt={tournament.name}
+                            />
+                        )}
+                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                            <Trophy className="size-5" />
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                        <CardTitle className="line-clamp-1 text-lg">
                             {tournament.name}
                         </CardTitle>
-                        <div className="flex-shrink-0">
-                            {tournament.status === 'completed' ? (
-                                <div className="rounded-lg bg-yellow-500/10 p-2">
-                                    <Crown className="size-5 text-yellow-600 dark:text-yellow-500" />
-                                </div>
-                            ) : tournament.status === 'in_progress' ? (
-                                <div className="rounded-lg bg-orange-500/10 p-2">
-                                    <TrendingUp className="size-5 text-orange-600 dark:text-orange-400" />
-                                </div>
-                            ) : (
-                                <div className="rounded-lg bg-primary/10 p-2 transition-colors group-hover:bg-primary/20">
-                                    <Trophy className="size-5 text-primary" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        <Badge variant={config.variant} className="text-xs">
-                            {config.label}
-                        </Badge>
-                        <VariantBadge variant={tournament.variant} />
-                        {isAlmostFull && !isFull && (
+                        <CardDescription className="mt-1 flex flex-wrap items-center gap-2">
                             <Badge
-                                variant="outline"
-                                className="border-orange-500/50 text-xs text-orange-700 dark:text-orange-400"
+                                variant={config.variant}
+                                className="text-xs"
                             >
-                                Casi lleno
+                                {config.label}
                             </Badge>
-                        )}
-                        {isFull && (
-                            <Badge
-                                variant="outline"
-                                className="border-red-500/50 text-xs text-red-700 dark:text-red-400"
-                            >
-                                Completo
-                            </Badge>
-                        )}
+                            <VariantBadge variant={tournament.variant} />
+                        </CardDescription>
                     </div>
-                </CardHeader>
+                </div>
+            </CardHeader>
+            <CardContent className="flex flex-1 flex-col gap-4">
+                {tournament.description && (
+                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {tournament.description}
+                    </p>
+                )}
 
-                <CardContent className="space-y-4 pt-0">
-                    {tournament.description && (
-                        <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                            {tournament.description}
-                        </p>
-                    )}
-
-                    {/* Registration progress */}
-                    {tournament.status !== 'completed' &&
-                        tournament.status !== 'cancelled' && (
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">
-                                        Inscripciones
-                                    </span>
-                                    <span className="font-medium">
-                                        {tournament.registered_teams_count || 0}{' '}
-                                        / {tournament.max_teams}
-                                    </span>
-                                </div>
-                                <Progress
-                                    value={registrationProgress}
-                                    className="h-1.5"
-                                />
-                            </div>
-                        )}
-
-                    <div className="space-y-2.5">
-                        <div className="flex items-center gap-2.5 text-sm">
-                            <div className="rounded-lg bg-primary/10 p-1.5">
-                                <Users className="size-3.5 text-primary" />
-                            </div>
-                            <span className="text-muted-foreground">
-                                <span className="font-semibold text-foreground">
-                                    {tournament.registered_teams_count || 0}
-                                </span>{' '}
-                                equipos registrados
+                <div className="mt-auto space-y-4">
+                    <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">
+                                Equipos
                             </span>
                         </div>
-
-                        {tournament.starts_at && (
-                            <div className="flex items-center gap-2.5 text-sm">
-                                <div className="rounded-lg bg-blue-500/10 p-1.5">
-                                    <Calendar className="size-3.5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <span className="text-muted-foreground">
-                                    {new Date(
-                                        tournament.starts_at,
-                                    ).toLocaleDateString('es-UY', {
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })}
-                                </span>
-                            </div>
-                        )}
-
-                        {tournament.organizer && (
-                            <div className="flex items-center gap-2.5 pt-1">
-                                <div className="flex size-6 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                                    {tournament.organizer.name
-                                        .charAt(0)
-                                        .toUpperCase()}
-                                </div>
-                                <span className="truncate text-xs text-muted-foreground">
-                                    Por {tournament.organizer.name}
-                                </span>
-                            </div>
-                        )}
+                        <span
+                            className={`text-sm font-bold ${getCapacityColor(registeredCount, tournament.max_teams)}`}
+                        >
+                            {registeredCount}/{tournament.max_teams}
+                        </span>
                     </div>
-                </CardContent>
-            </Card>
-        </Link>
+
+                    {tournament.starts_at && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                                {new Date(
+                                    tournament.starts_at,
+                                ).toLocaleDateString('es-UY', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric',
+                                })}
+                            </span>
+                        </div>
+                    )}
+
+                    <Button asChild variant="outline" className="w-full">
+                        <Link href={`/tournaments/${tournament.id}`}>
+                            Ver Torneo
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 };

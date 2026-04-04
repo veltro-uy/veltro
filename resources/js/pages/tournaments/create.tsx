@@ -16,10 +16,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, Save } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { AlertCircle, ArrowLeft, ImagePlus, Save, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Torneos', href: '/tournaments' },
@@ -39,7 +41,7 @@ interface FormData {
 }
 
 export default function TournamentCreate() {
-    const { data, setData, post, processing, errors } = useForm<FormData>({
+    const [data, setDataState] = useState<FormData>({
         name: '',
         description: '',
         visibility: 'public',
@@ -50,10 +52,75 @@ export default function TournamentCreate() {
         starts_at: '',
         ends_at: '',
     });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [processing, setProcessing] = useState(false);
+    const [selectedLogo, setSelectedLogo] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const setData = <K extends keyof FormData>(key: K, value: FormData[K]) => {
+        setDataState((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (
+            !['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(
+                file.type,
+            )
+        ) {
+            setErrors((prev) => ({
+                ...prev,
+                logo: 'Por favor selecciona una imagen válida (JPG, PNG o WEBP)',
+            }));
+            return;
+        }
+
+        if (file.size > 2048 * 1024) {
+            setErrors((prev) => ({
+                ...prev,
+                logo: 'La imagen no debe superar los 2MB',
+            }));
+            return;
+        }
+
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setSelectedLogo(file);
+        setPreviewUrl(URL.createObjectURL(file));
+        setErrors((prev) => {
+            const { logo: _, ...rest } = prev;
+            return rest;
+        });
+    };
+
+    const handleRemoveLogo = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setSelectedLogo(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/tournaments');
+        setProcessing(true);
+
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+        if (selectedLogo) {
+            formData.append('logo', selectedLogo);
+        }
+
+        router.post('/tournaments', formData, {
+            onSuccess: () => setProcessing(false),
+            onError: (errs) => {
+                setProcessing(false);
+                setErrors(errs as Record<string, string>);
+            },
+        });
     };
 
     return (
@@ -129,6 +196,66 @@ export default function TournamentCreate() {
                                         <p className="flex items-center gap-1 text-sm text-destructive">
                                             <AlertCircle className="size-3" />
                                             {errors.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Logo */}
+                                <div className="space-y-2">
+                                    <Label>Imagen del Torneo</Label>
+                                    <div className="flex items-center gap-4">
+                                        <Avatar className="size-16 rounded-lg">
+                                            {previewUrl && (
+                                                <AvatarImage
+                                                    src={previewUrl}
+                                                    alt="Preview"
+                                                />
+                                            )}
+                                            <AvatarFallback className="rounded-lg bg-muted">
+                                                <ImagePlus className="size-6 text-muted-foreground" />
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        fileInputRef.current?.click()
+                                                    }
+                                                >
+                                                    Subir imagen
+                                                </Button>
+                                                {selectedLogo && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={
+                                                            handleRemoveLogo
+                                                        }
+                                                    >
+                                                        <X className="size-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                JPG, PNG o WEBP. Máximo 2MB.
+                                            </p>
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                                            onChange={handleLogoSelect}
+                                            className="hidden"
+                                        />
+                                    </div>
+                                    {errors.logo && (
+                                        <p className="flex items-center gap-1 text-sm text-destructive">
+                                            <AlertCircle className="size-3" />
+                                            {errors.logo}
                                         </p>
                                     )}
                                 </div>

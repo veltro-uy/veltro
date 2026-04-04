@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\TournamentController;
+use App\Http\Controllers\TournamentLogoController;
 use App\Http\Controllers\TournamentRegistrationController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,10 @@ Route::middleware(['auth', 'verified', 'throttle:tournaments', 'onboarding'])->g
     Route::post('/tournaments/{id}/open-registration', [TournamentController::class, 'openRegistration'])->name('tournaments.open-registration');
     Route::post('/tournaments/{id}/start', [TournamentController::class, 'start'])->name('tournaments.start');
     Route::post('/tournaments/{id}/cancel', [TournamentController::class, 'cancel'])->name('tournaments.cancel');
+
+    // Tournament Logo
+    Route::post('/tournaments/{id}/logo', [TournamentLogoController::class, 'store'])->name('tournaments.logo.store');
+    Route::delete('/tournaments/{id}/logo', [TournamentLogoController::class, 'destroy'])->name('tournaments.logo.destroy');
 
     // Tournament Registrations
     Route::post('/tournaments/{id}/register', [TournamentRegistrationController::class, 'register'])->name('tournaments.register');
