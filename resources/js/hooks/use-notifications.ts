@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -241,20 +241,6 @@ export function useNotifications(): UseNotificationsReturn {
         return () =>
             window.removeEventListener('notifications:refresh', handleRefresh);
     }, [refresh, isAuthenticated]);
-
-    // Listen for Inertia navigation to refresh notifications (only when authenticated)
-    useEffect(() => {
-        if (!isAuthenticated) return;
-
-        const removeListener = router.on('finish', () => {
-            // Small delay to ensure navigation is fully complete
-            setTimeout(() => {
-                void fetchUnreadCount();
-            }, 100);
-        });
-
-        return () => removeListener();
-    }, [fetchUnreadCount, isAuthenticated]);
 
     return {
         unreadCount,

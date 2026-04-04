@@ -9,7 +9,18 @@ import {
 import { useNotifications } from '@/hooks/use-notifications';
 
 export function NotificationBell() {
-    const { unreadCount } = useNotifications();
+    const {
+        unreadCount,
+        notifications,
+        isLoading,
+        hasMore,
+        fetchNotifications,
+        loadMore,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification,
+        clearRead,
+    } = useNotifications();
 
     return (
         <DropdownMenu>
@@ -31,7 +42,17 @@ export function NotificationBell() {
                     </span>
                 </Button>
             </DropdownMenuTrigger>
-            <NotificationList />
+            <NotificationList
+                notifications={notifications}
+                isLoading={isLoading}
+                hasMore={hasMore}
+                fetchNotifications={fetchNotifications}
+                loadMore={loadMore}
+                markAsRead={markAsRead}
+                markAllAsRead={markAllAsRead}
+                deleteNotification={deleteNotification}
+                clearRead={clearRead}
+            />
         </DropdownMenu>
     );
 }

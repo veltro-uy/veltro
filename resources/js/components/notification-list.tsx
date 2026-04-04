@@ -7,21 +7,31 @@ import {
     DropdownMenuContent,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { useNotifications } from '@/hooks/use-notifications';
+import type { Notification } from '@/types';
 
-export function NotificationList() {
-    const {
-        notifications,
-        isLoading,
-        hasMore,
-        fetchNotifications,
-        loadMore,
-        markAsRead,
-        markAllAsRead,
-        deleteNotification,
-        clearRead,
-    } = useNotifications();
+interface NotificationListProps {
+    notifications: Notification[];
+    isLoading: boolean;
+    hasMore: boolean;
+    fetchNotifications: () => Promise<void>;
+    loadMore: () => Promise<void>;
+    markAsRead: (id: string) => Promise<void>;
+    markAllAsRead: () => Promise<void>;
+    clearRead: () => Promise<void>;
+    deleteNotification: (id: string) => Promise<void>;
+}
 
+export function NotificationList({
+    notifications,
+    isLoading,
+    hasMore,
+    fetchNotifications,
+    loadMore,
+    markAsRead,
+    markAllAsRead,
+    clearRead,
+    deleteNotification,
+}: NotificationListProps) {
     const hasOpenedRef = useRef(false);
     const hasUnread = notifications.some((n) => !n.read_at);
 
