@@ -8,6 +8,7 @@ use App\Models\FootballMatch;
 use App\Models\MatchRequest;
 use App\Models\Team;
 use App\Services\MatchService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -293,7 +294,7 @@ final class MatchController extends Controller
     /**
      * Show the form for editing the match.
      */
-    public function edit(int $id): Response
+    public function edit(int $id): Response|RedirectResponse
     {
         $match = FootballMatch::with(['homeTeam'])->findOrFail($id);
         $user = Auth::user();
