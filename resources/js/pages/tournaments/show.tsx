@@ -120,7 +120,9 @@ export default function TournamentShow({
     );
 
     const { post, delete: destroy, processing } = useForm();
-    const { flash } = usePage().props as any;
+    const { flash } = usePage<{
+        flash?: { success?: string; error?: string };
+    }>().props;
 
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
@@ -245,50 +247,50 @@ export default function TournamentShow({
                             </AvatarFallback>
                         </Avatar>
                         <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <h1 className="text-3xl font-bold tracking-tight">
-                                {tournament.name}
-                            </h1>
-                            <Badge
-                                variant={
-                                    statusConfig[tournament.status].variant
-                                }
-                            >
-                                {statusConfig[tournament.status].label}
-                            </Badge>
-                        </div>
-                        {tournament.description && (
-                            <p className="text-muted-foreground">
-                                {tournament.description}
-                            </p>
-                        )}
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                                <Users className="size-4" />
-                                <span>
-                                    <span className="font-medium text-foreground">
-                                        {approvedTeams.length}
-                                    </span>
-                                    {' / '}
-                                    {tournament.max_teams} equipos
-                                </span>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <h1 className="text-3xl font-bold tracking-tight">
+                                    {tournament.name}
+                                </h1>
+                                <Badge
+                                    variant={
+                                        statusConfig[tournament.status].variant
+                                    }
+                                >
+                                    {statusConfig[tournament.status].label}
+                                </Badge>
                             </div>
-                            <VariantBadge variant={tournament.variant} />
-                            {tournament.starts_at && (
+                            {tournament.description && (
+                                <p className="text-muted-foreground">
+                                    {tournament.description}
+                                </p>
+                            )}
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1.5">
-                                    <Calendar className="size-4" />
+                                    <Users className="size-4" />
                                     <span>
-                                        {new Date(
-                                            tournament.starts_at,
-                                        ).toLocaleDateString('es-UY', {
-                                            day: 'numeric',
-                                            month: 'long',
-                                            year: 'numeric',
-                                        })}
+                                        <span className="font-medium text-foreground">
+                                            {approvedTeams.length}
+                                        </span>
+                                        {' / '}
+                                        {tournament.max_teams} equipos
                                     </span>
                                 </div>
-                            )}
-                        </div>
+                                <VariantBadge variant={tournament.variant} />
+                                {tournament.starts_at && (
+                                    <div className="flex items-center gap-1.5">
+                                        <Calendar className="size-4" />
+                                        <span>
+                                            {new Date(
+                                                tournament.starts_at,
+                                            ).toLocaleDateString('es-UY', {
+                                                day: 'numeric',
+                                                month: 'long',
+                                                year: 'numeric',
+                                            })}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -366,14 +368,11 @@ export default function TournamentShow({
                                 <h2 className="text-lg font-semibold">
                                     Bracket
                                 </h2>
-                                <TournamentBracket
-                                    rounds={tournament.rounds}
-                                />
+                                <TournamentBracket rounds={tournament.rounds} />
                             </section>
                         ) : (
                             (tournament.status === 'draft' ||
-                                tournament.status ===
-                                    'registration_open') && (
+                                tournament.status === 'registration_open') && (
                                 <div className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
                                     <Trophy className="size-4" />
                                     El bracket se generará cuando el torneo
@@ -383,100 +382,84 @@ export default function TournamentShow({
                         )}
 
                         {/* Pending Teams (organizer only) */}
-                        {permissions.canApprove &&
-                            pendingTeams.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-base">
-                                            Equipos Pendientes (
-                                            {pendingTeams.length})
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Revisa y aprueba las solicitudes
-                                            de registro
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-3">
-                                            {pendingTeams.map((tt) => (
-                                                <div
-                                                    key={tt.id}
-                                                    className="flex items-center justify-between rounded-lg border p-3"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <TeamAvatar
-                                                            name={
-                                                                tt.team!.name
-                                                            }
-                                                            logoUrl={
-                                                                tt.team!
-                                                                    .logo_url
-                                                            }
-                                                            size="sm"
-                                                        />
-                                                        <div>
-                                                            <p className="font-medium">
-                                                                {
-                                                                    tt.team!
-                                                                        .name
-                                                                }
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                Registrado{' '}
-                                                                {new Date(
-                                                                    tt.registered_at,
-                                                                ).toLocaleDateString(
-                                                                    'es-UY',
-                                                                )}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                handleApprove(
-                                                                    tt.id,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                            className="gap-1"
-                                                        >
-                                                            <Check className="size-3" />
-                                                            Aprobar
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() =>
-                                                                handleReject(
-                                                                    tt.id,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                            className="gap-1"
-                                                        >
-                                                            <X className="size-3" />
-                                                            Rechazar
-                                                        </Button>
+                        {permissions.canApprove && pendingTeams.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-base">
+                                        Equipos Pendientes (
+                                        {pendingTeams.length})
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Revisa y aprueba las solicitudes de
+                                        registro
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        {pendingTeams.map((tt) => (
+                                            <div
+                                                key={tt.id}
+                                                className="flex items-center justify-between rounded-lg border p-3"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <TeamAvatar
+                                                        name={tt.team!.name}
+                                                        logoUrl={
+                                                            tt.team!.logo_url
+                                                        }
+                                                        size="sm"
+                                                    />
+                                                    <div>
+                                                        <p className="font-medium">
+                                                            {tt.team!.name}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Registrado{' '}
+                                                            {new Date(
+                                                                tt.registered_at,
+                                                            ).toLocaleDateString(
+                                                                'es-UY',
+                                                            )}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            handleApprove(tt.id)
+                                                        }
+                                                        disabled={processing}
+                                                        className="gap-1"
+                                                    >
+                                                        <Check className="size-3" />
+                                                        Aprobar
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            handleReject(tt.id)
+                                                        }
+                                                        disabled={processing}
+                                                        className="gap-1"
+                                                    >
+                                                        <X className="size-3" />
+                                                        Rechazar
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Approved Teams */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-base">
-                                    Equipos Confirmados (
-                                    {approvedTeams.length})
+                                    Equipos Confirmados ({approvedTeams.length})
                                 </CardTitle>
                                 <CardDescription>
                                     Equipos que participarán en el torneo
@@ -496,9 +479,7 @@ export default function TournamentShow({
                                             >
                                                 <TeamAvatar
                                                     name={tt.team!.name}
-                                                    logoUrl={
-                                                        tt.team!.logo_url
-                                                    }
+                                                    logoUrl={tt.team!.logo_url}
                                                     size="sm"
                                                 />
                                                 <div className="min-w-0 flex-1">
@@ -529,8 +510,7 @@ export default function TournamentShow({
                                 </h3>
                                 <div className="divide-y">
                                     <SidebarLabel label="Organizador">
-                                        {tournament.organizer?.name ||
-                                            'N/A'}
+                                        {tournament.organizer?.name || 'N/A'}
                                     </SidebarLabel>
                                     <SidebarLabel label="Visibilidad">
                                         {tournament.visibility === 'public'
@@ -569,12 +549,12 @@ export default function TournamentShow({
                                             <div className="flex items-center gap-2">
                                                 <TeamAvatar
                                                     name={
-                                                        userRegistration
-                                                            .team!.name
+                                                        userRegistration.team!
+                                                            .name
                                                     }
                                                     logoUrl={
-                                                        userRegistration
-                                                            .team!.logo_url
+                                                        userRegistration.team!
+                                                            .logo_url
                                                     }
                                                     size="sm"
                                                 />
@@ -626,8 +606,8 @@ export default function TournamentShow({
                                             {eligibleTeams.length === 0 ? (
                                                 <div className="rounded-lg border border-dashed p-3 text-center text-sm">
                                                     <p className="font-medium">
-                                                        No tienes equipos
-                                                        con esta variante
+                                                        No tienes equipos con
+                                                        esta variante
                                                     </p>
                                                     <Link href="/teams">
                                                         <Button
@@ -646,18 +626,12 @@ export default function TournamentShow({
                                                             selectedTeamId?.toString() ||
                                                             ''
                                                         }
-                                                        onValueChange={(
-                                                            v,
-                                                        ) =>
+                                                        onValueChange={(v) =>
                                                             setSelectedTeamId(
-                                                                parseInt(
-                                                                    v,
-                                                                ),
+                                                                parseInt(v),
                                                             )
                                                         }
-                                                        disabled={
-                                                            processing
-                                                        }
+                                                        disabled={processing}
                                                     >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Selecciona equipo" />
@@ -680,9 +654,7 @@ export default function TournamentShow({
                                                         </SelectContent>
                                                     </Select>
                                                     <Button
-                                                        onClick={
-                                                            handleRegister
-                                                        }
+                                                        onClick={handleRegister}
                                                         disabled={
                                                             !selectedTeamId ||
                                                             processing
@@ -754,15 +726,12 @@ export default function TournamentShow({
                                         </p>
                                         <p className="mb-2 text-xs text-muted-foreground">
                                             Para participar necesitas ser
-                                            capitán o co-capitán de un
-                                            equipo con la variante{' '}
-                                            {tournament.variant}.
+                                            capitán o co-capitán de un equipo
+                                            con la variante {tournament.variant}
+                                            .
                                         </p>
                                         <Link href="/teams">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                            >
+                                            <Button size="sm" variant="outline">
                                                 Ver Mis Equipos
                                             </Button>
                                         </Link>
