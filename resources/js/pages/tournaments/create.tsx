@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -16,7 +17,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
@@ -90,6 +90,7 @@ export default function TournamentCreate() {
         setSelectedLogo(file);
         setPreviewUrl(URL.createObjectURL(file));
         setErrors((prev) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { logo: _, ...rest } = prev;
             return rest;
         });

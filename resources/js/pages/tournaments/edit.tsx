@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -16,11 +17,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Tournament } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { AlertCircle, ArrowLeft, ImagePlus, Save, Trash2, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ImagePlus, Save, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 interface PageProps {
@@ -108,6 +108,7 @@ export default function TournamentEdit({ tournament }: PageProps) {
         setPreviewUrl(URL.createObjectURL(file));
         setRemoveLogo(false);
         setErrors((prev) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { logo: _, ...rest } = prev;
             return rest;
         });
