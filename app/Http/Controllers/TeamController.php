@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Team;
+use App\Models\TeamInvitation;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -77,11 +78,26 @@ final class TeamController extends Controller
         $canManage = $team->isLeader($user->id);
         $statistics = $this->teamService->getTeamStatistics($team);
 
+        $pendingInvitations = collect();
+        if ($canManage) {
+            $statusOrder = ['pending' => 0, 'expired' => 1, 'revoked' => 2];
+
+            $pendingInvitations = TeamInvitation::with('inviter:id,name')
+                ->where('team_id', $team->id)
+                ->whereIn('status', ['pending', 'expired', 'revoked'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->each(fn (TeamInvitation $invitation) => $invitation->checkAndMarkExpired())
+                ->sortBy(fn (TeamInvitation $invitation) => $statusOrder[$invitation->status] ?? 99)
+                ->values();
+        }
+
         return Inertia::render('teams/show', [
             'team' => $team,
             'isMember' => $isMember,
             'canManage' => $canManage,
             'statistics' => $statistics,
+            'pendingInvitations' => $pendingInvitations,
         ]);
     }
 
