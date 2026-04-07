@@ -110,6 +110,39 @@ const getCapacityColor = (current: number, max: number): string => {
     return 'text-muted-foreground';
 };
 
+const formatRelativeExpiry = (expiresAt: string, nowMs: number): string => {
+    const target = new Date(expiresAt).getTime();
+    const diffMs = target - nowMs;
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffMs <= 0) {
+        const ago = Math.abs(diffDays);
+        if (ago === 0) return 'expirada hoy';
+        if (ago === 1) return 'expirada hace 1 día';
+        return `expirada hace ${ago} días`;
+    }
+    if (diffDays === 0) return 'expira hoy';
+    if (diffDays === 1) return 'expira en 1 día';
+    return `expira en ${diffDays} días`;
+};
+
+const invitationRoleLabel = (role: 'player' | 'co_captain'): string =>
+    role === 'co_captain' ? 'Co-Capitán' : 'Jugador';
+
+const invitationStatusLabel = (
+    status: 'pending' | 'expired' | 'revoked' | 'accepted',
+): string => {
+    switch (status) {
+        case 'pending':
+            return 'Pendiente';
+        case 'expired':
+            return 'Expirada';
+        case 'revoked':
+            return 'Cancelada';
+        default:
+            return status;
+    }
+};
+
 interface Props {
     team: Team;
     isMember: boolean;
@@ -138,6 +171,8 @@ export default function Show({
             (m.role === 'captain' || m.role === 'co_captain'),
     );
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    // Stable "now" reference captured once on mount for relative-time labels.
+    const [nowMs] = useState(() => Date.now());
 
     const maxMembers =
         team.max_members ?? getMaxMembersForVariant(team.variant);
@@ -216,40 +251,6 @@ export default function Show({
                 onError: () => toast.error('Error al cancelar la invitación'),
             },
         );
-    };
-
-    const formatRelativeExpiry = (expiresAt: string): string => {
-        const now = Date.now();
-        const target = new Date(expiresAt).getTime();
-        const diffMs = target - now;
-        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-        if (diffMs <= 0) {
-            const ago = Math.abs(diffDays);
-            if (ago === 0) return 'expirada hoy';
-            if (ago === 1) return 'expirada hace 1 día';
-            return `expirada hace ${ago} días`;
-        }
-        if (diffDays === 0) return 'expira hoy';
-        if (diffDays === 1) return 'expira en 1 día';
-        return `expira en ${diffDays} días`;
-    };
-
-    const invitationRoleLabel = (role: TeamInvitation['role']): string =>
-        role === 'co_captain' ? 'Co-Capitán' : 'Jugador';
-
-    const invitationStatusLabel = (
-        status: TeamInvitation['status'],
-    ): string => {
-        switch (status) {
-            case 'pending':
-                return 'Pendiente';
-            case 'expired':
-                return 'Expirada';
-            case 'revoked':
-                return 'Cancelada';
-            default:
-                return status;
-        }
     };
 
     const handleLeaveTeam = () => {
@@ -685,6 +686,7 @@ export default function Show({
                                                             <span className="text-xs text-muted-foreground">
                                                                 {formatRelativeExpiry(
                                                                     invitation.expires_at,
+                                                                    nowMs,
                                                                 )}
                                                             </span>
                                                         </div>
