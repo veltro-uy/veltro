@@ -27,10 +27,20 @@ import { UserNameLink } from '@/components/user-name-link';
 import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
 import joinRequests from '@/routes/join-requests';
+import teamInvitations from '@/routes/team-invitations';
 import teams from '@/routes/teams';
 import type { BreadcrumbItem, TeamStatistics, User } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { BarChart3, LogOut, Shield, Star, Users } from 'lucide-react';
+import {
+    BarChart3,
+    Copy,
+    LogOut,
+    Mail,
+    Shield,
+    Star,
+    Users,
+    X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -51,6 +61,17 @@ interface JoinRequest {
     status: string;
     message?: string;
     user: User;
+}
+
+interface TeamInvitation {
+    id: number;
+    email: string;
+    token: string;
+    role: 'player' | 'co_captain';
+    status: 'pending' | 'expired' | 'revoked' | 'accepted';
+    expires_at: string;
+    created_at: string;
+    inviter?: { id: number; name: string } | null;
 }
 
 interface Team {
@@ -94,9 +115,16 @@ interface Props {
     isMember: boolean;
     canManage: boolean;
     statistics: TeamStatistics;
+    pendingInvitations?: TeamInvitation[];
 }
 
-export default function Show({ team, isMember, canManage, statistics }: Props) {
+export default function Show({
+    team,
+    isMember,
+    canManage,
+    statistics,
+    pendingInvitations = [],
+}: Props) {
     const { flash, auth } = usePage<{
         flash: { success?: string; error?: string };
         auth: { user: { id: number } };
@@ -168,6 +196,60 @@ export default function Show({ team, isMember, canManage, statistics }: Props) {
                 },
             },
         );
+    };
+
+    const handleCopyInvitationLink = (token: string) => {
+        const url = `${window.location.origin}/teams/invite/${token}`;
+        navigator.clipboard
+            .writeText(url)
+            .then(() => toast.success('Enlace copiado al portapapeles'))
+            .catch(() => toast.error('No se pudo copiar el enlace'));
+    };
+
+    const handleRevokeInvitation = (invitationId: number) => {
+        router.post(
+            teamInvitations.revoke(invitationId).url,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Invitación cancelada'),
+                onError: () => toast.error('Error al cancelar la invitación'),
+            },
+        );
+    };
+
+    const formatRelativeExpiry = (expiresAt: string): string => {
+        const now = Date.now();
+        const target = new Date(expiresAt).getTime();
+        const diffMs = target - now;
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        if (diffMs <= 0) {
+            const ago = Math.abs(diffDays);
+            if (ago === 0) return 'expirada hoy';
+            if (ago === 1) return 'expirada hace 1 día';
+            return `expirada hace ${ago} días`;
+        }
+        if (diffDays === 0) return 'expira hoy';
+        if (diffDays === 1) return 'expira en 1 día';
+        return `expira en ${diffDays} días`;
+    };
+
+    const invitationRoleLabel = (role: TeamInvitation['role']): string =>
+        role === 'co_captain' ? 'Co-Capitán' : 'Jugador';
+
+    const invitationStatusLabel = (
+        status: TeamInvitation['status'],
+    ): string => {
+        switch (status) {
+            case 'pending':
+                return 'Pendiente';
+            case 'expired':
+                return 'Expirada';
+            case 'revoked':
+                return 'Cancelada';
+            default:
+                return status;
+        }
     };
 
     const handleLeaveTeam = () => {
@@ -551,6 +633,105 @@ export default function Show({ team, isMember, canManage, statistics }: Props) {
                                             </div>
                                         </div>
                                     )}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Pending Invitations (only for captains/co-captains) */}
+                        {canManage && pendingInvitations.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        <div className="flex items-center gap-2">
+                                            <Mail className="h-5 w-5" />
+                                            Invitaciones Enviadas
+                                        </div>
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Gestiona las invitaciones enviadas a
+                                        nuevos miembros
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        {pendingInvitations.map(
+                                            (invitation) => (
+                                                <div
+                                                    key={invitation.id}
+                                                    className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-start sm:justify-between"
+                                                >
+                                                    <div className="min-w-0 flex-1 space-y-1">
+                                                        <p className="truncate font-medium">
+                                                            {invitation.email}
+                                                        </p>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <Badge variant="outline">
+                                                                {invitationRoleLabel(
+                                                                    invitation.role,
+                                                                )}
+                                                            </Badge>
+                                                            <Badge
+                                                                variant={
+                                                                    invitation.status ===
+                                                                    'pending'
+                                                                        ? 'default'
+                                                                        : 'secondary'
+                                                                }
+                                                            >
+                                                                {invitationStatusLabel(
+                                                                    invitation.status,
+                                                                )}
+                                                            </Badge>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {formatRelativeExpiry(
+                                                                    invitation.expires_at,
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        {invitation.inviter && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Enviada por{' '}
+                                                                {
+                                                                    invitation
+                                                                        .inviter
+                                                                        .name
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {invitation.status ===
+                                                        'pending' && (
+                                                        <div className="flex flex-shrink-0 gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() =>
+                                                                    handleCopyInvitationLink(
+                                                                        invitation.token,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Copy className="mr-1 h-4 w-4" />
+                                                                Copiar
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                onClick={() =>
+                                                                    handleRevokeInvitation(
+                                                                        invitation.id,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <X className="mr-1 h-4 w-4" />
+                                                                Cancelar
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         )}

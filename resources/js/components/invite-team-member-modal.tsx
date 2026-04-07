@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { router } from '@inertiajs/react';
 import { Check, Copy, Link as LinkIcon, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -64,6 +65,11 @@ export function InviteTeamMemberModal({ teamId, teamName }: Props) {
             if (data.invitation?.url) {
                 const url = data.invitation.url;
                 setInvitationLink(url);
+
+                // Refresh the pendingInvitations prop so the new row appears
+                router.reload({
+                    only: ['pendingInvitations'],
+                });
 
                 // Automatically copy to clipboard
                 navigator.clipboard
