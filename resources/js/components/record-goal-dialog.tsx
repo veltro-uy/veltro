@@ -36,8 +36,6 @@ interface RecordGoalDialogProps {
     matchId: number;
     teamId: number;
     teamName: string;
-    teamScore: number;
-    registeredGoals: number;
     availablePlayers: LineupPlayer[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -47,13 +45,10 @@ export function RecordGoalDialog({
     matchId,
     teamId,
     teamName,
-    teamScore,
-    registeredGoals,
     availablePlayers,
     open,
     onOpenChange,
 }: RecordGoalDialogProps) {
-    const remainingGoals = teamScore - registeredGoals;
     const { data, setData, processing, reset } = useForm({
         match_id: matchId,
         team_id: teamId.toString(),
@@ -107,23 +102,8 @@ export function RecordGoalDialog({
                     <DialogHeader>
                         <DialogTitle>Registrar Gol</DialogTitle>
                         <DialogDescription>
-                            Registrar un gol para {teamName}
-                            <span className="mt-2 block text-sm">
-                                Marcador: {teamScore} goles | Registrados:{' '}
-                                {registeredGoals} |
-                                <span
-                                    className={
-                                        remainingGoals > 0
-                                            ? 'font-semibold text-green-600 dark:text-green-500'
-                                            : 'font-semibold text-red-600 dark:text-red-500'
-                                    }
-                                >
-                                    {' '}
-                                    {remainingGoals > 0
-                                        ? `Disponibles: ${remainingGoals}`
-                                        : 'No hay goles disponibles'}
-                                </span>
-                            </span>
+                            Registrar un gol para {teamName}. El marcador se
+                            actualizará automáticamente.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -198,13 +178,11 @@ export function RecordGoalDialog({
                         </Button>
                         <Button
                             type="submit"
-                            disabled={processing || remainingGoals <= 0}
+                            disabled={processing}
                         >
                             {processing
                                 ? 'Registrando...'
-                                : remainingGoals <= 0
-                                  ? 'Límite alcanzado'
-                                  : 'Registrar Gol'}
+                                : 'Registrar Gol'}
                         </Button>
                     </DialogFooter>
                 </form>
