@@ -526,9 +526,7 @@ export default function Show({
                                                 {statistics.goals_scored}{' '}
                                                 <span className="font-normal text-muted-foreground">
                                                     /{' '}
-                                                    {
-                                                        statistics.goals_conceded
-                                                    }
+                                                    {statistics.goals_conceded}
                                                 </span>
                                             </div>
                                             <div className="text-xs text-muted-foreground">
