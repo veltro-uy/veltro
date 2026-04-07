@@ -20,7 +20,7 @@ final class TournamentService
     public function createTournament(User $user, array $data): Tournament
     {
         // Validate max_teams is power of 2
-        $maxTeams = $data['max_teams'] ?? 8;
+        $maxTeams = (int) ($data['max_teams'] ?? 8);
         if (! $this->isPowerOfTwo($maxTeams)) {
             throw new \InvalidArgumentException('Max teams must be a power of 2 (4, 8, 16, 32, 64)');
         }
@@ -54,7 +54,7 @@ final class TournamentService
 
         // Validate max_teams is power of 2 if being changed
         if (isset($data['max_teams'])) {
-            if (! $this->isPowerOfTwo($data['max_teams'])) {
+            if (! $this->isPowerOfTwo((int) $data['max_teams'])) {
                 throw new \InvalidArgumentException('Max teams must be a power of 2 (4, 8, 16, 32, 64)');
             }
 
