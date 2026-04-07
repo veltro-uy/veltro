@@ -35,17 +35,18 @@ import type {
     BreadcrumbItem,
     MatchAvailability,
 } from '@/types';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    AlertCircle,
     Calendar,
     Clock,
     Edit,
     MapPin,
-    Minus,
     Phone,
     Plus,
     Shield,
     Swords,
+    Target,
     Trophy,
     Users,
     X,
@@ -100,6 +101,7 @@ interface Match {
     id: number;
     home_team_id: number;
     away_team_id?: number;
+    tournament_id?: number;
     variant: string;
     scheduled_at: string;
     location: string;
@@ -229,17 +231,6 @@ export default function Show({
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [showCompleteDialog, setShowCompleteDialog] = useState(false);
 
-    // Score tracking
-    const {
-        data: scoreData,
-        setData: setScoreData,
-        post: postScore,
-        processing: scoreProcessing,
-    } = useForm({
-        home_score: match.home_score ?? 0,
-        away_score: match.away_score ?? 0,
-    });
-
     const [countdown, setCountdown] = useState<string>('');
     const [matchHasStarted, setMatchHasStarted] = useState(false);
     const [recordGoalDialog, setRecordGoalDialog] = useState<{
@@ -307,14 +298,6 @@ export default function Show({
 
         return () => clearInterval(interval);
     }, [match.scheduled_at]);
-
-    // Update score data when match scores change
-    useEffect(() => {
-        setScoreData({
-            home_score: match.home_score ?? 0,
-            away_score: match.away_score ?? 0,
-        });
-    }, [match.home_score, match.away_score, setScoreData]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -402,39 +385,17 @@ export default function Show({
         );
     };
 
-    const handleUpdateScore = () => {
-        postScore(matches.updateScore(match.id).url, {
-            onSuccess: () => {
-                toast.success('¡Marcador actualizado con éxito!');
-            },
-            onError: (errors) => {
-                const firstError = Object.values(errors)[0];
-                if (firstError) {
-                    toast.error(firstError as string);
-                }
-            },
-        });
-    };
+    const homeScore = match.home_score ?? 0;
+    const awayScore = match.away_score ?? 0;
 
-    const incrementHomeScore = () => {
-        setScoreData('home_score', scoreData.home_score + 1);
-    };
+    // Check for score/goal mismatch (safety net)
+    const hasScoreMismatch =
+        homeRegisteredGoals !== homeScore ||
+        (match.away_team && awayRegisteredGoals !== awayScore);
 
-    const decrementHomeScore = () => {
-        if (scoreData.home_score > 0) {
-            setScoreData('home_score', scoreData.home_score - 1);
-        }
-    };
-
-    const incrementAwayScore = () => {
-        setScoreData('away_score', scoreData.away_score + 1);
-    };
-
-    const decrementAwayScore = () => {
-        if (scoreData.away_score > 0) {
-            setScoreData('away_score', scoreData.away_score - 1);
-        }
-    };
+    // Tournament draw check
+    const isTournamentDraw =
+        match.tournament_id && homeScore === awayScore;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -529,60 +490,38 @@ export default function Show({
                                             <div className="flex items-center gap-3 md:gap-4">
                                                 {/* Home Score */}
                                                 <div className="flex items-center gap-2">
-                                                    {isLeader &&
+                                                    {isHomeLeader &&
                                                         match.status !==
-                                                            'completed' && (
+                                                            'completed' &&
+                                                        matchHasStarted && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-7 w-7 rounded-full"
-                                                                onClick={
-                                                                    decrementHomeScore
-                                                                }
-                                                                disabled={
-                                                                    scoreProcessing ||
-                                                                    scoreData.home_score ===
-                                                                        0 ||
-                                                                    !matchHasStarted
+                                                                onClick={() =>
+                                                                    setRecordGoalDialog(
+                                                                        {
+                                                                            open: true,
+                                                                            team: 'home',
+                                                                        },
+                                                                    )
                                                                 }
                                                             >
-                                                                <Minus className="h-3.5 w-3.5" />
+                                                                <Plus className="h-3.5 w-3.5" />
                                                             </Button>
                                                         )}
                                                     <div
                                                         className={`flex h-12 w-12 items-center justify-center rounded-lg text-3xl font-bold md:h-14 md:w-14 ${
                                                             match.status ===
                                                                 'completed' &&
-                                                            match.home_score !==
-                                                                undefined &&
-                                                            match.away_score !==
-                                                                undefined &&
-                                                            match.home_score >
-                                                                match.away_score
+                                                            homeScore >
+                                                                awayScore
                                                                 ? 'text-primary'
                                                                 : ''
                                                         }`}
                                                     >
-                                                        {scoreData.home_score}
+                                                        {homeScore}
                                                     </div>
-                                                    {isLeader &&
-                                                        match.status !==
-                                                            'completed' && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-7 w-7 rounded-full"
-                                                                onClick={
-                                                                    incrementHomeScore
-                                                                }
-                                                                disabled={
-                                                                    scoreProcessing ||
-                                                                    !matchHasStarted
-                                                                }
-                                                            >
-                                                                <Plus className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                        )}
                                                 </div>
 
                                                 <span className="text-xl font-bold text-muted-foreground md:text-2xl">
@@ -591,55 +530,33 @@ export default function Show({
 
                                                 {/* Away Score */}
                                                 <div className="flex items-center gap-2">
-                                                    {isLeader &&
-                                                        match.status !==
-                                                            'completed' && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-7 w-7 rounded-full"
-                                                                onClick={
-                                                                    decrementAwayScore
-                                                                }
-                                                                disabled={
-                                                                    scoreProcessing ||
-                                                                    scoreData.away_score ===
-                                                                        0 ||
-                                                                    !matchHasStarted
-                                                                }
-                                                            >
-                                                                <Minus className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                        )}
                                                     <div
                                                         className={`flex h-12 w-12 items-center justify-center rounded-lg text-3xl font-bold md:h-14 md:w-14 ${
                                                             match.status ===
                                                                 'completed' &&
-                                                            match.home_score !==
-                                                                undefined &&
-                                                            match.away_score !==
-                                                                undefined &&
-                                                            match.away_score >
-                                                                match.home_score
+                                                            awayScore >
+                                                                homeScore
                                                                 ? 'text-primary'
                                                                 : ''
                                                         }`}
                                                     >
-                                                        {scoreData.away_score}
+                                                        {awayScore}
                                                     </div>
-                                                    {isLeader &&
+                                                    {isAwayLeader &&
                                                         match.status !==
-                                                            'completed' && (
+                                                            'completed' &&
+                                                        matchHasStarted && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 className="h-7 w-7 rounded-full"
-                                                                onClick={
-                                                                    incrementAwayScore
-                                                                }
-                                                                disabled={
-                                                                    scoreProcessing ||
-                                                                    !matchHasStarted
+                                                                onClick={() =>
+                                                                    setRecordGoalDialog(
+                                                                        {
+                                                                            open: true,
+                                                                            team: 'away',
+                                                                        },
+                                                                    )
                                                                 }
                                                             >
                                                                 <Plus className="h-3.5 w-3.5" />
@@ -648,44 +565,6 @@ export default function Show({
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Update Score Button */}
-                                        {isLeader &&
-                                            match.status !== 'completed' && (
-                                                <>
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={
-                                                            handleUpdateScore
-                                                        }
-                                                        disabled={
-                                                            scoreProcessing ||
-                                                            !matchHasStarted ||
-                                                            (scoreData.home_score ===
-                                                                match.home_score &&
-                                                                scoreData.away_score ===
-                                                                    match.away_score)
-                                                        }
-                                                        className="text-xs"
-                                                    >
-                                                        {scoreProcessing
-                                                            ? 'Actualizando...'
-                                                            : !matchHasStarted
-                                                              ? 'Partido No Iniciado'
-                                                              : 'Actualizar Marcador'}
-                                                    </Button>
-                                                    {matchHasStarted && (
-                                                        <p className="text-center text-xs text-muted-foreground">
-                                                            Usa "Registrar Gol"
-                                                            debajo de cada
-                                                            equipo
-                                                            <br />
-                                                            para detalles de
-                                                            goleadores
-                                                        </p>
-                                                    )}
-                                                </>
-                                            )}
                                     </>
                                 ) : (
                                     <div className="rounded-full border bg-card p-4 shadow-sm">
@@ -834,16 +713,6 @@ export default function Show({
                         recordGoalDialog.team === 'home'
                             ? match.home_team.name
                             : (match.away_team?.name ?? '')
-                    }
-                    teamScore={
-                        recordGoalDialog.team === 'home'
-                            ? (match.home_score ?? 0)
-                            : (match.away_score ?? 0)
-                    }
-                    registeredGoals={
-                        recordGoalDialog.team === 'home'
-                            ? homeRegisteredGoals
-                            : awayRegisteredGoals
                     }
                     availablePlayers={
                         recordGoalDialog.team === 'home'
@@ -1182,18 +1051,158 @@ export default function Show({
                 open={showCompleteDialog}
                 onOpenChange={setShowCompleteDialog}
             >
-                <AlertDialogContent>
+                <AlertDialogContent className="max-w-md">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Completar Partido</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Estás seguro de que quieres marcar este partido
-                            como completado? Asegúrate de que el marcador final
-                            sea correcto antes de completar.
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-4">
+                                <p>
+                                    ¿Estás seguro de que quieres marcar este
+                                    partido como completado?
+                                </p>
+
+                                {/* Score Summary */}
+                                <div className="rounded-lg border bg-muted/50 p-4">
+                                    <div className="flex items-center justify-center gap-4 text-lg font-bold">
+                                        <span>
+                                            {match.home_team.name}
+                                        </span>
+                                        <span className="rounded-md bg-background px-3 py-1 text-2xl">
+                                            {homeScore} - {awayScore}
+                                        </span>
+                                        <span>
+                                            {match.away_team?.name}
+                                        </span>
+                                    </div>
+
+                                    {/* Goal scorers */}
+                                    {events.filter(
+                                        (e) => e.event_type === 'goal',
+                                    ).length > 0 && (
+                                        <div className="mt-3 grid grid-cols-2 gap-4 border-t pt-3">
+                                            <div className="space-y-1">
+                                                {events
+                                                    .filter(
+                                                        (e) =>
+                                                            Number(
+                                                                e.team_id,
+                                                            ) ===
+                                                                Number(
+                                                                    match
+                                                                        .home_team
+                                                                        .id,
+                                                                ) &&
+                                                            e.event_type ===
+                                                                'goal',
+                                                    )
+                                                    .sort(
+                                                        (a, b) =>
+                                                            (a.minute || 0) -
+                                                            (b.minute || 0),
+                                                    )
+                                                    .map((goal) => (
+                                                        <div
+                                                            key={goal.id}
+                                                            className="flex items-center gap-1.5 text-xs"
+                                                        >
+                                                            <Target className="h-3 w-3 text-green-600" />
+                                                            <span className="truncate">
+                                                                {goal.user
+                                                                    ?.name ||
+                                                                    'Sin asignar'}
+                                                            </span>
+                                                            {goal.minute && (
+                                                                <span className="text-muted-foreground">
+                                                                    {
+                                                                        goal.minute
+                                                                    }
+                                                                    '
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                            <div className="space-y-1">
+                                                {events
+                                                    .filter(
+                                                        (e) =>
+                                                            match.away_team &&
+                                                            Number(
+                                                                e.team_id,
+                                                            ) ===
+                                                                Number(
+                                                                    match
+                                                                        .away_team
+                                                                        .id,
+                                                                ) &&
+                                                            e.event_type ===
+                                                                'goal',
+                                                    )
+                                                    .sort(
+                                                        (a, b) =>
+                                                            (a.minute || 0) -
+                                                            (b.minute || 0),
+                                                    )
+                                                    .map((goal) => (
+                                                        <div
+                                                            key={goal.id}
+                                                            className="flex items-center gap-1.5 text-xs"
+                                                        >
+                                                            <Target className="h-3 w-3 text-green-600" />
+                                                            <span className="truncate">
+                                                                {goal.user
+                                                                    ?.name ||
+                                                                    'Sin asignar'}
+                                                            </span>
+                                                            {goal.minute && (
+                                                                <span className="text-muted-foreground">
+                                                                    {
+                                                                        goal.minute
+                                                                    }
+                                                                    '
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Warnings */}
+                                {homeScore === 0 &&
+                                    awayScore === 0 && (
+                                        <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-700 dark:text-yellow-400">
+                                            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                            El partido terminará 0 - 0
+                                        </div>
+                                    )}
+
+                                {hasScoreMismatch && (
+                                    <div className="flex items-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-700 dark:text-yellow-400">
+                                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                        Los goles registrados no coinciden con
+                                        el marcador
+                                    </div>
+                                )}
+
+                                {isTournamentDraw && (
+                                    <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-400">
+                                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                        Los partidos de torneo no pueden
+                                        terminar en empate. Actualiza el
+                                        marcador.
+                                    </div>
+                                )}
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCompleteMatch}>
+                        <AlertDialogAction
+                            onClick={handleCompleteMatch}
+                            disabled={!!isTournamentDraw}
+                        >
                             Completar Partido
                         </AlertDialogAction>
                     </AlertDialogFooter>
