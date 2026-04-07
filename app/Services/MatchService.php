@@ -357,9 +357,9 @@ final class MatchService
      */
     public function recordEvent(FootballMatch $match, int $teamId, array $eventData): MatchEvent
     {
-        // Verify match is in progress or completed
-        if (! $match->isInProgress() && ! $match->isCompleted()) {
-            throw new \Exception('Can only record events for in-progress or completed matches');
+        // Verify match is in progress, confirmed, or completed
+        if (! $match->isInProgress() && ! $match->isCompleted() && ! $match->isConfirmed()) {
+            throw new \Exception('Can only record events for confirmed, in-progress, or completed matches');
         }
 
         // Verify team is part of the match
@@ -367,27 +367,29 @@ final class MatchService
             throw new \Exception('Team is not part of this match');
         }
 
-        // If recording a goal, verify it doesn't exceed the team's score
-        if ($eventData['event_type'] === 'goal') {
-            $teamScore = $match->home_team_id === $teamId ? $match->home_score : $match->away_score;
-            $existingGoals = $match->events()
-                ->where('team_id', $teamId)
-                ->where('event_type', 'goal')
-                ->count();
+        return DB::transaction(function () use ($match, $teamId, $eventData) {
+            $event = MatchEvent::create([
+                'match_id' => $match->id,
+                'team_id' => $teamId,
+                'user_id' => $eventData['user_id'] ?? null,
+                'event_type' => $eventData['event_type'],
+                'minute' => $eventData['minute'] ?? null,
+                'description' => $eventData['description'] ?? null,
+            ]);
 
-            if ($existingGoals >= $teamScore) {
-                throw new \Exception("No se pueden registrar más goles. El equipo ya tiene {$existingGoals} goles registrados para un marcador de {$teamScore}.");
+            // Auto-sync score when recording a goal
+            if ($eventData['event_type'] === 'goal') {
+                $isHomeTeam = $match->home_team_id === $teamId;
+                $match->increment($isHomeTeam ? 'home_score' : 'away_score');
+
+                // Auto-start match if confirmed and scheduled time has passed
+                if ($match->isConfirmed() && ! $match->scheduled_at->isFuture()) {
+                    $match->update(['status' => 'in_progress', 'started_at' => now()]);
+                }
             }
-        }
 
-        return MatchEvent::create([
-            'match_id' => $match->id,
-            'team_id' => $teamId,
-            'user_id' => $eventData['user_id'] ?? null,
-            'event_type' => $eventData['event_type'],
-            'minute' => $eventData['minute'] ?? null,
-            'description' => $eventData['description'] ?? null,
-        ]);
+            return $event;
+        });
     }
 
     /**
@@ -586,6 +588,23 @@ final class MatchService
             }
         }
 
-        return $event->delete();
+        return DB::transaction(function () use ($event, $match) {
+            $eventType = $event->event_type;
+            $teamId = $event->team_id;
+
+            $deleted = $event->delete();
+
+            // Auto-decrement score when a goal is deleted
+            if ($deleted && $eventType === 'goal') {
+                $isHomeTeam = $match->home_team_id === $teamId;
+                $scoreField = $isHomeTeam ? 'home_score' : 'away_score';
+
+                if (($match->$scoreField ?? 0) > 0) {
+                    $match->decrement($scoreField);
+                }
+            }
+
+            return $deleted;
+        });
     }
 }
