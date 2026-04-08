@@ -153,7 +153,10 @@ final class TournamentController extends Controller
         // Check if user can perform various actions
         $canEdit = $user && $user->can('update', $tournament);
         $canDelete = $user && $user->can('delete', $tournament);
-        $canStart = $user && $user->can('start', $tournament);
+        // canStart combines the policy check (organizer + valid status) with the
+        // model's runtime readiness check (enough approved teams, power of 2)
+        // so the UI never offers a button that would fail server-side.
+        $canStart = $user && $user->can('start', $tournament) && $tournament->canStart();
         $canCancel = $user && $user->can('cancel', $tournament);
         $canApprove = $user && $user->can('approveTeam', $tournament);
 
