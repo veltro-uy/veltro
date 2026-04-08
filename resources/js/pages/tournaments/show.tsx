@@ -1,5 +1,15 @@
 import { TeamAvatar } from '@/components/team-avatar';
 import { TournamentBracket } from '@/components/tournament/tournament-bracket';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +20,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import {
     Select,
     SelectContent,
@@ -17,6 +28,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { UserAvatar } from '@/components/user-avatar';
 import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
 import type {
@@ -26,10 +39,11 @@ import type {
     Tournament,
     TournamentTeam,
 } from '@/types';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Calendar,
     Check,
+    Clock,
     Edit,
     Info,
     Loader2,
@@ -101,6 +115,20 @@ function SidebarLabel({
     );
 }
 
+function daysUntil(date: string): number {
+    const now = new Date();
+    const target = new Date(date);
+    const diffMs = target.getTime() - now.getTime();
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function formatCountdown(prefix: string, days: number): string {
+    if (days < 0) return `${prefix} hace ${Math.abs(days)} días`;
+    if (days === 0) return `${prefix} hoy`;
+    if (days === 1) return `${prefix} mañana`;
+    return `${prefix} en ${days} días`;
+}
+
 const breadcrumbs = (tournament: Tournament): BreadcrumbItem[] => [
     { title: 'Torneos', href: '/tournaments' },
     { title: tournament.name, href: `/tournaments/${tournament.id}` },
@@ -119,7 +147,13 @@ export default function TournamentShow({
         eligibleTeams[0]?.id || null,
     );
 
-    const { post, delete: destroy, processing } = useForm();
+    const [showOpenRegDialog, setShowOpenRegDialog] = useState(false);
+    const [showStartDialog, setShowStartDialog] = useState(false);
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [withdrawId, setWithdrawId] = useState<number | null>(null);
+
+    const [processing, setProcessing] = useState(false);
     const { flash } = usePage<{
         flash?: { success?: string; error?: string };
     }>().props;
@@ -129,14 +163,34 @@ export default function TournamentShow({
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
+    const handleErrors = (errors: Record<string, string>, fallback: string) => {
+        const msg = errors.error || Object.values(errors)[0] || fallback;
+        toast.error(Array.isArray(msg) ? msg[0] : msg);
+    };
+
+    const runAction = (
+        method: 'post' | 'delete',
+        url: string,
+        fallbackError: string,
+    ) => {
+        setProcessing(true);
+        const opts = {
+            preserveScroll: true,
+            onError: (errors: Record<string, string>) =>
+                handleErrors(errors, fallbackError),
+            onFinish: () => setProcessing(false),
+        };
+        if (method === 'post') router.post(url, {}, opts);
+        else router.delete(url, opts);
+    };
+
     const handleOpenRegistration = () => {
-        if (
-            confirm(
-                '¿Abrir la inscripción del torneo? Los equipos podrán registrarse después de esto.',
-            )
-        ) {
-            post(`/tournaments/${tournament.id}/open-registration`);
-        }
+        runAction(
+            'post',
+            `/tournaments/${tournament.id}/open-registration`,
+            'No se pudo abrir la inscripción',
+        );
+        setShowOpenRegDialog(false);
     };
 
     const handleRegister = () => {
@@ -162,41 +216,56 @@ export default function TournamentShow({
     };
 
     const handleApprove = (registrationId: number) => {
-        post(`/tournament-registrations/${registrationId}/approve`);
+        runAction(
+            'post',
+            `/tournament-registrations/${registrationId}/approve`,
+            'No se pudo aprobar el equipo',
+        );
     };
 
     const handleReject = (registrationId: number) => {
-        post(`/tournament-registrations/${registrationId}/reject`);
+        runAction(
+            'post',
+            `/tournament-registrations/${registrationId}/reject`,
+            'No se pudo rechazar el equipo',
+        );
     };
 
-    const handleWithdraw = (registrationId: number) => {
-        destroy(`/tournament-registrations/${registrationId}`);
+    const handleWithdraw = () => {
+        if (withdrawId === null) return;
+        runAction(
+            'delete',
+            `/tournament-registrations/${withdrawId}`,
+            'No se pudo retirar la inscripción',
+        );
+        setWithdrawId(null);
     };
 
     const handleStart = () => {
-        if (
-            confirm(
-                '¿Estás seguro de que deseas iniciar el torneo? Se generará el bracket y no se podrán agregar más equipos.',
-            )
-        ) {
-            post(`/tournaments/${tournament.id}/start`);
-        }
+        runAction(
+            'post',
+            `/tournaments/${tournament.id}/start`,
+            'No se pudo iniciar el torneo',
+        );
+        setShowStartDialog(false);
     };
 
     const handleCancel = () => {
-        if (confirm('¿Estás seguro de que deseas cancelar el torneo?')) {
-            post(`/tournaments/${tournament.id}/cancel`);
-        }
+        runAction(
+            'post',
+            `/tournaments/${tournament.id}/cancel`,
+            'No se pudo cancelar el torneo',
+        );
+        setShowCancelDialog(false);
     };
 
     const handleDelete = () => {
-        if (
-            confirm(
-                '¿Estás seguro de que deseas eliminar este torneo? Esta acción no se puede deshacer.',
-            )
-        ) {
-            destroy(`/tournaments/${tournament.id}`);
-        }
+        runAction(
+            'delete',
+            `/tournaments/${tournament.id}`,
+            'No se pudo eliminar el torneo',
+        );
+        setShowDeleteDialog(false);
     };
 
     const canUserRegister =
@@ -226,6 +295,27 @@ export default function TournamentShow({
             tournament.status === 'completed') &&
         tournament.rounds &&
         tournament.rounds.length > 0;
+
+    let countdownLabel: string | null = null;
+    if (
+        tournament.status === 'registration_open' &&
+        tournament.registration_deadline
+    ) {
+        countdownLabel = formatCountdown(
+            'Inscripción cierra',
+            daysUntil(tournament.registration_deadline),
+        );
+    } else if (tournament.status === 'draft' && tournament.starts_at) {
+        countdownLabel = formatCountdown(
+            'Comienza',
+            daysUntil(tournament.starts_at),
+        );
+    } else if (tournament.status === 'in_progress' && tournament.ends_at) {
+        countdownLabel = formatCountdown(
+            'Finaliza',
+            daysUntil(tournament.ends_at),
+        );
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs(tournament)}>
@@ -265,16 +355,6 @@ export default function TournamentShow({
                                 </p>
                             )}
                             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1.5">
-                                    <Users className="size-4" />
-                                    <span>
-                                        <span className="font-medium text-foreground">
-                                            {approvedTeams.length}
-                                        </span>
-                                        {' / '}
-                                        {tournament.max_teams} equipos
-                                    </span>
-                                </div>
                                 <VariantBadge variant={tournament.variant} />
                                 {tournament.starts_at && (
                                     <div className="flex items-center gap-1.5">
@@ -290,6 +370,33 @@ export default function TournamentShow({
                                         </span>
                                     </div>
                                 )}
+                                {countdownLabel && (
+                                    <div className="flex items-center gap-1.5">
+                                        <Clock className="size-4" />
+                                        <span>{countdownLabel}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="max-w-md space-y-1.5 pt-1">
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1.5">
+                                        <Users className="size-3.5" />
+                                        <span className="font-medium text-foreground">
+                                            {approvedTeams.length}
+                                        </span>
+                                        {' / '}
+                                        {tournament.max_teams} equipos
+                                    </span>
+                                    <span>mín. {tournament.min_teams}</span>
+                                </div>
+                                <Progress
+                                    value={
+                                        (approvedTeams.length /
+                                            tournament.max_teams) *
+                                        100
+                                    }
+                                    className="h-1.5"
+                                />
                             </div>
                         </div>
                     </div>
@@ -311,7 +418,7 @@ export default function TournamentShow({
                         {permissions.canEdit &&
                             tournament.status === 'draft' && (
                                 <Button
-                                    onClick={handleOpenRegistration}
+                                    onClick={() => setShowOpenRegDialog(true)}
                                     disabled={processing}
                                     size="sm"
                                     className="gap-2"
@@ -322,7 +429,7 @@ export default function TournamentShow({
                             )}
                         {permissions.canStart && (
                             <Button
-                                onClick={handleStart}
+                                onClick={() => setShowStartDialog(true)}
                                 disabled={processing}
                                 size="sm"
                                 className="gap-2"
@@ -334,7 +441,7 @@ export default function TournamentShow({
                         {permissions.canCancel && (
                             <Button
                                 variant="destructive"
-                                onClick={handleCancel}
+                                onClick={() => setShowCancelDialog(true)}
                                 disabled={processing}
                                 size="sm"
                                 className="gap-2"
@@ -346,7 +453,7 @@ export default function TournamentShow({
                         {permissions.canDelete && (
                             <Button
                                 variant="destructive"
-                                onClick={handleDelete}
+                                onClick={() => setShowDeleteDialog(true)}
                                 disabled={processing}
                                 size="sm"
                                 className="gap-2"
@@ -373,10 +480,16 @@ export default function TournamentShow({
                         ) : (
                             (tournament.status === 'draft' ||
                                 tournament.status === 'registration_open') && (
-                                <div className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-                                    <Trophy className="size-4" />
-                                    El bracket se generará cuando el torneo
-                                    comience
+                                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-10 text-center">
+                                    <Trophy className="size-8 text-muted-foreground" />
+                                    <p className="text-sm font-medium">
+                                        El bracket se generará cuando el torneo
+                                        comience
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Necesitas al menos{' '}
+                                        {tournament.min_teams} equipos aprobados
+                                    </p>
                                 </div>
                             )
                         )}
@@ -396,60 +509,81 @@ export default function TournamentShow({
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-3">
-                                        {pendingTeams.map((tt) => (
-                                            <div
-                                                key={tt.id}
-                                                className="flex items-center justify-between rounded-lg border p-3"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <TeamAvatar
-                                                        name={tt.team!.name}
-                                                        logoUrl={
-                                                            tt.team!.logo_url
-                                                        }
-                                                        size="sm"
-                                                    />
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {tt.team!.name}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Registrado{' '}
-                                                            {new Date(
-                                                                tt.registered_at,
-                                                            ).toLocaleDateString(
-                                                                'es-UY',
-                                                            )}
-                                                        </p>
+                                        {pendingTeams.map((tt) => {
+                                            const team = tt.team!;
+                                            const memberCount =
+                                                team.team_members?.length ?? 0;
+                                            return (
+                                                <div
+                                                    key={tt.id}
+                                                    className="flex items-center justify-between rounded-lg border p-3"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <TeamAvatar
+                                                            name={team.name}
+                                                            logoUrl={
+                                                                team.logo_url
+                                                            }
+                                                            size="sm"
+                                                        />
+                                                        <div>
+                                                            <p className="font-medium">
+                                                                {team.name}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {memberCount}{' '}
+                                                                jugador
+                                                                {memberCount ===
+                                                                1
+                                                                    ? ''
+                                                                    : 'es'}
+                                                                {
+                                                                    ' · Registrado '
+                                                                }
+                                                                {new Date(
+                                                                    tt.registered_at,
+                                                                ).toLocaleDateString(
+                                                                    'es-UY',
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                handleApprove(
+                                                                    tt.id,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                            className="gap-1"
+                                                        >
+                                                            <Check className="size-3" />
+                                                            Aprobar
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() =>
+                                                                handleReject(
+                                                                    tt.id,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                            className="gap-1"
+                                                        >
+                                                            <X className="size-3" />
+                                                            Rechazar
+                                                        </Button>
                                                     </div>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            handleApprove(tt.id)
-                                                        }
-                                                        disabled={processing}
-                                                        className="gap-1"
-                                                    >
-                                                        <Check className="size-3" />
-                                                        Aprobar
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            handleReject(tt.id)
-                                                        }
-                                                        disabled={processing}
-                                                        className="gap-1"
-                                                    >
-                                                        <X className="size-3" />
-                                                        Rechazar
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -472,28 +606,45 @@ export default function TournamentShow({
                                     </div>
                                 ) : (
                                     <div className="grid gap-3 sm:grid-cols-2">
-                                        {approvedTeams.map((tt) => (
-                                            <div
-                                                key={tt.id}
-                                                className="flex items-center gap-3 rounded-lg border p-3"
-                                            >
-                                                <TeamAvatar
-                                                    name={tt.team!.name}
-                                                    logoUrl={tt.team!.logo_url}
-                                                    size="sm"
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate font-medium">
-                                                        {tt.team!.name}
-                                                    </p>
-                                                    {tt.seed && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Seed #{tt.seed}
+                                        {approvedTeams.map((tt) => {
+                                            const team = tt.team!;
+                                            const memberCount =
+                                                team.team_members?.length ?? 0;
+                                            const captain =
+                                                team.team_members?.find(
+                                                    (m) => m.role === 'captain',
+                                                )?.user?.name;
+                                            return (
+                                                <div
+                                                    key={tt.id}
+                                                    className="flex items-center gap-3 rounded-lg border p-3"
+                                                >
+                                                    <TeamAvatar
+                                                        name={team.name}
+                                                        logoUrl={team.logo_url}
+                                                        size="md"
+                                                    />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate font-medium">
+                                                            {team.name}
                                                         </p>
+                                                        <p className="truncate text-xs text-muted-foreground">
+                                                            {captain
+                                                                ? `Cap. ${captain}`
+                                                                : `${memberCount} jugador${memberCount === 1 ? '' : 'es'}`}
+                                                        </p>
+                                                    </div>
+                                                    {tt.seed && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="shrink-0"
+                                                        >
+                                                            #{tt.seed}
+                                                        </Badge>
                                                     )}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </CardContent>
@@ -504,14 +655,36 @@ export default function TournamentShow({
                     <div className="space-y-6">
                         {/* Tournament Info */}
                         <Card>
-                            <CardContent className="py-4">
-                                <h3 className="mb-1 text-sm font-semibold">
+                            <CardHeader>
+                                <CardTitle className="text-base">
                                     Información
-                                </h3>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {tournament.organizer && (
+                                    <>
+                                        <div className="flex items-center gap-3">
+                                            <UserAvatar
+                                                name={tournament.organizer.name}
+                                                avatarUrl={
+                                                    tournament.organizer
+                                                        .avatar_url
+                                                }
+                                                size="md"
+                                            />
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-medium">
+                                                    {tournament.organizer.name}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Organizador
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Separator />
+                                    </>
+                                )}
                                 <div className="divide-y">
-                                    <SidebarLabel label="Organizador">
-                                        {tournament.organizer?.name || 'N/A'}
-                                    </SidebarLabel>
                                     <SidebarLabel label="Visibilidad">
                                         {tournament.visibility === 'public'
                                             ? 'Público'
@@ -539,11 +712,12 @@ export default function TournamentShow({
                         {/* Registration + User Status */}
                         {(userRegistration || canUserRegister) && (
                             <Card>
-                                <CardContent className="py-4">
-                                    <h3 className="mb-3 text-sm font-semibold">
+                                <CardHeader>
+                                    <CardTitle className="text-base">
                                         Inscripción
-                                    </h3>
-
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
                                     {userRegistration && (
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
@@ -589,7 +763,7 @@ export default function TournamentShow({
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() =>
-                                                        handleWithdraw(
+                                                        setWithdrawId(
                                                             userRegistration.id,
                                                         )
                                                     }
@@ -698,6 +872,25 @@ export default function TournamentShow({
                                 </div>
                             )}
 
+                        {tournament.status === 'registration_open' &&
+                            permissions.canApprove &&
+                            !permissions.canStart && (
+                                <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
+                                    <Info className="mt-0.5 size-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            Aún no puedes iniciar el torneo
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Necesitas {tournament.min_teams} o
+                                            más equipos aprobados, y la cantidad
+                                            debe ser potencia de 2 (4, 8, 16,
+                                            32, 64).
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                         {tournament.status === 'draft' &&
                             !permissions.canEdit && (
                                 <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
@@ -741,6 +934,121 @@ export default function TournamentShow({
                     </div>
                 </div>
             </div>
+
+            <AlertDialog
+                open={showOpenRegDialog}
+                onOpenChange={setShowOpenRegDialog}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Abrir Inscripción</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Abrir la inscripción del torneo? Los equipos podrán
+                            registrarse después de esto.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleOpenRegistration}>
+                            Abrir Inscripción
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={showStartDialog}
+                onOpenChange={setShowStartDialog}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Iniciar Torneo</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Estás seguro de que deseas iniciar el torneo? Se
+                            generará el bracket y no se podrán agregar más
+                            equipos.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleStart}>
+                            Iniciar Torneo
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={showCancelDialog}
+                onOpenChange={setShowCancelDialog}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancelar Torneo</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Estás seguro de que deseas cancelar el torneo? Esta
+                            acción puede afectar a los equipos inscriptos.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Volver</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleCancel}
+                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+                        >
+                            Cancelar Torneo
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Eliminar Torneo</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Estás seguro de que deseas eliminar este torneo?
+                            Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDelete}
+                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+                        >
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={withdrawId !== null}
+                onOpenChange={(open) => !open && setWithdrawId(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Retirar Inscripción</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Estás seguro de que deseas retirar la inscripción
+                            de tu equipo del torneo?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleWithdraw}
+                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+                        >
+                            Retirar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }
