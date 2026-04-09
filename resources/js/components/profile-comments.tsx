@@ -1,3 +1,13 @@
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
@@ -34,6 +44,7 @@ export function ProfileComments({
     const [currentPage, setCurrentPage] = useState(1);
     const [lastPage, setLastPage] = useState(1);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
 
     const fetchComments = useCallback(
         async (page: number = 1, append: boolean = false) => {
@@ -76,12 +87,7 @@ export function ProfileComments({
     }, [fetchComments]);
 
     const handleDelete = async (commentId: number) => {
-        if (
-            !confirm('¿Estás seguro de que quieres eliminar este comentario?')
-        ) {
-            return;
-        }
-
+        setCommentToDelete(null);
         setDeletingId(commentId);
 
         try {
@@ -184,7 +190,9 @@ export function ProfileComments({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => handleDelete(comment.id)}
+                                        onClick={() =>
+                                            setCommentToDelete(comment.id)
+                                        }
                                         disabled={deletingId === comment.id}
                                         className="h-auto p-1"
                                     >
@@ -221,6 +229,33 @@ export function ProfileComments({
                     )}
                 </Button>
             )}
+
+            <AlertDialog
+                open={commentToDelete !== null}
+                onOpenChange={(open) => !open && setCommentToDelete(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Eliminar comentario</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Estás seguro de que quieres eliminar este
+                            comentario? Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() =>
+                                commentToDelete !== null &&
+                                handleDelete(commentToDelete)
+                            }
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -2,6 +2,16 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
 import InputError from '@/components/input-error';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +48,7 @@ export default function Profile({
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [bioLength, setBioLength] = useState(auth.user.bio?.length || 0);
+    const [showDeleteAvatarDialog, setShowDeleteAvatarDialog] = useState(false);
 
     const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -68,9 +79,7 @@ export default function Profile({
     };
 
     const handleDeleteAvatar = () => {
-        if (!confirm('¿Estás seguro de que deseas eliminar tu foto de perfil?'))
-            return;
-
+        setShowDeleteAvatarDialog(false);
         router.delete('/settings/avatar', {
             preserveScroll: true,
             onSuccess: () => {
@@ -133,7 +142,9 @@ export default function Profile({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            onClick={handleDeleteAvatar}
+                                            onClick={() =>
+                                                setShowDeleteAvatarDialog(true)
+                                            }
                                             disabled={isUploadingAvatar}
                                         >
                                             <X className="mr-2 h-4 w-4" />
@@ -374,6 +385,32 @@ export default function Profile({
 
                 <DeleteUser hasPassword={hasPassword} />
             </SettingsLayout>
+
+            <AlertDialog
+                open={showDeleteAvatarDialog}
+                onOpenChange={setShowDeleteAvatarDialog}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Eliminar foto de perfil
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            ¿Estás seguro de que deseas eliminar tu foto de
+                            perfil? Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteAvatar}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Eliminar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

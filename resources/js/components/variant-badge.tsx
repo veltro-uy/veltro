@@ -1,8 +1,10 @@
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { Trophy } from 'lucide-react';
 
 interface VariantBadgeProps {
     variant: string;
+    className?: string;
 }
 
 const variantConfig = {
@@ -24,14 +26,14 @@ const variantConfig = {
     },
 };
 
-export function VariantBadge({ variant }: VariantBadgeProps) {
+export function VariantBadge({ variant, className }: VariantBadgeProps) {
     const config = variantConfig[variant as keyof typeof variantConfig] || {
         label: variant,
         color: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
     };
 
     return (
-        <Badge variant="secondary" className={config.color}>
+        <Badge variant="secondary" className={cn(config.color, className)}>
             <Trophy className="mr-1 h-3 w-3" />
             {config.label}
         </Badge>
