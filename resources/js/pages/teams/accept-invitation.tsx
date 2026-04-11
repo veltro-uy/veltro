@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
 import { Head, useForm } from '@inertiajs/react';
+import { toast } from 'sonner';
 
 interface Team {
     id: number;
@@ -40,7 +41,9 @@ export default function AcceptInvitation({ invitation, team, inviter }: Props) {
     const { post, processing } = useForm();
 
     const handleAccept = () => {
-        post(`/teams/invite/${invitation.token}/accept`);
+        post(`/teams/invite/${invitation.token}/accept`, {
+            onError: () => toast.error('Error al aceptar la invitación'),
+        });
     };
 
     return (

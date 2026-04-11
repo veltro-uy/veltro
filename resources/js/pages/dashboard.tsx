@@ -112,6 +112,7 @@ export default function Dashboard({
         router.delete(`/join-requests/${requestId}`, {
             preserveScroll: true,
             onSuccess: () => toast.success('Solicitud cancelada'),
+            onError: () => toast.error('Error al cancelar la solicitud'),
         });
     };
 
@@ -355,6 +356,7 @@ export default function Dashboard({
                                                             )
                                                         }
                                                         title="Cancelar solicitud"
+                                                        aria-label="Cancelar solicitud"
                                                     >
                                                         <X className="h-4 w-4" />
                                                     </Button>
