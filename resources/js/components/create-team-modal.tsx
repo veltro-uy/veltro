@@ -22,6 +22,7 @@ import { useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface Props {
     trigger?: ReactNode;
@@ -42,6 +43,7 @@ export function CreateTeamModal({ trigger }: Props) {
                 setOpen(false);
                 reset();
             },
+            onError: () => toast.error('Error al crear el equipo'),
         });
     };
 

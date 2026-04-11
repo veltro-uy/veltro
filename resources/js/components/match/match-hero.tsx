@@ -166,6 +166,7 @@ export function MatchHero({
                                                             variant="ghost"
                                                             size="icon"
                                                             className="h-7 w-7 rounded-full"
+                                                            aria-label="Registrar gol local"
                                                             onClick={() =>
                                                                 setRecordGoalDialog(
                                                                     {
@@ -215,6 +216,7 @@ export function MatchHero({
                                                             variant="ghost"
                                                             size="icon"
                                                             className="h-7 w-7 rounded-full"
+                                                            aria-label="Registrar gol visitante"
                                                             onClick={() =>
                                                                 setRecordGoalDialog(
                                                                     {
