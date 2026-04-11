@@ -9,6 +9,7 @@ import { User } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { Phone, SkipForward } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface Props {
     user: Pick<User, 'name' | 'email' | 'phone_number'>;
@@ -23,7 +24,9 @@ export default function PhoneNumber({ user }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(update().url);
+        post(update().url, {
+            onError: () => toast.error('Error al guardar el número'),
+        });
     };
 
     const handleSkip = () => {
@@ -33,6 +36,7 @@ export default function PhoneNumber({ user }: Props) {
             {},
             {
                 onFinish: () => setIsSkipping(false),
+                onError: () => toast.error('Error al omitir este paso'),
             },
         );
     };
