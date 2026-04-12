@@ -169,6 +169,7 @@ export function ScoreTracker({ match, isLeader }: Props) {
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8"
+                                    aria-label="Restar gol local"
                                     onClick={decrementHomeScore}
                                     disabled={
                                         processing ||
@@ -187,6 +188,7 @@ export function ScoreTracker({ match, isLeader }: Props) {
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8"
+                                    aria-label="Sumar gol local"
                                     onClick={incrementHomeScore}
                                     disabled={processing || !matchHasStarted}
                                 >
@@ -210,6 +212,7 @@ export function ScoreTracker({ match, isLeader }: Props) {
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8"
+                                    aria-label="Restar gol visitante"
                                     onClick={decrementAwayScore}
                                     disabled={
                                         processing ||
@@ -228,6 +231,7 @@ export function ScoreTracker({ match, isLeader }: Props) {
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8"
+                                    aria-label="Sumar gol visitante"
                                     onClick={incrementAwayScore}
                                     disabled={processing || !matchHasStarted}
                                 >
