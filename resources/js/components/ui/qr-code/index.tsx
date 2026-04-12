@@ -123,8 +123,8 @@ export const QRCode = ({
 				});
 
 				setSVG(newSvg);
-			} catch (err) {
-				console.error(err);
+			} catch {
+				// QR generation failure leaves svg unset; component renders fallback
 			}
 		};
 
