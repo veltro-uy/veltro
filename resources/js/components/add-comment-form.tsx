@@ -66,7 +66,6 @@ export function AddCommentForm({
                 onCommentAdded(data.comment);
             }
         } catch (error) {
-            console.error('Error submitting comment:', error);
             toast.error(
                 error instanceof Error
                     ? error.message

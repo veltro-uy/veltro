@@ -71,8 +71,7 @@ export function ProfileComments({
 
                 setCurrentPage(data.current_page);
                 setLastPage(data.last_page);
-            } catch (error) {
-                console.error('Error fetching comments:', error);
+            } catch {
                 toast.error('Error al cargar comentarios');
             } finally {
                 setLoading(false);
@@ -113,7 +112,6 @@ export function ProfileComments({
                 onCommentDeleted();
             }
         } catch (error) {
-            console.error('Error deleting comment:', error);
             toast.error(
                 error instanceof Error
                     ? error.message
@@ -249,7 +247,7 @@ export function ProfileComments({
                                 commentToDelete !== null &&
                                 handleDelete(commentToDelete)
                             }
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
                         >
                             Eliminar
                         </AlertDialogAction>
