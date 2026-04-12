@@ -114,7 +114,7 @@ export function CommendationDialog({
     useEffect(() => {
         if (isOpen) {
             // If we have initial data, use it; otherwise fetch
-            if (initialExistingCommendations !== null) {
+            if (initialExistingCommendations != null) {
                 setExistingCommendations(initialExistingCommendations);
             } else {
                 fetchExistingCommendations();
