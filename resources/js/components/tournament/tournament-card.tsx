@@ -69,10 +69,7 @@ export const TournamentCard = ({
                             {tournament.name}
                         </CardTitle>
                         <CardDescription className="mt-1 flex flex-wrap items-center gap-2">
-                            <Badge
-                                variant={config.variant}
-                                className="text-xs"
-                            >
+                            <Badge variant={config.variant} className="text-xs">
                                 {config.label}
                             </Badge>
                             <VariantBadge variant={tournament.variant} />
@@ -91,9 +88,7 @@ export const TournamentCard = ({
                     <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                                Equipos
-                            </span>
+                            <span className="text-sm font-medium">Equipos</span>
                         </div>
                         <span
                             className={`text-sm font-bold ${getCapacityColor(registeredCount, tournament.max_teams)}`}

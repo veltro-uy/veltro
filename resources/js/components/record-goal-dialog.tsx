@@ -176,13 +176,8 @@ export function RecordGoalDialog({
                         >
                             Cancelar
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                        >
-                            {processing
-                                ? 'Registrando...'
-                                : 'Registrar Gol'}
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Registrando...' : 'Registrar Gol'}
                         </Button>
                     </DialogFooter>
                 </form>
