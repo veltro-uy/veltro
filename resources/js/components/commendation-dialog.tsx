@@ -98,8 +98,8 @@ export function CommendationDialog({
                 setExistingCommendations(commendations);
                 onCommendationsUpdate?.(commendations);
             }
-        } catch (error) {
-            console.error('Error fetching commendations:', error);
+        } catch {
+            // Fetch failure leaves existingCommendations empty; user can retry
         } finally {
             setLoading(false);
         }
@@ -197,9 +197,8 @@ export function CommendationDialog({
                     `${failed.length} reconocimiento(s) no se pudieron enviar`,
                 );
             }
-        } catch (error) {
+        } catch {
             toast.error('Error al enviar reconocimientos');
-            console.error('Error submitting commendations:', error);
         } finally {
             setSubmitting(false);
         }

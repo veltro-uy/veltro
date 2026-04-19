@@ -2,7 +2,6 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn, isSameUrl, resolveUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
@@ -24,11 +23,6 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Autenticación 2FA',
         href: show(),
-        icon: null,
-    },
-    {
-        title: 'Apariencia',
-        href: editAppearance(),
         icon: null,
     },
 ];

@@ -171,6 +171,9 @@ export default function Show({
             (m.role === 'captain' || m.role === 'co_captain'),
     );
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const [invitationToRevoke, setInvitationToRevoke] = useState<number | null>(
+        null,
+    );
     // Stable "now" reference captured once on mount for relative-time labels.
     const [nowMs] = useState(() => Date.now());
 
@@ -241,14 +244,21 @@ export default function Show({
             .catch(() => toast.error('No se pudo copiar el enlace'));
     };
 
-    const handleRevokeInvitation = (invitationId: number) => {
+    const handleRevokeInvitation = () => {
+        if (invitationToRevoke === null) return;
         router.post(
-            teamInvitations.revoke(invitationId).url,
+            teamInvitations.revoke(invitationToRevoke).url,
             {},
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Invitación cancelada'),
-                onError: () => toast.error('Error al cancelar la invitación'),
+                onSuccess: () => {
+                    setInvitationToRevoke(null);
+                    toast.success('Invitación cancelada');
+                },
+                onError: () => {
+                    setInvitationToRevoke(null);
+                    toast.error('Error al cancelar la invitación');
+                },
             },
         );
     };
@@ -718,7 +728,7 @@ export default function Show({
                                                                 size="sm"
                                                                 variant="destructive"
                                                                 onClick={() =>
-                                                                    handleRevokeInvitation(
+                                                                    setInvitationToRevoke(
                                                                         invitation.id,
                                                                     )
                                                                 }
@@ -842,6 +852,36 @@ export default function Show({
                                 className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
                             >
                                 Abandonar Equipo
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Revoke Invitation Confirmation Dialog */}
+                <AlertDialog
+                    open={invitationToRevoke !== null}
+                    onOpenChange={(open) => {
+                        if (!open) setInvitationToRevoke(null);
+                    }}
+                >
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
+                                Cancelar Invitación
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                ¿Estás seguro de que quieres cancelar esta
+                                invitación? El enlace dejará de funcionar y
+                                deberás enviar una nueva invitación.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Volver</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleRevokeInvitation}
+                                className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+                            >
+                                Cancelar Invitación
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

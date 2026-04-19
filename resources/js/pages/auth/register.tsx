@@ -141,7 +141,7 @@ export default function Register() {
                 <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
                     onClick={() =>
                         window.location.assign('/auth/google/redirect')
                     }
@@ -169,7 +169,10 @@ export default function Register() {
                         <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
+                        <span
+                            className="px-2 text-white/40"
+                            style={{ background: '#060d17' }}
+                        >
                             O continuar con
                         </span>
                     </div>
@@ -316,7 +319,7 @@ export default function Register() {
 
                                 <Button
                                     type="submit"
-                                    className="mt-2 w-full"
+                                    className="mt-2 w-full bg-green-500 font-semibold text-black hover:bg-green-400"
                                     tabIndex={5}
                                     data-test="register-user-button"
                                 >

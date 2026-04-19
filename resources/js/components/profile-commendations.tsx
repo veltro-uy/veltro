@@ -41,8 +41,8 @@ export function ProfileCommendations({
                     );
                 }
             }
-        } catch (error) {
-            console.error('Error prefetching commendations:', error);
+        } catch {
+            // Prefetch is best-effort; dialog will refetch on open if needed
         } finally {
             setIsPrefetching(false);
         }

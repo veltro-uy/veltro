@@ -49,9 +49,8 @@ export function useNotifications(): UseNotificationsReturn {
                     setUnreadCount(data.count);
                 }
             }
-        } catch (error) {
+        } catch {
             // Silently ignore errors when not authenticated or during navigation
-            console.error('Failed to fetch unread count:', error);
         }
     }, [isAuthenticated]);
 
@@ -83,8 +82,7 @@ export function useNotifications(): UseNotificationsReturn {
                         setHasMore(data.current_page < data.last_page);
                     }
                 }
-            } catch (error) {
-                console.error('Failed to fetch notifications:', error);
+            } catch {
                 toast.error('Error al cargar notificaciones');
             } finally {
                 setIsLoading(false);
@@ -126,8 +124,8 @@ export function useNotifications(): UseNotificationsReturn {
                 );
                 setUnreadCount((prev) => Math.max(0, prev - 1));
             }
-        } catch (error) {
-            console.error('Failed to mark notification as read:', error);
+        } catch {
+            // Silently ignore — UI state will self-correct on next refresh
         }
     }, []);
 
@@ -157,8 +155,7 @@ export function useNotifications(): UseNotificationsReturn {
                 setUnreadCount(0);
                 toast.success('Todas las notificaciones marcadas como leídas');
             }
-        } catch (error) {
-            console.error('Failed to mark all as read:', error);
+        } catch {
             toast.error('Error al marcar todas como leídas');
         }
     }, []);
@@ -183,8 +180,7 @@ export function useNotifications(): UseNotificationsReturn {
                 setNotifications((prev) => prev.filter((n) => n.id !== id));
                 toast.success('Notificación eliminada');
             }
-        } catch (error) {
-            console.error('Failed to delete notification:', error);
+        } catch {
             toast.error('Error al eliminar notificación');
         }
     }, []);
@@ -209,8 +205,7 @@ export function useNotifications(): UseNotificationsReturn {
                 setNotifications((prev) => prev.filter((n) => !n.read_at));
                 toast.success('Notificaciones leídas eliminadas');
             }
-        } catch (error) {
-            console.error('Failed to clear read notifications:', error);
+        } catch {
             toast.error('Error al eliminar notificaciones');
         }
     }, []);
