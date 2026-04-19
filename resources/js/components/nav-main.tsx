@@ -14,7 +14,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
     return (
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
-            <SidebarMenu className='gap-1.5'>
+            <SidebarMenu className="gap-1.5">
                 {items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton

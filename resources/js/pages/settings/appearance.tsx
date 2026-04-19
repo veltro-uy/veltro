@@ -1,6 +1,5 @@
 import { Head } from '@inertiajs/react';
 
-import AppearanceTabs from '@/components/appearance-tabs';
 import HeadingSmall from '@/components/heading-small';
 import { type BreadcrumbItem } from '@/types';
 
@@ -24,9 +23,8 @@ export default function Appearance() {
                 <div className="space-y-6">
                     <HeadingSmall
                         title="Configuración de apariencia"
-                        description="Actualiza la configuración de apariencia de tu cuenta"
+                        description="La aplicación utiliza modo oscuro de forma fija."
                     />
-                    <AppearanceTabs />
                 </div>
             </SettingsLayout>
         </AppLayout>
