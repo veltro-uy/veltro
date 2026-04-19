@@ -11,7 +11,7 @@ import {
     Trophy,
     Users,
 } from 'lucide-react';
-import AppLogo from './app-logo';
+import AppLogoIcon from './app-logo-icon';
 
 interface LandingFooterProps {
     canRegister?: boolean;
@@ -30,9 +30,14 @@ export default function LandingFooter({
                     <div className="flex flex-col gap-4">
                         <Link
                             href={auth?.user ? teams.index().url : home().url}
-                            className="flex items-center gap-2 font-semibold"
+                            className="flex items-center gap-2"
                         >
-                            <AppLogo />
+                            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-green-500">
+                                <AppLogoIcon className="size-5 fill-black" />
+                            </div>
+                            <span className="text-sm font-semibold">
+                                Veltro
+                            </span>
                         </Link>
                         <p className="text-sm text-muted-foreground">
                             La plataforma centralizada para gestionar equipos de
