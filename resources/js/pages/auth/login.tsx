@@ -96,7 +96,7 @@ export default function Login({
                 <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
                     onClick={() =>
                         window.location.assign('/auth/google/redirect')
                     }
@@ -124,7 +124,10 @@ export default function Login({
                         <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
+                        <span
+                            className="px-2 text-white/40"
+                            style={{ background: '#060d17' }}
+                        >
                             O continuar con
                         </span>
                     </div>
@@ -219,7 +222,7 @@ export default function Login({
 
                                 <Button
                                     type="submit"
-                                    className="mt-4 w-full"
+                                    className="mt-4 w-full bg-green-500 font-semibold text-black hover:bg-green-400"
                                     tabIndex={4}
                                     disabled={processing}
                                     data-test="login-button"
