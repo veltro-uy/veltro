@@ -1,6 +1,6 @@
 import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { CalendarDays, Trophy, Users } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
 
@@ -50,19 +50,6 @@ export default function AuthSimpleLayout({
 }: PropsWithChildren<AuthLayoutProps>) {
     return (
         <>
-            <Head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link
-                    rel="preconnect"
-                    href="https://fonts.gstatic.com"
-                    crossOrigin="anonymous"
-                />
-                <link
-                    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap"
-                    rel="stylesheet"
-                />
-            </Head>
-
             <div
                 className="flex min-h-svh flex-col text-white lg:flex-row"
                 style={{ background: '#060d17' }}
