@@ -19,8 +19,8 @@ interface Match {
     home_team_id: number;
     away_team_id?: number;
     variant: string;
-    scheduled_at: string;
-    location: string;
+    scheduled_at: string | null;
+    location: string | null;
     match_type: string;
     status: string;
     home_score?: number;
@@ -34,7 +34,8 @@ interface MatchCardProps {
     match: Match;
 }
 
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString: string | null): string => {
+    if (!dateString) return 'Por programar';
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
         month: 'short',
@@ -43,7 +44,8 @@ const formatDate = (dateString: string): string => {
     });
 };
 
-const formatTime = (dateString: string): string => {
+const formatTime = (dateString: string | null): string => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleTimeString('es-ES', {
         hour: 'numeric',
@@ -179,7 +181,9 @@ export function MatchCard({ match }: MatchCardProps) {
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                         <MapPin className="h-4 w-4 flex-shrink-0" />
-                        <span className="line-clamp-1">{match.location}</span>
+                        <span className="line-clamp-1">
+                            {match.location ?? 'Por definir'}
+                        </span>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-2">
                         <Trophy className="h-4 w-4" />

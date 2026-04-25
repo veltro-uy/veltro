@@ -29,8 +29,8 @@ interface Team {
 
 interface Match {
     id: number;
-    scheduled_at: string;
-    location: string;
+    scheduled_at: string | null;
+    location: string | null;
     location_coords?: string;
     match_type: string;
     notes?: string;
@@ -58,8 +58,8 @@ export default function Edit({ match }: Props) {
     ];
 
     const { data, setData, put, processing, errors } = useForm({
-        scheduled_at: match.scheduled_at.slice(0, 16), // Format for datetime-local input
-        location: match.location,
+        scheduled_at: match.scheduled_at?.slice(0, 16) ?? '',
+        location: match.location ?? '',
         location_coords: match.location_coords || '',
         match_type: match.match_type,
         notes: match.notes || '',

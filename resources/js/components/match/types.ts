@@ -60,8 +60,8 @@ export interface MatchPageMatch {
     away_team_id?: number;
     tournament_id?: number;
     variant: string;
-    scheduled_at: string;
-    location: string;
+    scheduled_at: string | null;
+    location: string | null;
     match_type: string;
     status: string;
     home_score?: number;

@@ -32,7 +32,8 @@ export const getMatchStatusText = (status: string): string => {
     }
 };
 
-export const formatMatchDate = (dateString: string): string => {
+export const formatMatchDate = (dateString: string | null): string => {
+    if (!dateString) return 'Por programar';
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
         weekday: 'long',
@@ -42,7 +43,8 @@ export const formatMatchDate = (dateString: string): string => {
     });
 };
 
-export const formatMatchTime = (dateString: string): string => {
+export const formatMatchTime = (dateString: string | null): string => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleTimeString('es-ES', {
         hour: 'numeric',

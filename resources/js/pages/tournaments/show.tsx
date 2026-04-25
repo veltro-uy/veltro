@@ -20,6 +20,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
     Select,
@@ -32,6 +42,7 @@ import { Separator } from '@/components/ui/separator';
 import { UserAvatar } from '@/components/user-avatar';
 import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
+import tournamentMatches from '@/routes/tournaments/matches';
 import type {
     BreadcrumbItem,
     FootballMatch,
@@ -42,11 +53,14 @@ import type {
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Calendar,
+    CalendarClock,
     Check,
     Clock,
     Edit,
     Info,
     Loader2,
+    MapPin,
+    Pencil,
     Play,
     Trash2,
     Trophy,
@@ -73,7 +87,156 @@ interface PageProps {
         canStart: boolean;
         canCancel: boolean;
         canApprove: boolean;
+        canScheduleMatches: boolean;
     };
+}
+
+function formatScheduledAt(value: string | null): string {
+    if (!value) return 'Sin programar';
+    const date = new Date(value);
+    return date.toLocaleString('es-UY', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function toLocalDatetimeInputValue(value: string | null): string {
+    if (!value) return '';
+    const date = new Date(value);
+    const offsetMs = date.getTimezoneOffset() * 60_000;
+    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function ScheduleMatchDialog({
+    match,
+    tournamentId,
+    open,
+    onOpenChange,
+}: {
+    match: FootballMatch | null;
+    tournamentId: number;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                {match && (
+                    <ScheduleMatchForm
+                        key={match.id}
+                        match={match}
+                        tournamentId={tournamentId}
+                        onClose={() => onOpenChange(false)}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function ScheduleMatchForm({
+    match,
+    tournamentId,
+    onClose,
+}: {
+    match: FootballMatch;
+    tournamentId: number;
+    onClose: () => void;
+}) {
+    const [scheduledAt, setScheduledAt] = useState(() =>
+        toLocalDatetimeInputValue(match.scheduled_at),
+    );
+    const [location, setLocation] = useState(() => match.location ?? '');
+    const [submitting, setSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitting(true);
+        router.patch(
+            tournamentMatches.update([tournamentId, match.id]).url,
+            {
+                scheduled_at: scheduledAt || null,
+                location: location.trim() || null,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    onClose();
+                },
+                onError: (errs) => {
+                    setErrors(errs as Record<string, string>);
+                    toast.error('Revisá los datos del partido.');
+                },
+                onFinish: () => setSubmitting(false),
+            },
+        );
+    };
+
+    const homeName = match.home_team?.name ?? 'Por definir';
+    const awayName = match.away_team?.name ?? 'Por definir';
+
+    return (
+        <>
+            <DialogHeader>
+                <DialogTitle>Programar partido</DialogTitle>
+                <DialogDescription>
+                    {homeName} vs {awayName}
+                </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="scheduled_at">Fecha y hora</Label>
+                    <Input
+                        id="scheduled_at"
+                        type="datetime-local"
+                        value={scheduledAt}
+                        onChange={(e) => setScheduledAt(e.target.value)}
+                    />
+                    {errors.scheduled_at && (
+                        <p className="text-sm text-destructive">
+                            {errors.scheduled_at}
+                        </p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="location">Cancha</Label>
+                    <Input
+                        id="location"
+                        type="text"
+                        placeholder="Ej: Cancha 3 — Complejo Norte"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        maxLength={255}
+                    />
+                    {errors.location && (
+                        <p className="text-sm text-destructive">
+                            {errors.location}
+                        </p>
+                    )}
+                </div>
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onClose}
+                        disabled={submitting}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button type="submit" disabled={submitting}>
+                        {submitting ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            'Guardar'
+                        )}
+                    </Button>
+                </DialogFooter>
+            </form>
+        </>
+    );
 }
 
 const statusConfig = {
@@ -152,6 +315,9 @@ export default function TournamentShow({
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [withdrawId, setWithdrawId] = useState<number | null>(null);
+    const [scheduleMatch, setScheduleMatch] = useState<FootballMatch | null>(
+        null,
+    );
 
     const [processing, setProcessing] = useState(false);
     const { flash } = usePage<{
@@ -471,12 +637,134 @@ export default function TournamentShow({
                     <div className="space-y-6 lg:col-span-2">
                         {/* Bracket */}
                         {hasBracket ? (
-                            <section className="space-y-4">
-                                <h2 className="text-lg font-semibold">
-                                    Bracket
-                                </h2>
-                                <TournamentBracket rounds={tournament.rounds} />
-                            </section>
+                            <>
+                                <section className="space-y-4">
+                                    <h2 className="text-lg font-semibold">
+                                        Bracket
+                                    </h2>
+                                    <TournamentBracket
+                                        rounds={tournament.rounds}
+                                    />
+                                </section>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">
+                                            Programación de partidos
+                                        </CardTitle>
+                                        <CardDescription>
+                                            {permissions.canScheduleMatches
+                                                ? 'Definí la fecha, hora y cancha de cada partido.'
+                                                : 'Fechas y canchas confirmadas por el organizador.'}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        {tournament.rounds.map((round) => (
+                                            <div
+                                                key={round.id}
+                                                className="space-y-2"
+                                            >
+                                                <h3 className="text-sm font-medium text-muted-foreground">
+                                                    {round.name}
+                                                </h3>
+                                                <div className="space-y-2">
+                                                    {(round.matches?.length ??
+                                                        0) === 0 ? (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Sin partidos
+                                                        </p>
+                                                    ) : (
+                                                        round.matches!.map(
+                                                            (match) => {
+                                                                const home =
+                                                                    match
+                                                                        .home_team
+                                                                        ?.name ??
+                                                                    'Por definir';
+                                                                const away =
+                                                                    match
+                                                                        .away_team
+                                                                        ?.name ??
+                                                                    'Por definir';
+                                                                const isLocked =
+                                                                    match.status ===
+                                                                        'in_progress' ||
+                                                                    match.status ===
+                                                                        'completed';
+                                                                const canEditMatch =
+                                                                    permissions.canScheduleMatches &&
+                                                                    !isLocked;
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            match.id
+                                                                        }
+                                                                        className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                                                                    >
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="truncate text-sm font-medium">
+                                                                                {
+                                                                                    home
+                                                                                }{' '}
+                                                                                <span className="text-muted-foreground">
+                                                                                    vs
+                                                                                </span>{' '}
+                                                                                {
+                                                                                    away
+                                                                                }
+                                                                            </p>
+                                                                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                                                                <span className="flex items-center gap-1">
+                                                                                    <CalendarClock className="size-3.5" />
+                                                                                    {match.scheduled_at ? (
+                                                                                        formatScheduledAt(
+                                                                                            match.scheduled_at,
+                                                                                        )
+                                                                                    ) : (
+                                                                                        <Badge
+                                                                                            variant="outline"
+                                                                                            className="font-normal"
+                                                                                        >
+                                                                                            Sin
+                                                                                            programar
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                </span>
+                                                                                <span className="flex items-center gap-1">
+                                                                                    <MapPin className="size-3.5" />
+                                                                                    {match.location ??
+                                                                                        'Por definir'}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        {canEditMatch && (
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="outline"
+                                                                                onClick={() =>
+                                                                                    setScheduleMatch(
+                                                                                        match,
+                                                                                    )
+                                                                                }
+                                                                                className="gap-1.5"
+                                                                            >
+                                                                                <Pencil className="size-3.5" />
+                                                                                {match.scheduled_at
+                                                                                    ? 'Editar'
+                                                                                    : 'Programar'}
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            },
+                                                        )
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            </>
                         ) : (
                             (tournament.status === 'draft' ||
                                 tournament.status === 'registration_open') && (
@@ -1025,6 +1313,13 @@ export default function TournamentShow({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <ScheduleMatchDialog
+                tournamentId={tournament.id}
+                match={scheduleMatch}
+                open={scheduleMatch !== null}
+                onOpenChange={(open) => !open && setScheduleMatch(null)}
+            />
 
             <AlertDialog
                 open={withdrawId !== null}

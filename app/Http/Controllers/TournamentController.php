@@ -159,6 +159,7 @@ final class TournamentController extends Controller
         $canStart = $user && $user->can('start', $tournament) && $tournament->canStart();
         $canCancel = $user && $user->can('cancel', $tournament);
         $canApprove = $user && $user->can('approveTeam', $tournament);
+        $canScheduleMatches = $user && $user->can('scheduleMatches', $tournament);
 
         return Inertia::render('tournaments/show', [
             'tournament' => $tournament,
@@ -169,6 +170,7 @@ final class TournamentController extends Controller
                 'canStart' => $canStart,
                 'canCancel' => $canCancel,
                 'canApprove' => $canApprove,
+                'canScheduleMatches' => $canScheduleMatches,
             ],
         ]);
     }
