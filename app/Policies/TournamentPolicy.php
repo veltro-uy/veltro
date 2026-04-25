@@ -104,6 +104,15 @@ final class TournamentPolicy
     }
 
     /**
+     * Determine whether the user can schedule (set date/time/location for) tournament matches.
+     */
+    public function scheduleMatches(User $user, Tournament $tournament): bool
+    {
+        return $tournament->isOrganizer($user->id)
+            && ! in_array($tournament->status, ['completed', 'cancelled'], true);
+    }
+
+    /**
      * Determine whether the user can register a team for the tournament.
      */
     public function register(User $user, Tournament $tournament, Team $team): bool

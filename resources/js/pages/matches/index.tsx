@@ -30,8 +30,8 @@ interface Match {
     home_team_id: number;
     away_team_id?: number;
     variant: string;
-    scheduled_at: string;
-    location: string;
+    scheduled_at: string | null;
+    location: string | null;
     match_type: string;
     status: string;
     home_score?: number;
@@ -69,12 +69,14 @@ export default function Index({
         const past: Match[] = [];
 
         for (const match of myMatches) {
-            const matchDate = new Date(match.scheduled_at);
+            const matchDate = match.scheduled_at
+                ? new Date(match.scheduled_at)
+                : null;
             // Consider a match as "past" if it's completed OR if the scheduled time has passed
             if (
                 match.status === 'completed' ||
                 match.status === 'cancelled' ||
-                matchDate < now
+                (matchDate && matchDate < now)
             ) {
                 past.push(match);
             } else {
@@ -82,17 +84,16 @@ export default function Index({
             }
         }
 
-        // Sort upcoming by date ascending (soonest first)
-        upcoming.sort(
-            (a, b) =>
-                new Date(a.scheduled_at).getTime() -
-                new Date(b.scheduled_at).getTime(),
-        );
+        const dateValue = (m: Match) =>
+            m.scheduled_at ? new Date(m.scheduled_at).getTime() : Infinity;
+
+        // Sort upcoming by date ascending (soonest first; unscheduled at the end)
+        upcoming.sort((a, b) => dateValue(a) - dateValue(b));
         // Sort past by date descending (most recent first)
         past.sort(
             (a, b) =>
-                new Date(b.scheduled_at).getTime() -
-                new Date(a.scheduled_at).getTime(),
+                (b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0) -
+                (a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0),
         );
 
         return { upcomingMatches: upcoming, pastMatches: past };
@@ -104,7 +105,9 @@ export default function Index({
                 match.home_team.name
                     .toLowerCase()
                     .includes(searchQuery.toLowerCase()) ||
-                match.location.toLowerCase().includes(searchQuery.toLowerCase())
+                (match.location ?? '')
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase())
             );
         });
     }, [availableMatches, searchQuery]);

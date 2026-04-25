@@ -282,8 +282,8 @@ final class TournamentService
                 'variant' => $tournament->variant,
                 'status' => 'confirmed',
                 'match_type' => 'competitive',
-                'scheduled_at' => $tournament->starts_at,
-                'location' => 'TBD',
+                'scheduled_at' => null,
+                'location' => null,
                 'created_by' => $tournament->organizer_id,
                 'confirmed_at' => now(),
             ]);
@@ -304,8 +304,8 @@ final class TournamentService
                     'variant' => $tournament->variant,
                     'status' => 'pending',
                     'match_type' => 'competitive',
-                    'scheduled_at' => $tournament->starts_at,
-                    'location' => 'TBD',
+                    'scheduled_at' => null,
+                    'location' => null,
                     'created_by' => $tournament->organizer_id,
                 ]);
             }
