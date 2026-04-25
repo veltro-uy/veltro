@@ -314,8 +314,8 @@ export interface FootballMatch {
     tournament_round?: TournamentRound;
     bracket_position?: number;
     variant: string;
-    scheduled_at: string;
-    location: string;
+    scheduled_at: string | null;
+    location: string | null;
     location_coords?: string;
     match_type: string;
     status: string;

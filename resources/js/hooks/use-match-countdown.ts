@@ -5,11 +5,13 @@ interface CountdownResult {
     hasStarted: boolean;
 }
 
-export function useMatchCountdown(scheduledAt: string): CountdownResult {
+export function useMatchCountdown(scheduledAt: string | null): CountdownResult {
     const [countdown, setCountdown] = useState<string>('');
     const [hasStarted, setHasStarted] = useState(false);
 
     useEffect(() => {
+        if (!scheduledAt) return;
+
         const updateCountdown = () => {
             const matchTime = new Date(scheduledAt);
             const currentTime = new Date();

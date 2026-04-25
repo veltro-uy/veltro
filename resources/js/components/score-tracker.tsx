@@ -24,7 +24,7 @@ interface Match {
     home_score?: number;
     away_score?: number;
     status: string;
-    scheduled_at: string;
+    scheduled_at: string | null;
     home_team: Team;
     away_team?: Team;
 }
@@ -45,8 +45,10 @@ export function ScoreTracker({ match, isLeader }: Props) {
 
     // Calculate countdown and check if match has started
     useEffect(() => {
+        if (!match.scheduled_at) return;
+        const scheduledAt = match.scheduled_at;
         const updateCountdown = () => {
-            const matchTime = new Date(match.scheduled_at);
+            const matchTime = new Date(scheduledAt);
             const currentTime = new Date();
             const timeDiff = matchTime.getTime() - currentTime.getTime();
 
