@@ -22,6 +22,7 @@ import type { BreadcrumbItem, Tournament } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, ImagePlus, Save, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 interface PageProps {
     tournament: Tournament;
@@ -143,6 +144,9 @@ export default function TournamentEdit({ tournament }: PageProps) {
             onError: (errs) => {
                 setProcessing(false);
                 setErrors(errs as Record<string, string>);
+                if (errs.error) {
+                    toast.error(errs.error as string);
+                }
             },
         });
     };
@@ -173,6 +177,13 @@ export default function TournamentEdit({ tournament }: PageProps) {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
+                                {errors.error && (
+                                    <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                                        <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                                        <span>{errors.error}</span>
+                                    </div>
+                                )}
+
                                 {/* Name */}
                                 <div className="space-y-2">
                                     <Label htmlFor="name">
