@@ -151,7 +151,7 @@ final class TournamentController extends Controller
         })->where('variant', $tournament->variant)->get(['id', 'name', 'variant']) : collect();
 
         // Check if user can perform various actions
-        $canEdit = $user && $user->can('update', $tournament);
+        $canEdit = $user && $user->can('update', $tournament) && $tournament->canBeEdited();
         $canDelete = $user && $user->can('delete', $tournament);
         // canStart combines the policy check (organizer + valid status) with the
         // model's runtime readiness check (enough approved teams, power of 2)
@@ -178,11 +178,17 @@ final class TournamentController extends Controller
     /**
      * Show the form for editing the specified tournament.
      */
-    public function edit(int $id): Response
+    public function edit(int $id): Response|\Illuminate\Http\RedirectResponse
     {
         $tournament = Tournament::findOrFail($id);
 
         $this->authorize('update', $tournament);
+
+        if (! $tournament->canBeEdited()) {
+            return redirect()
+                ->route('tournaments.show', $tournament->id)
+                ->with('error', 'Este torneo ya no se puede editar.');
+        }
 
         return Inertia::render('tournaments/edit', [
             'tournament' => $tournament,
