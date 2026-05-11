@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\Tournament;
+use App\Services\StandingsService;
 use App\Services\TournamentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -92,18 +93,7 @@ final class TournamentController extends Controller
     {
         $this->authorize('create', Tournament::class);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'visibility' => ['required', 'in:public,invite_only'],
-            'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
-            'max_teams' => ['required', 'integer', 'in:4,8,16,32,64'],
-            'min_teams' => ['required', 'integer', 'min:2'],
-            'registration_deadline' => array_filter(['nullable', 'date', 'after:now', $request->starts_at ? 'before:starts_at' : null]),
-            'starts_at' => array_filter(['nullable', 'date', 'after_or_equal:now', $request->ends_at ? 'before:ends_at' : null]),
-            'ends_at' => array_filter(['nullable', 'date', $request->starts_at ? 'after:starts_at' : null]),
-        ]);
+        $validated = $request->validate($this->tournamentRules($request));
 
         try {
             $user = Auth::user();
@@ -133,6 +123,8 @@ final class TournamentController extends Controller
             'tournamentTeams.registeredBy:id,name',
             'rounds.matches.homeTeam',
             'rounds.matches.awayTeam',
+            'groups.teams.team',
+            'groups.matches',
         ])
             ->withCount(['tournamentTeams as registered_teams_count' => function ($query) {
                 $query->whereIn('status', ['pending', 'approved']);
@@ -161,8 +153,23 @@ final class TournamentController extends Controller
         $canApprove = $user && $user->can('approveTeam', $tournament);
         $canScheduleMatches = $user && $user->can('scheduleMatches', $tournament);
 
+        $standings = null;
+        $groupStandings = null;
+        $canDrawGroups = false;
+
+        if ($tournament->isLeague()) {
+            $standings = $this->buildLeagueStandings($tournament);
+        }
+
+        if ($tournament->isGroupStageKnockout()) {
+            $groupStandings = $this->buildGroupStandings($tournament);
+            $canDrawGroups = $user && $user->can('drawGroups', $tournament);
+        }
+
         return Inertia::render('tournaments/show', [
             'tournament' => $tournament,
+            'standings' => $standings,
+            'groupStandings' => $groupStandings,
             'userTeams' => $userTeams,
             'permissions' => [
                 'canEdit' => $canEdit,
@@ -171,8 +178,112 @@ final class TournamentController extends Controller
                 'canCancel' => $canCancel,
                 'canApprove' => $canApprove,
                 'canScheduleMatches' => $canScheduleMatches,
+                'canDrawGroups' => $canDrawGroups,
             ],
         ]);
+    }
+
+    /**
+     * Build the league standings rows enriched with team data for Inertia.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildLeagueStandings(Tournament $tournament): array
+    {
+        $teamIds = $tournament->approvedTeams()->pluck('team_id');
+        $matches = $tournament->matches()->get();
+
+        $rows = app(StandingsService::class)->compute($matches, $teamIds, $tournament->id);
+
+        return $this->attachTeamsToRows($rows, $tournament);
+    }
+
+    /**
+     * Build per-group standings keyed by tournament_group_id.
+     *
+     * @return array<int, array<int, array<string, mixed>>>
+     */
+    private function buildGroupStandings(Tournament $tournament): array
+    {
+        $service = app(StandingsService::class);
+        $byGroup = [];
+
+        foreach ($tournament->groups as $group) {
+            $rows = $service->forGroup($group);
+            $byGroup[$group->id] = $this->attachTeamsToRows($rows, $tournament);
+        }
+
+        return $byGroup;
+    }
+
+    /**
+     * @param  array<int, \App\Support\StandingRow>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function attachTeamsToRows(array $rows, Tournament $tournament): array
+    {
+        $teamMap = [];
+        foreach ($tournament->tournamentTeams as $tt) {
+            if ($tt->team) {
+                $teamMap[$tt->team_id] = $tt->team;
+            }
+        }
+
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = $row->toArray() + [
+                'team' => $teamMap[$row->teamId] ?? null,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Build validation rules for tournament create/update, branching on format.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function tournamentRules(Request $request, bool $isUpdate = false): array
+    {
+        $format = $request->input('format', 'single_elimination');
+
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'visibility' => ['required', 'in:public,invite_only'],
+            'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
+            'format' => ['nullable', 'in:single_elimination,league,group_stage_knockout'],
+            'min_teams' => ['required', 'integer', 'min:2'],
+            'registration_deadline' => array_filter([
+                'nullable', 'date',
+                $isUpdate ? null : 'after:now',
+                $request->starts_at ? 'before:starts_at' : null,
+            ]),
+            'starts_at' => array_filter([
+                'nullable', 'date',
+                $isUpdate ? null : 'after_or_equal:now',
+                $request->ends_at ? 'before:ends_at' : null,
+            ]),
+            'ends_at' => array_filter([
+                'nullable', 'date',
+                $request->starts_at ? 'after:starts_at' : null,
+            ]),
+        ];
+
+        if ($format === 'group_stage_knockout') {
+            $rules['group_count'] = ['required', 'integer', 'in:2,4,8,16'];
+            $rules['group_size'] = ['required', 'integer', 'min:2', 'max:16'];
+            // max_teams is derived from group_count × group_size in the service.
+            $rules['max_teams'] = ['nullable', 'integer'];
+        } elseif ($format === 'league') {
+            $rules['max_teams'] = ['required', 'integer', 'min:2', 'max:64'];
+        } else {
+            $rules['max_teams'] = ['required', 'integer', 'in:4,8,16,32,64'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -204,18 +315,7 @@ final class TournamentController extends Controller
 
         $this->authorize('update', $tournament);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'visibility' => ['required', 'in:public,invite_only'],
-            'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
-            'max_teams' => ['required', 'integer', 'in:4,8,16,32,64'],
-            'min_teams' => ['required', 'integer', 'min:2'],
-            'registration_deadline' => array_filter(['nullable', 'date', $request->starts_at ? 'before:starts_at' : null]),
-            'starts_at' => array_filter(['nullable', 'date', $request->ends_at ? 'before:ends_at' : null]),
-            'ends_at' => array_filter(['nullable', 'date', $request->starts_at ? 'after:starts_at' : null]),
-        ]);
+        $validated = $request->validate($this->tournamentRules($request, isUpdate: true));
 
         try {
             unset($validated['logo']);

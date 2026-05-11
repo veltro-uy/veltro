@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, TournamentFormat } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, ImagePlus, Save, X } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -33,6 +33,9 @@ interface FormData {
     description: string;
     visibility: 'public' | 'invite_only';
     variant: string;
+    format: TournamentFormat;
+    group_count: number;
+    group_size: number;
     max_teams: number;
     min_teams: number;
     registration_deadline: string;
@@ -46,6 +49,9 @@ export default function TournamentCreate() {
         description: '',
         visibility: 'public',
         variant: '',
+        format: 'single_elimination',
+        group_count: 4,
+        group_size: 4,
         max_teams: 8,
         min_teams: 4,
         registration_deadline: '',
@@ -103,12 +109,37 @@ export default function TournamentCreate() {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    const derivedMaxTeams =
+        data.format === 'group_stage_knockout'
+            ? data.group_count * data.group_size
+            : data.max_teams;
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setProcessing(true);
 
         const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
+        const payload: Record<string, string | number> = {
+            name: data.name,
+            description: data.description,
+            visibility: data.visibility,
+            variant: data.variant,
+            format: data.format,
+            min_teams: data.min_teams,
+            registration_deadline: data.registration_deadline,
+            starts_at: data.starts_at,
+            ends_at: data.ends_at,
+        };
+
+        if (data.format === 'group_stage_knockout') {
+            payload.group_count = data.group_count;
+            payload.group_size = data.group_size;
+            payload.max_teams = derivedMaxTeams;
+        } else {
+            payload.max_teams = data.max_teams;
+        }
+
+        Object.entries(payload).forEach(([key, value]) => {
             formData.append(key, String(value));
         });
         if (selectedLogo) {
@@ -338,55 +369,227 @@ export default function TournamentCreate() {
                                     )}
                                 </div>
 
-                                {/* Max Teams */}
+                                {/* Format */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="max_teams">
-                                        Número Máximo de Equipos{' '}
+                                    <Label htmlFor="format">
+                                        Formato del Torneo{' '}
                                         <span className="text-destructive">
                                             *
                                         </span>
                                     </Label>
                                     <Select
-                                        value={data.max_teams.toString()}
-                                        onValueChange={(value) =>
-                                            setData(
-                                                'max_teams',
-                                                parseInt(value),
-                                            )
-                                        }
+                                        value={data.format}
+                                        onValueChange={(
+                                            value: TournamentFormat,
+                                        ) => setData('format', value)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="4">
-                                                4 equipos
+                                            <SelectItem value="single_elimination">
+                                                Eliminación directa - Brackets,
+                                                un partido por ronda
                                             </SelectItem>
-                                            <SelectItem value="8">
-                                                8 equipos
+                                            <SelectItem value="league">
+                                                Liga - Todos contra todos, gana
+                                                el de más puntos
                                             </SelectItem>
-                                            <SelectItem value="16">
-                                                16 equipos
-                                            </SelectItem>
-                                            <SelectItem value="32">
-                                                32 equipos
-                                            </SelectItem>
-                                            <SelectItem value="64">
-                                                64 equipos
+                                            <SelectItem value="group_stage_knockout">
+                                                Fase de grupos + eliminación -
+                                                Grupos primero, luego bracket
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-xs text-muted-foreground">
-                                        Debe ser una potencia de 2 para el
-                                        bracket de eliminación
-                                    </p>
-                                    {errors.max_teams && (
+                                    {errors.format && (
                                         <p className="flex items-center gap-1 text-sm text-destructive">
                                             <AlertCircle className="size-3" />
-                                            {errors.max_teams}
+                                            {errors.format}
                                         </p>
                                     )}
                                 </div>
+
+                                {/* Max Teams (single_elimination) */}
+                                {data.format === 'single_elimination' && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="max_teams">
+                                            Número Máximo de Equipos{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </Label>
+                                        <Select
+                                            value={data.max_teams.toString()}
+                                            onValueChange={(value) =>
+                                                setData(
+                                                    'max_teams',
+                                                    parseInt(value),
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="4">
+                                                    4 equipos
+                                                </SelectItem>
+                                                <SelectItem value="8">
+                                                    8 equipos
+                                                </SelectItem>
+                                                <SelectItem value="16">
+                                                    16 equipos
+                                                </SelectItem>
+                                                <SelectItem value="32">
+                                                    32 equipos
+                                                </SelectItem>
+                                                <SelectItem value="64">
+                                                    64 equipos
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">
+                                            Debe ser una potencia de 2 para el
+                                            bracket
+                                        </p>
+                                        {errors.max_teams && (
+                                            <p className="flex items-center gap-1 text-sm text-destructive">
+                                                <AlertCircle className="size-3" />
+                                                {errors.max_teams}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Max Teams (league) */}
+                                {data.format === 'league' && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="max_teams">
+                                            Número Máximo de Equipos{' '}
+                                            <span className="text-destructive">
+                                                *
+                                            </span>
+                                        </Label>
+                                        <Input
+                                            id="max_teams"
+                                            type="number"
+                                            value={data.max_teams}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'max_teams',
+                                                    parseInt(e.target.value) ||
+                                                        2,
+                                                )
+                                            }
+                                            min={2}
+                                            max={64}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Cualquier número de 2 a 64. Cada
+                                            equipo jugará{' '}
+                                            {Math.max(0, data.max_teams - 1)}{' '}
+                                            partidos.
+                                        </p>
+                                        {errors.max_teams && (
+                                            <p className="flex items-center gap-1 text-sm text-destructive">
+                                                <AlertCircle className="size-3" />
+                                                {errors.max_teams}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Group config (group_stage_knockout) */}
+                                {data.format === 'group_stage_knockout' && (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="group_count">
+                                                Cantidad de Grupos{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </Label>
+                                            <Select
+                                                value={data.group_count.toString()}
+                                                onValueChange={(value) =>
+                                                    setData(
+                                                        'group_count',
+                                                        parseInt(value),
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="2">
+                                                        2 grupos
+                                                    </SelectItem>
+                                                    <SelectItem value="4">
+                                                        4 grupos
+                                                    </SelectItem>
+                                                    <SelectItem value="8">
+                                                        8 grupos
+                                                    </SelectItem>
+                                                    <SelectItem value="16">
+                                                        16 grupos
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-muted-foreground">
+                                                Debe ser potencia de 2 para que
+                                                los 2 mejores de cada grupo
+                                                formen un bracket limpio.
+                                            </p>
+                                            {errors.group_count && (
+                                                <p className="flex items-center gap-1 text-sm text-destructive">
+                                                    <AlertCircle className="size-3" />
+                                                    {errors.group_count}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="group_size">
+                                                Equipos por Grupo{' '}
+                                                <span className="text-destructive">
+                                                    *
+                                                </span>
+                                            </Label>
+                                            <Input
+                                                id="group_size"
+                                                type="number"
+                                                value={data.group_size}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'group_size',
+                                                        parseInt(
+                                                            e.target.value,
+                                                        ) || 2,
+                                                    )
+                                                }
+                                                min={2}
+                                                max={16}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Total: {derivedMaxTeams} equipos
+                                                ({data.group_count} ×{' '}
+                                                {data.group_size}). Cada equipo
+                                                jugará{' '}
+                                                {Math.max(
+                                                    0,
+                                                    data.group_size - 1,
+                                                )}{' '}
+                                                partidos en su grupo.
+                                            </p>
+                                            {errors.group_size && (
+                                                <p className="flex items-center gap-1 text-sm text-destructive">
+                                                    <AlertCircle className="size-3" />
+                                                    {errors.group_size}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
 
                                 {/* Min Teams */}
                                 <div className="space-y-2">
