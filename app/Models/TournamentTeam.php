@@ -22,6 +22,7 @@ final class TournamentTeam extends Model
         'team_id',
         'status',
         'seed',
+        'tournament_group_id',
         'registered_by',
         'registered_at',
         'approved_at',
@@ -62,6 +63,14 @@ final class TournamentTeam extends Model
     public function registeredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'registered_by');
+    }
+
+    /**
+     * Get the group this team has been drawn into (group_stage_knockout only).
+     */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(TournamentGroup::class, 'tournament_group_id');
     }
 
     /**

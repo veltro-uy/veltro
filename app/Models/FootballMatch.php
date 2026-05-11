@@ -30,7 +30,9 @@ final class FootballMatch extends Model
         'away_team_id',
         'tournament_id',
         'tournament_round_id',
+        'tournament_group_id',
         'bracket_position',
+        'matchday',
         'variant',
         'scheduled_at',
         'location',
@@ -101,6 +103,27 @@ final class FootballMatch extends Model
     public function tournamentRound(): BelongsTo
     {
         return $this->belongsTo(TournamentRound::class);
+    }
+
+    /**
+     * Get the tournament group this match belongs to (group_stage_knockout only).
+     */
+    public function tournamentGroup(): BelongsTo
+    {
+        return $this->belongsTo(TournamentGroup::class, 'tournament_group_id');
+    }
+
+    public function isGroupMatch(): bool
+    {
+        return $this->tournament_group_id !== null;
+    }
+
+    public function isLeagueMatch(): bool
+    {
+        return $this->tournament_id !== null
+            && $this->matchday !== null
+            && $this->tournament_group_id === null
+            && $this->bracket_position === null;
     }
 
     /**
