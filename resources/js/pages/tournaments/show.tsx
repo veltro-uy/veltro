@@ -25,6 +25,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { UserAvatar } from '@/components/user-avatar';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import teams from '@/routes/teams';
 import tournamentRegistrations from '@/routes/tournament-registrations';
 import tournaments from '@/routes/tournaments';
@@ -327,7 +328,7 @@ export default function TournamentShow({
         <AppLayout breadcrumbs={breadcrumbs(tournament)}>
             <Head title={tournament.name} />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-6">
+            <div className="mx-auto flex h-full w-full max-w-[1600px] flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
                 <TournamentHeader
                     tournament={tournament}
                     approvedTeamsCount={approvedTeams.length}
@@ -340,10 +341,8 @@ export default function TournamentShow({
                     onDelete={() => setShowDeleteDialog(true)}
                 />
 
-                {/* Two-column layout */}
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Left column — main content */}
-                    <div className="space-y-6 lg:col-span-2">
+                <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
+                    <div className="min-w-0 space-y-6">
                         {/* Group draw (group_stage_knockout, pre-start) */}
                         {tournament.format === 'group_stage_knockout' &&
                             permissions.canDrawGroups &&
@@ -367,15 +366,22 @@ export default function TournamentShow({
                         {hasBracket ? (
                             <>
                                 {tournament.format === 'league' && standings ? (
-                                    <section className="space-y-4">
-                                        <h2 className="text-lg font-semibold">
-                                            Tabla de Posiciones
-                                        </h2>
-                                        <StandingsTable
-                                            rows={standings}
-                                            highlightTopN={1}
-                                        />
-                                    </section>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>
+                                                Tabla de Posiciones
+                                            </CardTitle>
+                                            <CardDescription>
+                                                Clasificación general del torneo
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <StandingsTable
+                                                rows={standings}
+                                                highlightTopN={1}
+                                            />
+                                        </CardContent>
+                                    </Card>
                                 ) : tournament.format ===
                                   'group_stage_knockout' ? (
                                     <>
@@ -404,36 +410,49 @@ export default function TournamentShow({
                                         {(tournament.phase === 'knockout' ||
                                             tournament.phase ===
                                                 'completed') && (
-                                            <section className="space-y-4">
-                                                <h2 className="text-lg font-semibold">
-                                                    Bracket
-                                                </h2>
-                                                <TournamentBracket
-                                                    rounds={tournament.rounds.filter(
-                                                        (r) =>
-                                                            !r.matches?.some(
-                                                                (m) =>
-                                                                    m.tournament_group_id !=
-                                                                    null,
-                                                            ),
-                                                    )}
-                                                />
-                                            </section>
+                                            <Card>
+                                                <CardHeader>
+                                                    <CardTitle>
+                                                        Bracket
+                                                    </CardTitle>
+                                                    <CardDescription>
+                                                        Cruces de eliminación
+                                                        directa
+                                                    </CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <TournamentBracket
+                                                        rounds={tournament.rounds.filter(
+                                                            (r) =>
+                                                                !r.matches?.some(
+                                                                    (m) =>
+                                                                        m.tournament_group_id !=
+                                                                        null,
+                                                                ),
+                                                        )}
+                                                    />
+                                                </CardContent>
+                                            </Card>
                                         )}
                                     </>
                                 ) : (
-                                    <section className="space-y-4">
-                                        <h2 className="text-lg font-semibold">
-                                            Bracket
-                                        </h2>
-                                        <TournamentBracket
-                                            rounds={tournament.rounds}
-                                        />
-                                    </section>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Bracket</CardTitle>
+                                            <CardDescription>
+                                                Camino hacia la final del torneo
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <TournamentBracket
+                                                rounds={tournament.rounds}
+                                            />
+                                        </CardContent>
+                                    </Card>
                                 )}
 
                                 <Card>
-                                    <CardHeader>
+                                    <CardHeader className="border-b">
                                         <CardTitle className="text-base">
                                             Programación de partidos
                                         </CardTitle>
@@ -443,13 +462,13 @@ export default function TournamentShow({
                                                 : 'Fechas y canchas confirmadas por el organizador.'}
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent className="space-y-6">
+                                    <CardContent className="space-y-5">
                                         {tournament.rounds.map((round) => (
                                             <div
                                                 key={round.id}
-                                                className="space-y-2"
+                                                className="space-y-2.5"
                                             >
-                                                <h3 className="text-sm font-medium text-muted-foreground">
+                                                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                                     {round.name}
                                                 </h3>
                                                 <div className="space-y-2">
@@ -484,7 +503,11 @@ export default function TournamentShow({
                                                                         key={
                                                                             match.id
                                                                         }
-                                                                        className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                                                                        className={cn(
+                                                                            'flex flex-col gap-3 rounded-lg border bg-card/40 p-3 transition-colors sm:flex-row sm:items-center sm:justify-between',
+                                                                            canEditMatch &&
+                                                                                'hover:border-primary/30 hover:bg-muted/20',
+                                                                        )}
                                                                     >
                                                                         <div className="min-w-0 flex-1">
                                                                             <p className="truncate text-sm font-medium">
@@ -531,7 +554,7 @@ export default function TournamentShow({
                                                                                         match,
                                                                                     )
                                                                                 }
-                                                                                className="gap-1.5"
+                                                                                className="w-full gap-1.5 sm:w-auto"
                                                                             >
                                                                                 <Pencil className="size-3.5" />
                                                                                 {match.scheduled_at
@@ -724,8 +747,7 @@ export default function TournamentShow({
                         </Card>
                     </div>
 
-                    {/* Right column — sidebar */}
-                    <div className="space-y-6">
+                    <div className="order-first space-y-4 xl:sticky xl:top-20 xl:order-none">
                         {/* Tournament Info */}
                         <Card>
                             <CardHeader>
