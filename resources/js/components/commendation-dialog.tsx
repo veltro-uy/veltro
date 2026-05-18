@@ -8,6 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import userCommendations from '@/routes/users/commendations';
 import type {
     CommendationCategory,
     CommendationStats,
@@ -85,7 +86,7 @@ export function CommendationDialog({
         }
 
         try {
-            const response = await fetch(`/api/users/${userId}/commendations`);
+            const response = await fetch(userCommendations.index(userId).url);
             if (!response.ok) {
                 throw new Error('Error al cargar reconocimientos');
             }
@@ -146,7 +147,7 @@ export function CommendationDialog({
         try {
             // Submit each category individually
             const promises = selectedCategories.map((category) =>
-                fetch(`/api/users/${userId}/commendations`, {
+                fetch(userCommendations.store(userId).url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

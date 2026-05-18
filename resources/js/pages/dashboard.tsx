@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
+import joinRequests from '@/routes/join-requests';
+import matches from '@/routes/matches';
+import teams from '@/routes/teams';
+import tournaments from '@/routes/tournaments';
 import type {
     BreadcrumbItem,
     FootballMatch,
@@ -109,7 +113,7 @@ export default function Dashboard({
     }, [flash]);
 
     const handleCancelRequest = (requestId: number) => {
-        router.delete(`/join-requests/${requestId}`, {
+        router.delete(joinRequests.cancel(requestId).url, {
             preserveScroll: true,
             onSuccess: () => toast.success('Solicitud cancelada'),
             onError: () => toast.error('Error al cancelar la solicitud'),
@@ -149,7 +153,13 @@ export default function Dashboard({
                                     </p>
                                 </div>
                                 <div className="flex gap-3">
-                                    <Link href="/teams">
+                                    <Link
+                                        href={
+                                            teams.index({
+                                                query: { view: 'discover' },
+                                            }).url
+                                        }
+                                    >
                                         <Button
                                             variant="outline"
                                             className="gap-2"
@@ -158,7 +168,7 @@ export default function Dashboard({
                                             Descubrir Equipos
                                         </Button>
                                     </Link>
-                                    <Link href="/teams">
+                                    <Link href={teams.create().url}>
                                         <Button className="gap-2">
                                             <Plus className="h-4 w-4" />
                                             Crear Equipo
@@ -184,7 +194,7 @@ export default function Dashboard({
                             <section className="space-y-3">
                                 <SectionHeader
                                     title="Próximos Partidos"
-                                    href="/matches"
+                                    href={matches.index().url}
                                 />
                                 {upcomingMatches.length === 0 ? (
                                     <Card className="border-dashed">
@@ -201,7 +211,7 @@ export default function Dashboard({
                                                     rivales disponibles
                                                 </p>
                                             </div>
-                                            <Link href="/matches">
+                                            <Link href={matches.index().url}>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -236,7 +246,7 @@ export default function Dashboard({
                                 <section className="space-y-3">
                                     <SectionHeader
                                         title="Torneos Activos"
-                                        href="/tournaments"
+                                        href={tournaments.index().url}
                                     />
                                     <div className="grid gap-4 md:grid-cols-2">
                                         {activeTournaments.map((tournament) => (
@@ -256,14 +266,14 @@ export default function Dashboard({
                             <section className="space-y-3">
                                 <SectionHeader
                                     title="Mis Equipos"
-                                    href="/teams"
+                                    href={teams.index().url}
                                     badge={myTeams.length}
                                 />
                                 <div className="space-y-3">
                                     {myTeams.map((team) => (
                                         <Link
                                             key={team.id}
-                                            href={`/teams/${team.id}`}
+                                            href={teams.show(team.id).url}
                                         >
                                             <Card className="transition-all hover:border-primary/20 hover:shadow-md">
                                                 <CardContent className="flex items-center gap-3 py-3">

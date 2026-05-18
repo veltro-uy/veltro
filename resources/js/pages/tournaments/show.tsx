@@ -1,19 +1,11 @@
 import { TeamAvatar } from '@/components/team-avatar';
 import { GroupDraw } from '@/components/tournament/group-draw';
 import { GroupsGrid } from '@/components/tournament/groups-grid';
+import { ScheduleMatchDialog } from '@/components/tournament/schedule-match-dialog';
 import { StandingsTable } from '@/components/tournament/standings-table';
+import { TournamentActionDialogs } from '@/components/tournament/tournament-action-dialogs';
 import { TournamentBracket } from '@/components/tournament/tournament-bracket';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TournamentHeader } from '@/components/tournament/tournament-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,17 +16,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import {
     Select,
     SelectContent,
     SelectItem,
@@ -43,9 +24,10 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { UserAvatar } from '@/components/user-avatar';
-import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
-import tournamentMatches from '@/routes/tournaments/matches';
+import teams from '@/routes/teams';
+import tournamentRegistrations from '@/routes/tournament-registrations';
+import tournaments from '@/routes/tournaments';
 import type {
     BreadcrumbItem,
     FootballMatch,
@@ -57,17 +39,12 @@ import type {
 } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
-    Calendar,
     CalendarClock,
     Check,
-    Clock,
-    Edit,
     Info,
     Loader2,
     MapPin,
     Pencil,
-    Play,
-    Trash2,
     Trophy,
     Users,
     X,
@@ -110,154 +87,6 @@ function formatScheduledAt(value: string | null): string {
         minute: '2-digit',
     });
 }
-
-function toLocalDatetimeInputValue(value: string | null): string {
-    if (!value) return '';
-    const date = new Date(value);
-    const offsetMs = date.getTimezoneOffset() * 60_000;
-    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
-}
-
-function ScheduleMatchDialog({
-    match,
-    tournamentId,
-    open,
-    onOpenChange,
-}: {
-    match: FootballMatch | null;
-    tournamentId: number;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-}) {
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                {match && (
-                    <ScheduleMatchForm
-                        key={match.id}
-                        match={match}
-                        tournamentId={tournamentId}
-                        onClose={() => onOpenChange(false)}
-                    />
-                )}
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-function ScheduleMatchForm({
-    match,
-    tournamentId,
-    onClose,
-}: {
-    match: FootballMatch;
-    tournamentId: number;
-    onClose: () => void;
-}) {
-    const [scheduledAt, setScheduledAt] = useState(() =>
-        toLocalDatetimeInputValue(match.scheduled_at),
-    );
-    const [location, setLocation] = useState(() => match.location ?? '');
-    const [submitting, setSubmitting] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setSubmitting(true);
-        router.patch(
-            tournamentMatches.update([tournamentId, match.id]).url,
-            {
-                scheduled_at: scheduledAt || null,
-                location: location.trim() || null,
-            },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    onClose();
-                },
-                onError: (errs) => {
-                    setErrors(errs as Record<string, string>);
-                    toast.error('Revisá los datos del partido.');
-                },
-                onFinish: () => setSubmitting(false),
-            },
-        );
-    };
-
-    const homeName = match.home_team?.name ?? 'Por definir';
-    const awayName = match.away_team?.name ?? 'Por definir';
-
-    return (
-        <>
-            <DialogHeader>
-                <DialogTitle>Programar partido</DialogTitle>
-                <DialogDescription>
-                    {homeName} vs {awayName}
-                </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="scheduled_at">Fecha y hora</Label>
-                    <Input
-                        id="scheduled_at"
-                        type="datetime-local"
-                        value={scheduledAt}
-                        onChange={(e) => setScheduledAt(e.target.value)}
-                    />
-                    {errors.scheduled_at && (
-                        <p className="text-sm text-destructive">
-                            {errors.scheduled_at}
-                        </p>
-                    )}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="location">Cancha</Label>
-                    <Input
-                        id="location"
-                        type="text"
-                        placeholder="Ej: Cancha 3 — Complejo Norte"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        maxLength={255}
-                    />
-                    {errors.location && (
-                        <p className="text-sm text-destructive">
-                            {errors.location}
-                        </p>
-                    )}
-                </div>
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onClose}
-                        disabled={submitting}
-                    >
-                        Cancelar
-                    </Button>
-                    <Button type="submit" disabled={submitting}>
-                        {submitting ? (
-                            <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                            'Guardar'
-                        )}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </>
-    );
-}
-
-const statusConfig = {
-    draft: { label: 'Borrador', variant: 'secondary' as const },
-    registration_open: {
-        label: 'Inscripción Abierta',
-        variant: 'default' as const,
-    },
-    in_progress: { label: 'En Progreso', variant: 'default' as const },
-    completed: { label: 'Completado', variant: 'outline' as const },
-    cancelled: { label: 'Cancelado', variant: 'destructive' as const },
-};
 
 const teamStatusConfig: Record<
     string,
@@ -302,8 +131,8 @@ function formatCountdown(prefix: string, days: number): string {
 }
 
 const breadcrumbs = (tournament: Tournament): BreadcrumbItem[] => [
-    { title: 'Torneos', href: '/tournaments' },
-    { title: tournament.name, href: `/tournaments/${tournament.id}` },
+    { title: 'Torneos', href: tournaments.index().url },
+    { title: tournament.name, href: tournaments.show(tournament.id).url },
 ];
 
 export default function TournamentShow({
@@ -364,7 +193,7 @@ export default function TournamentShow({
     const handleOpenRegistration = () => {
         runAction(
             'post',
-            `/tournaments/${tournament.id}/open-registration`,
+            tournaments.openRegistration(tournament.id).url,
             'No se pudo abrir la inscripción',
         );
         setShowOpenRegDialog(false);
@@ -377,7 +206,7 @@ export default function TournamentShow({
         }
 
         router.post(
-            `/tournaments/${tournament.id}/register`,
+            tournaments.register(tournament.id).url,
             { team_id: selectedTeamId },
             {
                 preserveScroll: true,
@@ -395,7 +224,7 @@ export default function TournamentShow({
     const handleApprove = (registrationId: number) => {
         runAction(
             'post',
-            `/tournament-registrations/${registrationId}/approve`,
+            tournamentRegistrations.approve(registrationId).url,
             'No se pudo aprobar el equipo',
         );
     };
@@ -403,7 +232,7 @@ export default function TournamentShow({
     const handleReject = (registrationId: number) => {
         runAction(
             'post',
-            `/tournament-registrations/${registrationId}/reject`,
+            tournamentRegistrations.reject(registrationId).url,
             'No se pudo rechazar el equipo',
         );
     };
@@ -412,7 +241,7 @@ export default function TournamentShow({
         if (withdrawId === null) return;
         runAction(
             'delete',
-            `/tournament-registrations/${withdrawId}`,
+            tournamentRegistrations.withdraw(withdrawId).url,
             'No se pudo retirar la inscripción',
         );
         setWithdrawId(null);
@@ -421,7 +250,7 @@ export default function TournamentShow({
     const handleStart = () => {
         runAction(
             'post',
-            `/tournaments/${tournament.id}/start`,
+            tournaments.start(tournament.id).url,
             'No se pudo iniciar el torneo',
         );
         setShowStartDialog(false);
@@ -430,7 +259,7 @@ export default function TournamentShow({
     const handleCancel = () => {
         runAction(
             'post',
-            `/tournaments/${tournament.id}/cancel`,
+            tournaments.cancel(tournament.id).url,
             'No se pudo cancelar el torneo',
         );
         setShowCancelDialog(false);
@@ -439,7 +268,7 @@ export default function TournamentShow({
     const handleDelete = () => {
         runAction(
             'delete',
-            `/tournaments/${tournament.id}`,
+            tournaments.destroy(tournament.id).url,
             'No se pudo eliminar el torneo',
         );
         setShowDeleteDialog(false);
@@ -499,148 +328,17 @@ export default function TournamentShow({
             <Head title={tournament.name} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex flex-1 gap-4">
-                        <Avatar className="size-14 rounded-lg">
-                            {tournament.logo_url && (
-                                <AvatarImage
-                                    src={tournament.logo_url}
-                                    alt={tournament.name}
-                                />
-                            )}
-                            <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                                <Trophy className="size-7" />
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <h1 className="text-3xl font-bold tracking-tight">
-                                    {tournament.name}
-                                </h1>
-                                <Badge
-                                    variant={
-                                        statusConfig[tournament.status].variant
-                                    }
-                                >
-                                    {statusConfig[tournament.status].label}
-                                </Badge>
-                            </div>
-                            {tournament.description && (
-                                <p className="text-muted-foreground">
-                                    {tournament.description}
-                                </p>
-                            )}
-                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                                <VariantBadge variant={tournament.variant} />
-                                {tournament.starts_at && (
-                                    <div className="flex items-center gap-1.5">
-                                        <Calendar className="size-4" />
-                                        <span>
-                                            {new Date(
-                                                tournament.starts_at,
-                                            ).toLocaleDateString('es-UY', {
-                                                day: 'numeric',
-                                                month: 'long',
-                                                year: 'numeric',
-                                            })}
-                                        </span>
-                                    </div>
-                                )}
-                                {countdownLabel && (
-                                    <div className="flex items-center gap-1.5">
-                                        <Clock className="size-4" />
-                                        <span>{countdownLabel}</span>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="max-w-md space-y-1.5 pt-1">
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span className="flex items-center gap-1.5">
-                                        <Users className="size-3.5" />
-                                        <span className="font-medium text-foreground">
-                                            {approvedTeams.length}
-                                        </span>
-                                        {' / '}
-                                        {tournament.max_teams} equipos
-                                    </span>
-                                    <span>mín. {tournament.min_teams}</span>
-                                </div>
-                                <Progress
-                                    value={
-                                        (approvedTeams.length /
-                                            tournament.max_teams) *
-                                        100
-                                    }
-                                    className="h-1.5"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-2">
-                        {permissions.canEdit && (
-                            <Link href={`/tournaments/${tournament.id}/edit`}>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Edit className="size-4" />
-                                    Editar
-                                </Button>
-                            </Link>
-                        )}
-                        {permissions.canEdit &&
-                            tournament.status === 'draft' && (
-                                <Button
-                                    onClick={() => setShowOpenRegDialog(true)}
-                                    disabled={processing}
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Users className="size-4" />
-                                    Abrir Inscripción
-                                </Button>
-                            )}
-                        {permissions.canStart && (
-                            <Button
-                                onClick={() => setShowStartDialog(true)}
-                                disabled={processing}
-                                size="sm"
-                                className="gap-2"
-                            >
-                                <Play className="size-4" />
-                                Iniciar Torneo
-                            </Button>
-                        )}
-                        {permissions.canCancel && (
-                            <Button
-                                variant="destructive"
-                                onClick={() => setShowCancelDialog(true)}
-                                disabled={processing}
-                                size="sm"
-                                className="gap-2"
-                            >
-                                <X className="size-4" />
-                                Cancelar
-                            </Button>
-                        )}
-                        {permissions.canDelete && (
-                            <Button
-                                variant="destructive"
-                                onClick={() => setShowDeleteDialog(true)}
-                                disabled={processing}
-                                size="sm"
-                                className="gap-2"
-                            >
-                                <Trash2 className="size-4" />
-                                Eliminar
-                            </Button>
-                        )}
-                    </div>
-                </div>
+                <TournamentHeader
+                    tournament={tournament}
+                    approvedTeamsCount={approvedTeams.length}
+                    countdownLabel={countdownLabel}
+                    permissions={permissions}
+                    processing={processing}
+                    onOpenRegistration={() => setShowOpenRegDialog(true)}
+                    onStart={() => setShowStartDialog(true)}
+                    onCancel={() => setShowCancelDialog(true)}
+                    onDelete={() => setShowDeleteDialog(true)}
+                />
 
                 {/* Two-column layout */}
                 <div className="grid gap-6 lg:grid-cols-3">
@@ -1158,7 +856,9 @@ export default function TournamentShow({
                                                         No tienes equipos con
                                                         esta variante
                                                     </p>
-                                                    <Link href="/teams">
+                                                    <Link
+                                                        href={teams.index().url}
+                                                    >
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
@@ -1298,7 +998,7 @@ export default function TournamentShow({
                                             con la variante {tournament.variant}
                                             .
                                         </p>
-                                        <Link href="/teams">
+                                        <Link href={teams.create().url}>
                                             <Button size="sm" variant="outline">
                                                 Ver Mis Equipos
                                             </Button>
@@ -1310,97 +1010,6 @@ export default function TournamentShow({
                 </div>
             </div>
 
-            <AlertDialog
-                open={showOpenRegDialog}
-                onOpenChange={setShowOpenRegDialog}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Abrir Inscripción</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Abrir la inscripción del torneo? Los equipos podrán
-                            registrarse después de esto.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleOpenRegistration}>
-                            Abrir Inscripción
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog
-                open={showStartDialog}
-                onOpenChange={setShowStartDialog}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Iniciar Torneo</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Estás seguro de que deseas iniciar el torneo? Se
-                            generará el bracket y no se podrán agregar más
-                            equipos.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleStart}>
-                            Iniciar Torneo
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog
-                open={showCancelDialog}
-                onOpenChange={setShowCancelDialog}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Cancelar Torneo</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Estás seguro de que deseas cancelar el torneo? Esta
-                            acción puede afectar a los equipos inscriptos.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Volver</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleCancel}
-                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
-                        >
-                            Cancelar Torneo
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog
-                open={showDeleteDialog}
-                onOpenChange={setShowDeleteDialog}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Eliminar Torneo</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Estás seguro de que deseas eliminar este torneo?
-                            Esta acción no se puede deshacer.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDelete}
-                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
-                        >
-                            Eliminar
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <ScheduleMatchDialog
                 tournamentId={tournament.id}
                 match={scheduleMatch}
@@ -1408,29 +1017,23 @@ export default function TournamentShow({
                 onOpenChange={(open) => !open && setScheduleMatch(null)}
             />
 
-            <AlertDialog
-                open={withdrawId !== null}
-                onOpenChange={(open) => !open && setWithdrawId(null)}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Retirar Inscripción</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            ¿Estás seguro de que deseas retirar la inscripción
-                            de tu equipo del torneo?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleWithdraw}
-                            className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
-                        >
-                            Retirar
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <TournamentActionDialogs
+                openRegistrationOpen={showOpenRegDialog}
+                startOpen={showStartDialog}
+                cancelOpen={showCancelDialog}
+                deleteOpen={showDeleteDialog}
+                withdrawOpen={withdrawId !== null}
+                onOpenRegistrationOpenChange={setShowOpenRegDialog}
+                onStartOpenChange={setShowStartDialog}
+                onCancelOpenChange={setShowCancelDialog}
+                onDeleteOpenChange={setShowDeleteDialog}
+                onWithdrawOpenChange={(open) => !open && setWithdrawId(null)}
+                onOpenRegistration={handleOpenRegistration}
+                onStart={handleStart}
+                onCancel={handleCancel}
+                onDelete={handleDelete}
+                onWithdraw={handleWithdraw}
+            />
         </AppLayout>
     );
 }

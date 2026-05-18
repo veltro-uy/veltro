@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import userCommendations from '@/routes/users/commendations';
 import type { CommendationCategory, CommendationStats } from '@/types';
 import { Award, Crown, SmilePlus, Trophy, Users } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -32,7 +33,7 @@ export function ProfileCommendations({
 
         setIsPrefetching(true);
         try {
-            const response = await fetch(`/api/users/${userId}/commendations`);
+            const response = await fetch(userCommendations.index(userId).url);
             if (response.ok) {
                 const data = await response.json();
                 if (data.given_commendations) {
