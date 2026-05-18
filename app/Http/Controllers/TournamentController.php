@@ -28,21 +28,21 @@ final class TournamentController extends Controller
     public function index(Request $request): Response
     {
         $user = Auth::user();
+        $status = $request->string('status')->toString();
+        $variant = $request->string('variant')->toString();
+        $sort = $request->string('sort')->toString();
+
+        $filters = [
+            'status' => in_array($status, ['draft', 'registration_open', 'in_progress', 'completed', 'cancelled'], true) ? $status : 'all',
+            'variant' => in_array($variant, ['football_11', 'football_7', 'football_5', 'futsal'], true) ? $variant : 'all',
+            'search' => trim($request->string('search')->toString()),
+            'sort' => in_array($sort, ['newest', 'start_soon', 'name'], true) ? $sort : 'newest',
+        ];
 
         $query = Tournament::with(['organizer:id,name,avatar_path,google_avatar_url'])
             ->withCount(['tournamentTeams as registered_teams_count' => function ($query) {
                 $query->whereIn('status', ['pending', 'approved']);
             }]);
-
-        // Filter by status if provided
-        if ($request->has('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by variant if provided
-        if ($request->has('variant') && $request->variant !== 'all') {
-            $query->where('variant', $request->variant);
-        }
 
         // Only show public tournaments or tournaments user is involved in
         $query->where(function ($q) use ($user) {
@@ -57,7 +57,34 @@ final class TournamentController extends Controller
             }
         });
 
-        $tournaments = $query->orderByDesc('created_at')->paginate(12);
+        if ($filters['variant'] !== 'all') {
+            $query->where('variant', $filters['variant']);
+        }
+
+        if ($filters['search'] !== '') {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'like', "%{$filters['search']}%")
+                    ->orWhere('description', 'like', "%{$filters['search']}%");
+            });
+        }
+
+        $statusCounts = (clone $query)
+            ->select('status')
+            ->selectRaw('count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        if ($filters['status'] !== 'all') {
+            $query->where('status', $filters['status']);
+        }
+
+        match ($filters['sort']) {
+            'start_soon' => $query->orderByRaw('starts_at is null, starts_at asc')->orderByDesc('created_at'),
+            'name' => $query->orderBy('name')->orderByDesc('created_at'),
+            default => $query->orderByDesc('created_at'),
+        };
+
+        $tournaments = $query->paginate(12)->withQueryString();
 
         // Get user's teams where they are a leader (for creating tournaments)
         $userTeams = $user ? Team::whereHas('teamMembers', function ($query) use ($user) {
@@ -68,11 +95,16 @@ final class TournamentController extends Controller
 
         return Inertia::render('tournaments/index', [
             'tournaments' => $tournaments,
-            'userTeams' => $userTeams,
-            'filters' => [
-                'status' => $request->status ?? 'all',
-                'variant' => $request->variant ?? 'all',
+            'statusCounts' => [
+                'all' => $statusCounts->sum(),
+                'draft' => (int) ($statusCounts['draft'] ?? 0),
+                'registration_open' => (int) ($statusCounts['registration_open'] ?? 0),
+                'in_progress' => (int) ($statusCounts['in_progress'] ?? 0),
+                'completed' => (int) ($statusCounts['completed'] ?? 0),
+                'cancelled' => (int) ($statusCounts['cancelled'] ?? 0),
             ],
+            'userTeams' => $userTeams,
+            'filters' => $filters,
         ]);
     }
 

@@ -1,7 +1,7 @@
-import { TournamentCard } from '@/components/tournament/tournament-card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
     Select,
     SelectContent,
@@ -9,12 +9,25 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, Tournament } from '@/types';
+import { cn } from '@/lib/utils';
+import tournamentsRoute from '@/routes/tournaments';
+import type { BreadcrumbItem, Tournament, TournamentStatus } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, Plus, Search, Trophy, Zap } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import {
+    ArrowUpDown,
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    CircleDot,
+    Plus,
+    Search,
+    Trophy,
+    Users,
+    X,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -23,161 +36,250 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type TournamentStatusFilter = TournamentStatus | 'all';
+
 interface PageProps {
     tournaments: {
         data: Tournament[];
         current_page: number;
         last_page: number;
+        from: number | null;
+        to: number | null;
         per_page: number;
         total: number;
     };
+    statusCounts: Record<TournamentStatusFilter, number>;
     filters: {
-        status: string;
+        status: TournamentStatusFilter;
         variant: string;
+        search: string;
+        sort: string;
     };
 }
 
-export default function TournamentsIndex({ tournaments, filters }: PageProps) {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('all');
+const statusOptions: Array<{
+    value: TournamentStatusFilter;
+    label: string;
+}> = [
+    { value: 'all', label: 'Todos' },
+    { value: 'registration_open', label: 'Inscripción' },
+    { value: 'in_progress', label: 'En juego' },
+    { value: 'completed', label: 'Finalizados' },
+    { value: 'draft', label: 'Borradores' },
+    { value: 'cancelled', label: 'Cancelados' },
+];
 
-    const handleVariantChange = (variant: string) => {
-        router.get(
-            '/tournaments',
-            { ...filters, variant },
-            { preserveState: true },
+const statusConfig: Record<
+    TournamentStatus,
+    {
+        label: string;
+        className: string;
+        variant: 'default' | 'secondary' | 'outline' | 'destructive';
+    }
+> = {
+    draft: {
+        label: 'Borrador',
+        variant: 'secondary',
+        className: 'bg-muted text-muted-foreground',
+    },
+    registration_open: {
+        label: 'Inscripción abierta',
+        variant: 'secondary',
+        className: 'bg-primary/10 text-primary',
+    },
+    in_progress: {
+        label: 'En juego',
+        variant: 'secondary',
+        className: 'bg-primary/10 text-primary',
+    },
+    completed: {
+        label: 'Finalizado',
+        variant: 'outline',
+        className: 'text-muted-foreground',
+    },
+    cancelled: {
+        label: 'Cancelado',
+        variant: 'destructive',
+        className: '',
+    },
+};
+
+const formatDate = (value?: string) => {
+    if (!value) return 'Sin fecha';
+
+    return new Date(value).toLocaleDateString('es-UY', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+};
+
+const cleanFilters = (
+    filters: PageProps['filters'] & { page?: number | null },
+) => ({
+    status: filters.status === 'all' ? undefined : filters.status,
+    variant: filters.variant === 'all' ? undefined : filters.variant,
+    search: filters.search.trim() === '' ? undefined : filters.search.trim(),
+    sort: filters.sort === 'newest' ? undefined : filters.sort,
+    page: filters.page ?? undefined,
+});
+
+export default function TournamentsIndex({
+    tournaments,
+    statusCounts,
+    filters,
+}: PageProps) {
+    const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
+
+    const updateFilters = useCallback(
+        (
+            updates: Partial<PageProps['filters']> & { page?: number | null },
+            options: { replace?: boolean } = {},
+        ) => {
+            const nextFilters = {
+                ...filters,
+                ...updates,
+            };
+
+            router.get(
+                tournamentsRoute.index.url(),
+                cleanFilters(nextFilters),
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    replace: options.replace ?? true,
+                },
+            );
+        },
+        [filters],
+    );
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            if (searchQuery !== (filters.search ?? '')) {
+                updateFilters({ search: searchQuery, page: null });
+            }
+        }, 350);
+
+        return () => window.clearTimeout(timeout);
+    }, [filters.search, searchQuery, updateFilters]);
+
+    const activeFilterCount = useMemo(
+        () =>
+            [
+                filters.status !== 'all',
+                filters.variant !== 'all',
+                filters.search.trim() !== '',
+                filters.sort !== 'newest',
+            ].filter(Boolean).length,
+        [filters],
+    );
+
+    const pageNumbers = useMemo(() => {
+        const start = Math.max(1, tournaments.current_page - 2);
+        const end = Math.min(
+            tournaments.last_page,
+            tournaments.current_page + 2,
         );
-    };
 
-    const categorizedTournaments = useMemo(() => {
-        const all = tournaments.data;
-        const upcoming = all.filter((t) => t.status === 'registration_open');
-        const active = all.filter((t) => t.status === 'in_progress');
-        const past = all.filter((t) => t.status === 'completed');
-
-        return { all, upcoming, active, past };
-    }, [tournaments.data]);
-
-    const filteredTournaments = useMemo(() => {
-        const source =
-            activeTab === 'all'
-                ? categorizedTournaments.all
-                : categorizedTournaments[
-                      activeTab as keyof typeof categorizedTournaments
-                  ];
-
-        if (!searchQuery.trim()) return source;
-
-        return source.filter(
-            (t) =>
-                t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                t.description
-                    ?.toLowerCase()
-                    .includes(searchQuery.toLowerCase()),
+        return Array.from(
+            { length: end - start + 1 },
+            (_, index) => start + index,
         );
-    }, [categorizedTournaments, activeTab, searchQuery]);
+    }, [tournaments.current_page, tournaments.last_page]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Torneos" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
+            <div className="flex h-full flex-1 flex-col gap-6 p-4 sm:p-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="space-y-1">
+                        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                             Torneos
                         </h1>
-                        <p className="text-muted-foreground">
-                            Compite y demuestra tu talento
+                        <p className="text-sm text-muted-foreground">
+                            {tournaments.total === 1
+                                ? '1 torneo encontrado'
+                                : `${tournaments.total} torneos encontrados`}
                         </p>
                     </div>
-                    <Link href="/tournaments/create">
-                        <Button className="gap-2">
+
+                    <Button asChild className="w-full gap-2 sm:w-fit">
+                        <Link href={tournamentsRoute.create.url()}>
                             <Plus className="size-4" />
-                            Crear Torneo
-                        </Button>
-                    </Link>
+                            Crear torneo
+                        </Link>
+                    </Button>
                 </div>
 
-                {/* Toggle Group + Filters */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <ToggleGroup
-                        type="single"
-                        value={activeTab}
-                        onValueChange={(value) => {
-                            if (value) setActiveTab(value);
-                        }}
-                        className="justify-start"
-                    >
-                        <ToggleGroupItem
-                            value="all"
-                            aria-label="Todos"
-                            className="gap-2"
-                        >
-                            <Trophy className="h-4 w-4" />
-                            Todos
-                            <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {categorizedTournaments.all.length}
-                            </span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                            value="upcoming"
-                            aria-label="Abiertos"
-                            className="gap-2"
-                        >
-                            <Calendar className="h-4 w-4" />
-                            Abiertos
-                            <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {categorizedTournaments.upcoming.length}
-                            </span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                            value="active"
-                            aria-label="Activos"
-                            className="gap-2"
-                        >
-                            <Zap className="h-4 w-4" />
-                            Activos
-                            <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {categorizedTournaments.active.length}
-                            </span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                            value="past"
-                            aria-label="Pasados"
-                            className="gap-2"
-                        >
-                            Pasados
-                            <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-                                {categorizedTournaments.past.length}
-                            </span>
-                        </ToggleGroupItem>
-                    </ToggleGroup>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                    {statusOptions.map((option) => {
+                        const isActive = filters.status === option.value;
+
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() =>
+                                    updateFilters({
+                                        status: option.value,
+                                        page: null,
+                                    })
+                                }
+                                className={cn(
+                                    'flex min-h-20 flex-col justify-between rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/50',
+                                    isActive &&
+                                        'border-primary bg-primary/5 ring-1 ring-primary/15',
+                                )}
+                            >
+                                <span className="flex items-center justify-between gap-2 text-sm font-medium">
+                                    {option.label}
+                                    {isActive && (
+                                        <CircleDot className="size-4 text-primary" />
+                                    )}
+                                </span>
+                                <span
+                                    className={cn(
+                                        'text-2xl leading-none font-semibold',
+                                        isActive
+                                            ? 'text-primary'
+                                            : option.value === 'cancelled'
+                                              ? 'text-destructive'
+                                              : 'text-foreground',
+                                    )}
+                                >
+                                    {statusCounts[option.value] ?? 0}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
 
-                {/* Search and Variant Filter */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="relative flex-1">
-                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="flex flex-col gap-3 rounded-lg border bg-background p-3 lg:flex-row lg:items-center">
+                    <div className="relative min-w-0 flex-1">
+                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                            placeholder="Buscar torneos por nombre..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(event) =>
+                                setSearchQuery(event.target.value)
+                            }
+                            placeholder="Buscar por nombre o descripción"
                             className="pl-9"
                         />
                     </div>
+
                     <Select
                         value={filters.variant}
-                        onValueChange={handleVariantChange}
+                        onValueChange={(variant) =>
+                            updateFilters({ variant, page: null })
+                        }
                     >
-                        <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectTrigger className="w-full lg:w-44">
                             <SelectValue placeholder="Variante" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">
-                                Todas las variantes
-                            </SelectItem>
+                            <SelectItem value="all">Todas</SelectItem>
                             <SelectItem value="football_11">
                                 Fútbol 11
                             </SelectItem>
@@ -186,45 +288,248 @@ export default function TournamentsIndex({ tournaments, filters }: PageProps) {
                             <SelectItem value="futsal">Futsal</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <Select
+                        value={filters.sort}
+                        onValueChange={(sort) =>
+                            updateFilters({ sort, page: null })
+                        }
+                    >
+                        <SelectTrigger className="w-full lg:w-48">
+                            <ArrowUpDown className="size-4 text-muted-foreground" />
+                            <SelectValue placeholder="Orden" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="newest">
+                                Más recientes
+                            </SelectItem>
+                            <SelectItem value="start_soon">
+                                Próximos a iniciar
+                            </SelectItem>
+                            <SelectItem value="name">Nombre</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {activeFilterCount > 0 && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="gap-2 lg:ml-auto"
+                            onClick={() => {
+                                setSearchQuery('');
+                                updateFilters({
+                                    status: 'all',
+                                    variant: 'all',
+                                    search: '',
+                                    sort: 'newest',
+                                    page: null,
+                                });
+                            }}
+                        >
+                            <X className="size-4" />
+                            Limpiar
+                        </Button>
+                    )}
                 </div>
 
-                {/* Tournament Grid */}
-                {filteredTournaments.length === 0 ? (
-                    <Card className="flex flex-col items-center justify-center py-12">
-                        <CardContent className="flex flex-col items-center gap-4 pt-6">
-                            <div className="rounded-full bg-muted p-4">
-                                <Trophy className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                            <div className="text-center">
-                                <h3 className="text-lg font-semibold">
-                                    No se encontraron torneos
-                                </h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {searchQuery
-                                        ? 'Intenta con otra búsqueda o ajusta los filtros'
-                                        : 'No hay torneos disponibles en esta categoría'}
-                                </p>
-                            </div>
-                            {activeTab === 'all' &&
-                                !searchQuery &&
-                                tournaments.data.length === 0 && (
-                                    <Link href="/tournaments/create">
-                                        <Button className="gap-2">
-                                            <Plus className="size-4" />
-                                            Crear Primer Torneo
-                                        </Button>
-                                    </Link>
-                                )}
-                        </CardContent>
-                    </Card>
+                {tournaments.data.length === 0 ? (
+                    <div className="flex min-h-80 flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-8 text-center">
+                        <div className="rounded-full bg-muted p-4">
+                            <Trophy className="size-8 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-1">
+                            <h2 className="text-lg font-semibold">
+                                No hay torneos para mostrar
+                            </h2>
+                            <p className="max-w-md text-sm text-muted-foreground">
+                                Ajusta la búsqueda o limpia los filtros para ver
+                                más resultados.
+                            </p>
+                        </div>
+                    </div>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {filteredTournaments.map((tournament) => (
-                            <TournamentCard
-                                key={tournament.id}
-                                tournament={tournament}
-                            />
-                        ))}
+                    <div className="overflow-hidden rounded-lg border bg-background">
+                        <div className="hidden grid-cols-[minmax(0,1.7fr)_150px_150px_150px_120px] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-medium text-muted-foreground lg:grid">
+                            <span>Torneo</span>
+                            <span>Estado</span>
+                            <span>Equipos</span>
+                            <span>Inicio</span>
+                            <span className="text-right">Acción</span>
+                        </div>
+
+                        <div className="divide-y">
+                            {tournaments.data.map((tournament) => {
+                                const status = statusConfig[tournament.status];
+                                const registeredTeams =
+                                    tournament.registered_teams_count ?? 0;
+                                const capacity = Math.min(
+                                    100,
+                                    Math.round(
+                                        (registeredTeams /
+                                            tournament.max_teams) *
+                                            100,
+                                    ),
+                                );
+
+                                return (
+                                    <div
+                                        key={tournament.id}
+                                        className="grid gap-4 px-4 py-4 transition-colors hover:bg-muted/30 lg:grid-cols-[minmax(0,1.7fr)_150px_150px_150px_120px] lg:items-center"
+                                    >
+                                        <div className="flex min-w-0 items-start gap-3">
+                                            <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                                                {tournament.logo_url ? (
+                                                    <img
+                                                        src={
+                                                            tournament.logo_url
+                                                        }
+                                                        alt={tournament.name}
+                                                        className="size-full object-cover"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
+                                                        <Trophy className="size-5" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Link
+                                                        href={tournamentsRoute.show.url(
+                                                            tournament.id,
+                                                        )}
+                                                        className="min-w-0 text-base font-semibold hover:underline"
+                                                    >
+                                                        <span className="line-clamp-1">
+                                                            {tournament.name}
+                                                        </span>
+                                                    </Link>
+                                                    <VariantBadge
+                                                        variant={
+                                                            tournament.variant
+                                                        }
+                                                        className="border-border bg-muted text-muted-foreground hover:bg-muted [&>svg]:text-muted-foreground"
+                                                    />
+                                                </div>
+                                                {tournament.description && (
+                                                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                                                        {tournament.description}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <Badge
+                                                variant={status.variant}
+                                                className={status.className}
+                                            >
+                                                {status.label}
+                                            </Badge>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-3 text-sm">
+                                                <span className="inline-flex items-center gap-2 text-muted-foreground">
+                                                    <Users className="size-4" />
+                                                    Equipos
+                                                </span>
+                                                <span className="font-medium">
+                                                    {registeredTeams}/
+                                                    {tournament.max_teams}
+                                                </span>
+                                            </div>
+                                            <Progress value={capacity} />
+                                        </div>
+
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Calendar className="size-4" />
+                                            <span>
+                                                {formatDate(
+                                                    tournament.starts_at,
+                                                )}
+                                            </span>
+                                        </div>
+
+                                        <Button
+                                            asChild
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full lg:w-auto"
+                                        >
+                                            <Link
+                                                href={tournamentsRoute.show.url(
+                                                    tournament.id,
+                                                )}
+                                            >
+                                                Ver torneo
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {tournaments.last_page > 1 && (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-muted-foreground">
+                            Mostrando {tournaments.from} a {tournaments.to} de{' '}
+                            {tournaments.total}
+                        </p>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                disabled={tournaments.current_page === 1}
+                                onClick={() =>
+                                    updateFilters({
+                                        page: tournaments.current_page - 1,
+                                    })
+                                }
+                            >
+                                <ChevronLeft className="size-4" />
+                            </Button>
+
+                            {pageNumbers.map((page) => (
+                                <Button
+                                    key={page}
+                                    type="button"
+                                    variant={
+                                        page === tournaments.current_page
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    size="sm"
+                                    className="min-w-9"
+                                    onClick={() => updateFilters({ page })}
+                                >
+                                    {page}
+                                </Button>
+                            ))}
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                disabled={
+                                    tournaments.current_page ===
+                                    tournaments.last_page
+                                }
+                                onClick={() =>
+                                    updateFilters({
+                                        page: tournaments.current_page + 1,
+                                    })
+                                }
+                            >
+                                <ChevronRight className="size-4" />
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>
