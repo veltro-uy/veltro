@@ -1,7 +1,7 @@
 import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, Trophy, Users } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Trophy, Users } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
 
 interface AuthLayoutProps {
@@ -16,31 +16,25 @@ const PitchLines = () => (
         className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox="0 0 800 900"
         preserveAspectRatio="xMidYMid slice"
-        style={{ opacity: 0.05 }}
+        style={{ opacity: 0.045 }}
     >
-        <g fill="none" stroke="white" strokeWidth="1.5">
-            <rect x="50" y="50" width="700" height="800" />
-            <line x1="400" y1="50" x2="400" y2="850" />
-            <circle cx="400" cy="450" r="100" />
+        <g fill="none" stroke="white" strokeWidth="1.4">
+            <rect x="58" y="60" width="684" height="780" rx="8" />
+            <line x1="400" y1="60" x2="400" y2="840" />
+            <circle cx="400" cy="450" r="98" />
             <circle cx="400" cy="450" r="4" fill="white" stroke="none" />
-            <rect x="50" y="270" width="160" height="260" />
-            <rect x="590" y="270" width="160" height="260" />
-            <rect x="50" y="340" width="55" height="120" />
-            <rect x="695" y="340" width="55" height="120" />
-            <path d="M50,50 Q70,50 70,70" />
-            <path d="M750,50 Q730,50 730,70" />
-            <path d="M50,850 Q70,850 70,830" />
-            <path d="M750,850 Q730,850 730,830" />
-            <circle cx="130" cy="450" r="4" fill="white" stroke="none" />
-            <circle cx="670" cy="450" r="4" fill="white" stroke="none" />
+            <rect x="58" y="274" width="158" height="252" rx="4" />
+            <rect x="584" y="274" width="158" height="252" rx="4" />
+            <rect x="58" y="342" width="54" height="116" rx="3" />
+            <rect x="688" y="342" width="54" height="116" rx="3" />
         </g>
     </svg>
 );
 
 const features = [
     { icon: Users, text: 'Invitá a tu plantel con un enlace' },
-    { icon: CalendarDays, text: 'Organizá partidos en segundos' },
-    { icon: Trophy, text: 'Competí en torneos organizados' },
+    { icon: CalendarDays, text: 'Organizá partidos sin perseguir mensajes' },
+    { icon: Trophy, text: 'Competí con estructura de torneo real' },
 ];
 
 export default function AuthSimpleLayout({
@@ -50,67 +44,51 @@ export default function AuthSimpleLayout({
 }: PropsWithChildren<AuthLayoutProps>) {
     return (
         <>
-            <Head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link
-                    rel="preconnect"
-                    href="https://fonts.gstatic.com"
-                    crossOrigin="anonymous"
-                />
-                <link
-                    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap"
-                    rel="stylesheet"
-                />
-            </Head>
+            <Head />
 
-            <div
-                className="flex min-h-svh flex-col text-white lg:flex-row"
-                style={{ background: '#060d17' }}
-            >
-                {/* Left: brand panel — desktop only */}
-                <div className="relative hidden flex-col justify-between overflow-hidden p-12 lg:flex lg:w-[45%]">
+            <div className="grid min-h-svh bg-[#101312] text-white lg:grid-cols-[0.92fr_1.08fr]">
+                <aside className="relative hidden overflow-hidden border-r border-white/[0.08] bg-[#141815] lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-12">
                     <PitchLines />
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute top-[-20%] left-[-10%] h-[500px] w-[500px] rounded-full blur-[130px]"
-                        style={{ background: 'rgba(34,197,94,0.1)' }}
-                    />
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute right-[-10%] bottom-[-10%] h-[300px] w-[300px] rounded-full blur-[100px]"
-                        style={{ background: 'rgba(34,197,94,0.06)' }}
-                    />
 
-                    {/* Logo */}
                     <Link
                         href={home()}
                         className="relative z-10 flex items-center gap-3"
                     >
-                        <div className="flex aspect-square size-9 items-center justify-center rounded-md bg-green-500">
-                            <AppLogoIcon className="size-5 fill-black" />
-                        </div>
-                        <span className="text-sm font-semibold">Veltro</span>
+                        <span className="flex size-9 items-center justify-center rounded-md bg-[#48d17a]">
+                            <AppLogoIcon className="size-5 fill-[#07110b]" />
+                        </span>
+                        <span className="text-sm font-semibold tracking-wide">
+                            Veltro
+                        </span>
                     </Link>
 
-                    {/* Tagline + features */}
-                    <div className="relative z-10">
-                        <h2 className="font-display mb-4 text-5xl font-bold uppercase leading-none xl:text-6xl">
-                            Tu equipo.
-                            <br />
-                            <span className="text-green-400">Sin caos.</span>
+                    <div className="relative z-10 max-w-md">
+                        <span className="mb-5 inline-flex items-center gap-2 rounded-md border border-[#48d17a]/25 bg-[#48d17a]/10 px-3 py-1.5 text-xs font-semibold text-[#8df0ad]">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Hecho en Uruguay para capitanes amateur
+                        </span>
+
+                        <h2 className="text-5xl leading-[1.02] font-semibold tracking-normal xl:text-6xl">
+                            Gestioná tu equipo sin depender del grupo de
+                            WhatsApp.
                         </h2>
-                        <p className="mb-10 max-w-xs text-sm leading-relaxed text-white/50">
-                            La plataforma para equipos de fútbol amateur en
-                            Uruguay. Partidos, asistencia y torneos en un solo
-                            lugar.
+
+                        <p className="mt-5 max-w-sm text-sm leading-6 text-white/55">
+                            Partidos, asistencia, estadísticas y torneos en una
+                            experiencia simple para capitanes y clara para
+                            jugadores.
                         </p>
-                        <div className="flex flex-col gap-4">
+
+                        <div className="mt-9 grid gap-3">
                             {features.map(({ icon: Icon, text }) => (
-                                <div key={text} className="flex items-center gap-3">
-                                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-green-500/[0.15] text-green-400">
-                                        <Icon className="h-3.5 w-3.5" />
+                                <div
+                                    key={text}
+                                    className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-[#101312]/75 px-3 py-3"
+                                >
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#48d17a]/10 text-[#48d17a]">
+                                        <Icon className="h-4 w-4" />
                                     </span>
-                                    <span className="text-sm text-white/55">
+                                    <span className="text-sm text-white/58">
                                         {text}
                                     </span>
                                 </div>
@@ -118,56 +96,52 @@ export default function AuthSimpleLayout({
                         </div>
                     </div>
 
-                    {/* Bottom badge */}
-                    <div className="relative z-10">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-green-500/25 bg-green-500/[0.1] px-3 py-1 text-xs font-medium text-green-400">
-                            <span className="relative flex h-1.5 w-1.5">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-400" />
+                    <p className="relative z-10 text-xs text-white/38">
+                        Gratis, sin publicidad y preparado para fútbol 11, 7, 5
+                        y futsal.
+                    </p>
+                </aside>
+
+                <section className="relative flex min-h-svh items-center justify-center overflow-hidden px-4 py-10 sm:px-6 lg:px-12">
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0))]" />
+                    <PitchLines />
+
+                    <div className="relative z-10 w-full max-w-[430px]">
+                        <Link
+                            href={home()}
+                            className="mb-8 flex items-center justify-center gap-3 lg:hidden"
+                        >
+                            <span className="flex size-9 items-center justify-center rounded-md bg-[#48d17a]">
+                                <AppLogoIcon className="size-5 fill-[#07110b]" />
                             </span>
-                            Hecho en Uruguay · 100% Gratis
-                        </span>
-                    </div>
-                </div>
+                            <span className="text-sm font-semibold tracking-wide">
+                                Veltro
+                            </span>
+                        </Link>
 
-                {/* Right: form panel */}
-                <div
-                    className="flex flex-1 flex-col items-center justify-center p-6 md:p-10 lg:p-12"
-                    style={{ borderLeft: '1px solid rgba(255,255,255,0.06)' }}
-                >
-                    {/* Mobile logo */}
-                    <Link
-                        href={home()}
-                        className="mb-10 flex items-center gap-2 lg:hidden"
-                    >
-                        <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-green-500">
-                            <AppLogoIcon className="size-5 fill-black" />
-                        </div>
-                        <span className="text-sm font-semibold">Veltro</span>
-                    </Link>
+                        <div className="rounded-lg border border-white/[0.08] bg-[#171b19]/96 p-6 shadow-[0_28px_90px_rgba(0,0,0,0.34)] sm:p-8">
+                            <div className="mb-7">
+                                <h1 className="text-3xl leading-tight font-semibold tracking-normal">
+                                    {title}
+                                </h1>
+                                <p className="mt-2 text-sm leading-6 text-white/55">
+                                    {description}
+                                </p>
+                            </div>
 
-                    <div className="w-full max-w-sm">
-                        <div className="mb-8">
-                            <h1 className="font-display mb-2 text-4xl font-bold uppercase leading-none">
-                                {title}
-                            </h1>
-                            <p className="text-sm text-white/50">
-                                {description}
-                            </p>
+                            <div className="auth-form-surface">{children}</div>
                         </div>
 
-                        {children}
-
-                        <div className="mt-8 text-center">
+                        <div className="mt-6 text-center">
                             <Link
                                 href={home()}
-                                className="text-xs text-white/30 transition-colors hover:text-white/60"
+                                className="text-xs font-medium text-white/40 transition-colors hover:text-white/70"
                             >
-                                ← Volver al inicio
+                                Volver al inicio
                             </Link>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </>
     );

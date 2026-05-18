@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\TournamentController;
+use App\Http\Controllers\TournamentGroupController;
 use App\Http\Controllers\TournamentLogoController;
 use App\Http\Controllers\TournamentMatchController;
 use App\Http\Controllers\TournamentRegistrationController;
@@ -23,6 +24,10 @@ Route::middleware(['auth', 'verified', 'throttle:tournaments', 'onboarding'])->g
 
     // Tournament Match Scheduling
     Route::patch('/tournaments/{tournament}/matches/{match}', [TournamentMatchController::class, 'update'])->name('tournaments.matches.update');
+
+    // Tournament Groups (group_stage_knockout draw)
+    Route::post('/tournaments/{id}/groups/draw', [TournamentGroupController::class, 'assign'])->name('tournaments.groups.assign');
+    Route::delete('/tournaments/{id}/groups/draw', [TournamentGroupController::class, 'clear'])->name('tournaments.groups.clear');
 
     // Tournament Logo
     Route::post('/tournaments/{id}/logo', [TournamentLogoController::class, 'store'])->name('tournaments.logo.store');

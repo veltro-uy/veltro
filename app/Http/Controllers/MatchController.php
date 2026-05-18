@@ -469,8 +469,9 @@ final class MatchController extends Controller
             abort(403, 'No autorizado');
         }
 
-        // Check if match time has been reached
-        if ($match->scheduled_at->isFuture()) {
+        // Check if match time has been reached (skip when no schedule is set,
+        // e.g. league matches without a fixed kickoff time)
+        if ($match->scheduled_at !== null && $match->scheduled_at->isFuture()) {
             return back()->with('error', 'No se puede completar el partido antes de que comience');
         }
 

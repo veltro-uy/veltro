@@ -397,19 +397,22 @@ final class MatchService
      */
     public function completeMatch(FootballMatch $match): FootballMatch
     {
-        // Verify match is in progress
         if (! $match->isInProgress()) {
             throw new \Exception('Can only complete in-progress matches');
         }
 
-        // Verify match time has been reached
-        if ($match->scheduled_at->isFuture()) {
+        if ($match->scheduled_at !== null && $match->scheduled_at->isFuture()) {
             throw new \Exception('Cannot complete match before it has started');
         }
 
-        // Tournament matches cannot end in a draw
+        // Draws are forbidden only for knockout matches (single-elim or the
+        // knockout phase of group_stage_knockout). League and group-stage
+        // matches accept draws as valid results.
         if ($match->isTournamentMatch() && $match->home_score === $match->away_score) {
-            throw new \Exception('Tournament matches cannot end in a draw. Please update the score to reflect a winner.');
+            $tournament = $match->tournament;
+            if ($tournament->isSingleElimination() || $tournament->inKnockout()) {
+                throw new \Exception('Tournament matches cannot end in a draw. Please update the score to reflect a winner.');
+            }
         }
 
         $match->update([
@@ -417,10 +420,17 @@ final class MatchService
             'completed_at' => now(),
         ]);
 
-        // If this is a tournament match, advance the winner
         if ($match->isTournamentMatch()) {
             $tournamentService = app(TournamentService::class);
-            $tournamentService->advanceWinner($match);
+            $tournament = $match->tournament;
+
+            if ($tournament->isSingleElimination() || $tournament->inKnockout()) {
+                $tournamentService->advanceWinner($match);
+            } elseif ($tournament->isLeague()) {
+                $tournamentService->completeLeagueIfDone($tournament);
+            } elseif ($tournament->inGroupStage()) {
+                $tournamentService->maybeTransitionToKnockout($tournament);
+            }
         }
 
         return $match->fresh();

@@ -1,4 +1,7 @@
 import { TeamAvatar } from '@/components/team-avatar';
+import { GroupDraw } from '@/components/tournament/group-draw';
+import { GroupsGrid } from '@/components/tournament/groups-grid';
+import { StandingsTable } from '@/components/tournament/standings-table';
 import { TournamentBracket } from '@/components/tournament/tournament-bracket';
 import {
     AlertDialog,
@@ -46,8 +49,10 @@ import tournamentMatches from '@/routes/tournaments/matches';
 import type {
     BreadcrumbItem,
     FootballMatch,
+    StandingRow,
     Team,
     Tournament,
+    TournamentGroup,
     TournamentTeam,
 } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -79,7 +84,10 @@ interface PageProps {
             name: string;
             matches: FootballMatch[];
         }>;
+        groups?: TournamentGroup[];
     };
+    standings: StandingRow[] | null;
+    groupStandings: Record<number, StandingRow[]> | null;
     userTeams: Team[];
     permissions: {
         canEdit: boolean;
@@ -88,6 +96,7 @@ interface PageProps {
         canCancel: boolean;
         canApprove: boolean;
         canScheduleMatches: boolean;
+        canDrawGroups: boolean;
     };
 }
 
@@ -299,6 +308,8 @@ const breadcrumbs = (tournament: Tournament): BreadcrumbItem[] => [
 
 export default function TournamentShow({
     tournament,
+    standings,
+    groupStandings,
     userTeams,
     permissions,
 }: PageProps) {
@@ -635,17 +646,93 @@ export default function TournamentShow({
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Left column — main content */}
                     <div className="space-y-6 lg:col-span-2">
-                        {/* Bracket */}
+                        {/* Group draw (group_stage_knockout, pre-start) */}
+                        {tournament.format === 'group_stage_knockout' &&
+                            permissions.canDrawGroups &&
+                            tournament.groups &&
+                            tournament.groups.length > 0 &&
+                            (tournament.status === 'draft' ||
+                                tournament.status === 'registration_open') && (
+                                <GroupDraw
+                                    tournamentId={tournament.id}
+                                    groups={tournament.groups}
+                                    approvedTeams={
+                                        approvedTeams as (TournamentTeam & {
+                                            team: Team;
+                                        })[]
+                                    }
+                                    groupSize={tournament.group_size ?? 4}
+                                />
+                            )}
+
+                        {/* Bracket / Standings / Groups */}
                         {hasBracket ? (
                             <>
-                                <section className="space-y-4">
-                                    <h2 className="text-lg font-semibold">
-                                        Bracket
-                                    </h2>
-                                    <TournamentBracket
-                                        rounds={tournament.rounds}
-                                    />
-                                </section>
+                                {tournament.format === 'league' && standings ? (
+                                    <section className="space-y-4">
+                                        <h2 className="text-lg font-semibold">
+                                            Tabla de Posiciones
+                                        </h2>
+                                        <StandingsTable
+                                            rows={standings}
+                                            highlightTopN={1}
+                                        />
+                                    </section>
+                                ) : tournament.format ===
+                                  'group_stage_knockout' ? (
+                                    <>
+                                        {tournament.groups &&
+                                            groupStandings && (
+                                                <section className="space-y-4">
+                                                    <h2 className="text-lg font-semibold">
+                                                        {tournament.phase ===
+                                                            'knockout' ||
+                                                        tournament.phase ===
+                                                            'completed'
+                                                            ? 'Tablas Finales de Grupos'
+                                                            : 'Fase de Grupos'}
+                                                    </h2>
+                                                    <GroupsGrid
+                                                        groups={
+                                                            tournament.groups
+                                                        }
+                                                        standingsByGroup={
+                                                            groupStandings
+                                                        }
+                                                        highlightTopN={2}
+                                                    />
+                                                </section>
+                                            )}
+                                        {(tournament.phase === 'knockout' ||
+                                            tournament.phase ===
+                                                'completed') && (
+                                            <section className="space-y-4">
+                                                <h2 className="text-lg font-semibold">
+                                                    Bracket
+                                                </h2>
+                                                <TournamentBracket
+                                                    rounds={tournament.rounds.filter(
+                                                        (r) =>
+                                                            !r.matches?.some(
+                                                                (m) =>
+                                                                    m.tournament_group_id !=
+                                                                    null,
+                                                            ),
+                                                    )}
+                                                />
+                                            </section>
+                                        )}
+                                    </>
+                                ) : (
+                                    <section className="space-y-4">
+                                        <h2 className="text-lg font-semibold">
+                                            Bracket
+                                        </h2>
+                                        <TournamentBracket
+                                            rounds={tournament.rounds}
+                                        />
+                                    </section>
+                                )}
 
                                 <Card>
                                     <CardHeader>
