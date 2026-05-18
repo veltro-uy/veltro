@@ -14,11 +14,14 @@ import {
     ArrowRight,
     BellRing,
     CalendarDays,
-    Globe,
+    CheckCircle2,
+    ShieldCheck,
     Trophy,
     Users,
 } from 'lucide-react';
 import type { ElementType, ReactNode } from 'react';
+
+const accent = '#48d17a';
 
 const PitchLines = () => (
     <svg
@@ -26,28 +29,28 @@ const PitchLines = () => (
         className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox="0 0 1200 700"
         preserveAspectRatio="xMidYMid slice"
-        style={{ opacity: 0.05 }}
+        style={{ opacity: 0.045 }}
     >
-        <g fill="none" stroke="white" strokeWidth="1.5">
-            <rect x="80" y="60" width="1040" height="580" />
-            <line x1="600" y1="60" x2="600" y2="640" />
-            <circle cx="600" cy="350" r="100" />
+        <g fill="none" stroke="white" strokeWidth="1.4">
+            <rect x="90" y="70" width="1020" height="560" rx="8" />
+            <line x1="600" y1="70" x2="600" y2="630" />
+            <circle cx="600" cy="350" r="96" />
             <circle cx="600" cy="350" r="4" fill="white" stroke="none" />
-            <rect x="80" y="210" width="165" height="280" />
-            <rect x="955" y="210" width="165" height="280" />
-            <rect x="80" y="280" width="55" height="140" />
-            <rect x="1065" y="280" width="55" height="140" />
-            <path d="M80,60 Q100,60 100,80" />
-            <path d="M1120,60 Q1100,60 1100,80" />
-            <path d="M80,640 Q100,640 100,620" />
-            <path d="M1120,640 Q1100,640 1100,620" />
-            <circle cx="176" cy="350" r="4" fill="white" stroke="none" />
-            <circle cx="1024" cy="350" r="4" fill="white" stroke="none" />
+            <rect x="90" y="215" width="164" height="270" rx="4" />
+            <rect x="946" y="215" width="164" height="270" rx="4" />
+            <rect x="90" y="285" width="56" height="130" rx="3" />
+            <rect x="1054" y="285" width="56" height="130" rx="3" />
         </g>
     </svg>
 );
 
-const DarkBentoCard = ({
+const SectionLabel = ({ children }: { children: ReactNode }) => (
+    <span className="text-xs font-semibold tracking-[0.18em] text-[#48d17a] uppercase">
+        {children}
+    </span>
+);
+
+const ProductCard = ({
     children,
     className = '',
 }: {
@@ -55,26 +58,103 @@ const DarkBentoCard = ({
     className?: string;
 }) => (
     <div
-        className={`group relative flex flex-col overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.04] p-8 backdrop-blur-sm transition-colors hover:border-white/[0.14] hover:bg-white/[0.06] sm:p-10 ${className}`}
+        className={`flex h-full flex-col rounded-lg border border-white/[0.08] bg-[#171b19] p-6 shadow-[0_18px_70px_rgba(0,0,0,0.28)] ${className}`}
     >
         {children}
     </div>
 );
 
-const BentoIcon = ({
+const FeatureIcon = ({
     icon: Icon,
     label,
 }: {
     icon: ElementType;
     label: string;
 }) => (
-    <div className="mb-6 flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/[0.15] text-green-400">
+    <div className="mb-5 flex items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[#48d17a]/20 bg-[#48d17a]/10 text-[#48d17a]">
             <Icon className="h-4 w-4" />
         </span>
-        <span className="text-sm font-medium text-white/40">{label}</span>
+        <span className="text-xs font-semibold tracking-[0.16em] text-white/40 uppercase">
+            {label}
+        </span>
     </div>
 );
+
+const stats = [
+    { value: '500+', label: 'Partidos organizados' },
+    { value: '80+', label: 'Equipos registrados' },
+    { value: '1.200+', label: 'Jugadores activos' },
+];
+
+const features = [
+    {
+        icon: CalendarDays,
+        label: 'Partidos',
+        title: 'Organizá partidos sin perseguir mensajes',
+        description:
+            'Centralizá fecha, cancha, rival, formato y marcador en una vista clara para todo el plantel.',
+        preview: <LandingMatchPreview />,
+        className: 'lg:col-span-7',
+    },
+    {
+        icon: Users,
+        label: 'Disponibilidad',
+        title: 'Confirmaciones visibles antes de llegar a la cancha',
+        description:
+            'Sabé quién va, quién falta responder y cuándo necesitás mover suplentes.',
+        preview: <LandingAvailabilityPreview />,
+        className: 'lg:col-span-5',
+    },
+    {
+        icon: BellRing,
+        label: 'Recordatorios',
+        title: 'Menos ruido, más respuestas',
+        description:
+            'Recordatorios puntuales para quienes todavía no confirmaron asistencia al próximo partido.',
+        preview: (
+            <div className="space-y-3 rounded-lg border border-white/[0.08] bg-[#101312] p-4">
+                <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#48d17a]/10 text-[#48d17a]">
+                        <BellRing className="h-4 w-4" />
+                    </span>
+                    <div>
+                        <span className="block text-sm font-medium text-white">
+                            Partido mañana
+                        </span>
+                        <span className="text-xs text-white/45">
+                            3 jugadores pendientes
+                        </span>
+                    </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    {['Voy', 'Tal vez', 'No voy'].map((item, index) => (
+                        <span
+                            key={item}
+                            className={`rounded-md border px-3 py-2 text-center text-xs font-semibold ${
+                                index === 0
+                                    ? 'border-[#48d17a]/30 bg-[#48d17a]/10 text-[#48d17a]'
+                                    : 'border-white/[0.08] bg-white/[0.035] text-white/50'
+                            }`}
+                        >
+                            {item}
+                        </span>
+                    ))}
+                </div>
+            </div>
+        ),
+        className: 'lg:col-span-5',
+    },
+    {
+        icon: Trophy,
+        label: 'Torneos',
+        title: 'Competí con estructura de torneo real',
+        description:
+            'Inscribí equipos, seguí cupos disponibles y mantené el calendario competitivo ordenado.',
+        preview: <LandingTournamentPreview />,
+        className: 'lg:col-span-7',
+    },
+];
 
 export default function LandingPage({
     canRegister = true,
@@ -84,39 +164,45 @@ export default function LandingPage({
     const { auth } = usePage<SharedData>().props;
     const isLoggedIn = !!auth?.user;
 
-    const ctaButtons = isLoggedIn ? (
+    const primaryCta = isLoggedIn ? (
         <Button
             size="lg"
-            className="rounded-xl bg-green-500 font-semibold text-black hover:bg-green-400"
+            className="h-11 rounded-md bg-[#48d17a] px-5 font-semibold text-[#07110b] shadow-[0_12px_34px_rgba(72,209,122,0.22)] hover:bg-[#60df8b]"
             asChild
         >
             <Link href={teams.index().url}>
-                Ver Equipos
+                Ver equipos
                 <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
         </Button>
     ) : (
-        <>
-            {canRegister && (
-                <Button
-                    size="lg"
-                    className="rounded-xl bg-green-500 font-semibold text-black hover:bg-green-400"
-                    asChild
-                >
-                    <Link href={register().url}>
-                        Comenzar gratis
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-            )}
+        canRegister && (
             <Button
                 size="lg"
-                variant="outline"
-                className="rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                className="h-11 rounded-md bg-[#48d17a] px-5 font-semibold text-[#07110b] shadow-[0_12px_34px_rgba(72,209,122,0.22)] hover:bg-[#60df8b]"
                 asChild
             >
-                <Link href={login().url}>Iniciar sesión</Link>
+                <Link href={register().url}>
+                    Comenzar gratis
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
             </Button>
+        )
+    );
+
+    const ctaButtons = (
+        <>
+            {primaryCta}
+            {!isLoggedIn && (
+                <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-11 rounded-md border-white/15 bg-white/[0.03] px-5 text-white hover:bg-white/[0.07] hover:text-white"
+                    asChild
+                >
+                    <Link href={login().url}>Iniciar sesión</Link>
+                </Button>
+            )}
         </>
     );
 
@@ -124,36 +210,26 @@ export default function LandingPage({
         <>
             <Head>
                 <title>
-                    Veltro — Plataforma para equipos de fútbol amateur en
+                    Veltro - Plataforma para equipos de futbol amateur en
                     Uruguay
                 </title>
                 <meta
                     name="description"
-                    content="Gestioná tu equipo, organizá partidos, seguí estadísticas y conectá con otros equipos de fútbol amateur en Uruguay. Todo en un solo lugar."
+                    content="Gestiona tu equipo, organiza partidos, confirma asistencia y conecta con otros equipos de futbol amateur en Uruguay."
                 />
             </Head>
 
-            <div
-                className="flex min-h-screen flex-col text-white"
-                style={{ background: '#060d17' }}
-            >
-                {/* Header */}
-                <header
-                    className="sticky top-0 z-50 backdrop-blur-xl"
-                    style={{
-                        background: 'rgba(6,13,23,0.88)',
-                        borderBottom: '1px solid rgba(255,255,255,0.07)',
-                    }}
-                >
-                    <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+            <div className="min-h-screen bg-[#101312] text-white">
+                <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#101312]/90 backdrop-blur-xl">
+                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
                         <Link
                             href={home().url}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-3"
                         >
-                            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-green-500">
-                                <AppLogoIcon className="size-5 fill-black" />
-                            </div>
-                            <span className="ml-1 text-sm font-semibold text-white">
+                            <span className="flex size-8 items-center justify-center rounded-md bg-[#48d17a]">
+                                <AppLogoIcon className="size-5 fill-[#07110b]" />
+                            </span>
+                            <span className="text-sm font-semibold tracking-wide text-white">
                                 Veltro
                             </span>
                         </Link>
@@ -162,11 +238,11 @@ export default function LandingPage({
                             {isLoggedIn ? (
                                 <Button
                                     size="sm"
-                                    className="bg-green-500 font-medium text-black hover:bg-green-400"
+                                    className="h-9 rounded-md bg-[#48d17a] px-3 font-semibold text-[#07110b] hover:bg-[#60df8b]"
                                     asChild
                                 >
                                     <Link href={teams.index().url}>
-                                        Ver Equipos
+                                        Ver equipos
                                         <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                                     </Link>
                                 </Button>
@@ -175,7 +251,7 @@ export default function LandingPage({
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="hidden text-white/60 hover:bg-white/10 hover:text-white sm:inline-flex"
+                                        className="hidden h-9 rounded-md px-3 text-white/60 hover:bg-white/[0.06] hover:text-white sm:inline-flex"
                                         asChild
                                     >
                                         <Link href={login().url}>
@@ -185,7 +261,7 @@ export default function LandingPage({
                                     {canRegister && (
                                         <Button
                                             size="sm"
-                                            className="bg-green-500 font-medium text-black hover:bg-green-400"
+                                            className="h-9 rounded-md bg-[#48d17a] px-3 font-semibold text-[#07110b] hover:bg-[#60df8b]"
                                             asChild
                                         >
                                             <Link href={register().url}>
@@ -199,374 +275,235 @@ export default function LandingPage({
                     </div>
                 </header>
 
-                {/* Hero */}
-                <section className="relative overflow-hidden pt-20 pb-24 md:pt-28 md:pb-32">
-                    <PitchLines />
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute top-[-20%] left-[5%] h-[700px] w-[700px] rounded-full blur-[140px]"
-                        style={{ background: 'rgba(34,197,94,0.09)' }}
-                    />
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute right-[0%] bottom-[-10%] h-[400px] w-[400px] rounded-full blur-[120px]"
-                        style={{ background: 'rgba(34,197,94,0.06)' }}
-                    />
-
-                    <div className="container mx-auto max-w-7xl px-4 md:px-6">
-                        <div className="flex flex-col items-center gap-16 lg:flex-row lg:items-center lg:gap-16">
-                            {/* Text column */}
-                            <div className="flex max-w-2xl flex-1 flex-col gap-7 text-center lg:text-left">
-                                <div className="flex justify-center lg:justify-start">
-                                    <span className="inline-flex items-center gap-2 rounded-full border border-green-500/25 bg-green-500/[0.1] px-3 py-1 text-xs font-medium text-green-400">
-                                        <span className="relative flex h-1.5 w-1.5">
-                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-400" />
-                                        </span>
-                                        Hecho en Uruguay · 100% Gratis
+                <main>
+                    <section className="relative overflow-hidden border-b border-white/[0.08] bg-[#101312]">
+                        <PitchLines />
+                        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-18 md:px-6 md:py-24 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
+                            <div className="max-w-2xl text-center lg:text-left">
+                                <div className="mb-6 flex justify-center lg:justify-start">
+                                    <span className="inline-flex items-center gap-2 rounded-md border border-[#48d17a]/25 bg-[#48d17a]/10 px-3 py-1.5 text-xs font-semibold text-[#8df0ad]">
+                                        <ShieldCheck className="h-3.5 w-3.5" />
+                                        Hecho en Uruguay para capitanes amateur
                                     </span>
                                 </div>
 
-                                <h1 className="font-display text-[5.5rem] font-bold uppercase leading-none tracking-tight sm:text-[7rem] lg:text-[6.5rem] xl:text-[8rem]">
-                                    Tu equipo.
-                                    <br />
-                                    <span className="text-green-400">
-                                        Sin caos.
-                                    </span>
+                                <h1 className="text-5xl leading-[0.98] font-semibold tracking-normal text-white sm:text-6xl lg:text-7xl">
+                                    Gestioná tu equipo sin depender del grupo de
+                                    WhatsApp.
                                 </h1>
 
-                                <p className="mx-auto max-w-xl text-lg leading-relaxed text-white/55 lg:mx-0">
-                                    Veltro reemplaza los grupos de WhatsApp con
-                                    una plataforma para capitanes: partidos,
-                                    asistencia, estadísticas y torneos en un
-                                    solo lugar.
+                                <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-white/60 sm:text-lg lg:mx-0">
+                                    Veltro reúne partidos, disponibilidad,
+                                    estadísticas y torneos en una experiencia
+                                    simple para capitanes y clara para
+                                    jugadores.
                                 </p>
 
-                                <div className="flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+                                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
                                     {ctaButtons}
                                 </div>
 
-                                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/35 lg:justify-start">
+                                <div className="mt-8 grid gap-3 text-left text-sm text-white/55 sm:grid-cols-3">
                                     {[
                                         'Sin publicidad',
                                         'Sin tarjeta de crédito',
                                         'Fútbol 11, 7, 5 y futsal',
                                     ].map((text) => (
-                                        <span
+                                        <div
                                             key={text}
-                                            className="flex items-center gap-2"
+                                            className="flex items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2"
                                         >
-                                            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                                            {text}
-                                        </span>
+                                            <CheckCircle2
+                                                className="h-4 w-4 shrink-0"
+                                                style={{ color: accent }}
+                                            />
+                                            <span>{text}</span>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
 
-                            {/* Preview column */}
-                            <div className="relative w-full max-w-sm flex-shrink-0 lg:max-w-md">
-                                <div
-                                    style={{
-                                        filter: 'drop-shadow(0 30px 80px rgba(34,197,94,0.18))',
-                                    }}
-                                >
+                            <div className="mx-auto w-full max-w-[520px] lg:mx-0">
+                                <div className="rounded-lg border border-white/[0.08] bg-[#171b19] p-3 shadow-[0_30px_100px_rgba(0,0,0,0.34)]">
                                     <LandingMatchPreview />
                                 </div>
-                                <div className="absolute -top-5 -right-5 hidden rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 backdrop-blur-sm lg:block">
-                                    <span className="font-display block text-3xl font-bold leading-none text-green-400">
-                                        9/11
-                                    </span>
-                                    <span className="text-xs text-white/50">
-                                        confirmados
-                                    </span>
-                                </div>
-                                <div className="absolute -bottom-5 -left-5 hidden rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 backdrop-blur-sm lg:block">
-                                    <span className="block text-sm font-medium">
-                                        Recordatorio enviado
-                                    </span>
-                                    <span className="text-xs text-white/50">
-                                        a 3 jugadores
-                                    </span>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <div className="rounded-lg border border-white/[0.08] bg-[#171b19] p-4">
+                                        <span className="block text-3xl font-semibold text-[#48d17a]">
+                                            9/11
+                                        </span>
+                                        <span className="text-xs text-white/50">
+                                            jugadores confirmados
+                                        </span>
+                                    </div>
+                                    <div className="rounded-lg border border-white/[0.08] bg-[#171b19] p-4">
+                                        <span className="block text-sm font-semibold text-white">
+                                            Recordatorio enviado
+                                        </span>
+                                        <span className="text-xs text-white/50">
+                                            a 3 jugadores pendientes
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
 
-                {/* Stats strip */}
-                <div
-                    className="py-12"
-                    style={{
-                        borderTop: '1px solid rgba(255,255,255,0.06)',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
-                        background: 'rgba(255,255,255,0.02)',
-                    }}
-                >
-                    <div className="container mx-auto max-w-4xl px-4">
-                        <div className="grid grid-cols-1 gap-8 text-center sm:grid-cols-3">
-                            {[
-                                {
-                                    value: '500+',
-                                    label: 'Partidos organizados',
-                                },
-                                { value: '80+', label: 'Equipos registrados' },
-                                {
-                                    value: '1.200+',
-                                    label: 'Jugadores activos',
-                                },
-                            ].map(({ value, label }) => (
+                    <section className="border-b border-white/[0.08] bg-[#141815] py-10">
+                        <div className="mx-auto grid max-w-5xl gap-6 px-4 text-center sm:grid-cols-3 md:px-6">
+                            {stats.map(({ value, label }) => (
                                 <div
                                     key={label}
-                                    className="flex flex-col gap-2"
+                                    className="rounded-lg border border-white/[0.08] bg-[#101312] px-5 py-6"
                                 >
-                                    <span className="font-display text-5xl font-bold leading-none text-green-400">
+                                    <span className="block text-4xl font-semibold tracking-normal text-[#48d17a]">
                                         {value}
                                     </span>
-                                    <span className="text-sm text-white/40">
+                                    <span className="mt-2 block text-sm text-white/50">
                                         {label}
                                     </span>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </div>
+                    </section>
 
-                {/* Features bento */}
-                <section className="py-24 md:py-32">
-                    <div className="container mx-auto max-w-6xl px-4">
-                        <div className="mx-auto mb-16 flex max-w-2xl flex-col items-center gap-4 text-center">
-                            <span className="text-xs font-semibold tracking-[0.2em] text-green-500 uppercase">
-                                Qué podés hacer
-                            </span>
-                            <h2 className="font-display text-5xl font-bold uppercase leading-none tracking-tight sm:text-6xl">
-                                Diseñado para capitanes,
-                                <br />
-                                <span className="text-white/35">
-                                    pensado para jugadores.
-                                </span>
-                            </h2>
+                    <section className="py-20 md:py-28">
+                        <div className="mx-auto max-w-7xl px-4 md:px-6">
+                            <div className="mb-12 grid gap-4 lg:grid-cols-[0.72fr_1fr] lg:items-end">
+                                <div>
+                                    <SectionLabel>Qué podés hacer</SectionLabel>
+                                    <h2 className="mt-4 max-w-xl text-4xl leading-tight font-semibold sm:text-5xl">
+                                        Una plataforma ordenada para cada semana
+                                        de partido.
+                                    </h2>
+                                </div>
+                                <p className="max-w-2xl text-base leading-7 text-white/55 lg:justify-self-end">
+                                    Diseñada para reducir fricción operativa:
+                                    menos mensajes repetidos, menos dudas de
+                                    asistencia y mejor trazabilidad del equipo.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-4 lg:grid-cols-12">
+                                {features.map(
+                                    ({
+                                        icon,
+                                        label,
+                                        title,
+                                        description,
+                                        preview,
+                                        className,
+                                    }) => (
+                                        <ProductCard
+                                            key={title}
+                                            className={className}
+                                        >
+                                            <FeatureIcon
+                                                icon={icon}
+                                                label={label}
+                                            />
+                                            <div className="grid flex-1 gap-6 md:grid-cols-[0.86fr_1.14fr] md:items-center">
+                                                <div>
+                                                    <h3 className="text-2xl leading-tight font-semibold text-white">
+                                                        {title}
+                                                    </h3>
+                                                    <p className="mt-3 text-sm leading-6 text-white/50">
+                                                        {description}
+                                                    </p>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    {preview}
+                                                </div>
+                                            </div>
+                                        </ProductCard>
+                                    ),
+                                )}
+                            </div>
                         </div>
+                    </section>
 
-                        <div className="grid gap-4 lg:grid-cols-12 lg:gap-5">
-                            <DarkBentoCard className="lg:col-span-8">
-                                <BentoIcon
-                                    icon={CalendarDays}
-                                    label="Partidos"
-                                />
-                                <h3 className="font-display mb-3 text-3xl font-bold uppercase leading-none sm:text-4xl">
-                                    Organizá partidos en segundos
-                                </h3>
-                                <p className="mb-8 max-w-md text-sm text-white/45">
-                                    Fecha, cancha, rival y marcador — todo en
-                                    una tarjeta que los jugadores entienden al
-                                    instante.
-                                </p>
-                                <div className="relative mt-auto">
-                                    <div
-                                        className="absolute inset-0 rounded-xl"
-                                        style={{
-                                            background:
-                                                'radial-gradient(ellipse at center, rgba(34,197,94,0.07) 0%, transparent 70%)',
-                                        }}
-                                    />
-                                    <LandingMatchPreview />
-                                </div>
-                            </DarkBentoCard>
+                    <section className="border-y border-white/[0.08] bg-[#141815] py-20 md:py-24">
+                        <div className="mx-auto max-w-7xl px-4 md:px-6">
+                            <div className="mb-12 max-w-2xl">
+                                <SectionLabel>Cómo funciona</SectionLabel>
+                                <h2 className="mt-4 text-4xl leading-tight font-semibold sm:text-5xl">
+                                    De crear el equipo a jugar en minutos.
+                                </h2>
+                            </div>
 
-                            <DarkBentoCard className="lg:col-span-4">
-                                <BentoIcon
-                                    icon={BellRing}
-                                    label="Recordatorios"
-                                />
-                                <h3 className="font-display mb-3 text-3xl font-bold uppercase leading-none">
-                                    Nadie se olvida del partido
-                                </h3>
-                                <p className="mb-8 text-sm text-white/45">
-                                    Recordatorios automáticos 48 horas antes a
-                                    quien no confirmó.
-                                </p>
-                                <div className="mt-auto space-y-3">
-                                    <div className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.05] p-4">
-                                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/[0.15] text-green-400">
-                                            <BellRing className="h-4 w-4" />
-                                        </span>
-                                        <div className="flex flex-col gap-0.5">
-                                            <span className="text-sm font-medium">
-                                                Partido mañana
-                                            </span>
-                                            <span className="text-xs text-white/40">
-                                                ¿Venís a jugar?
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <span className="flex-1 rounded-lg border border-green-500/30 bg-green-500/[0.15] px-3 py-2.5 text-center text-xs font-semibold text-green-400">
-                                            Voy
-                                        </span>
-                                        <span className="flex-1 rounded-lg border border-white/[0.08] bg-white/[0.05] px-3 py-2.5 text-center text-xs font-medium text-white/35">
-                                            Tal vez
-                                        </span>
-                                        <span className="flex-1 rounded-lg border border-white/[0.08] bg-white/[0.05] px-3 py-2.5 text-center text-xs font-medium text-white/35">
-                                            No
-                                        </span>
-                                    </div>
-                                </div>
-                            </DarkBentoCard>
-
-                            <DarkBentoCard className="lg:col-span-5">
-                                <BentoIcon
-                                    icon={Users}
-                                    label="Disponibilidad"
-                                />
-                                <h3 className="font-display mb-3 text-3xl font-bold uppercase leading-none">
-                                    Sabé quién va antes del silbato
-                                </h3>
-                                <p className="mb-8 text-sm text-white/45">
-                                    Panorama completo de tu plantel con alertas
-                                    si no llegás al mínimo.
-                                </p>
-                                <div className="mt-auto">
-                                    <LandingAvailabilityPreview />
-                                </div>
-                            </DarkBentoCard>
-
-                            <DarkBentoCard className="lg:col-span-7">
-                                <BentoIcon icon={Trophy} label="Torneos" />
-                                <h3 className="font-display mb-3 text-3xl font-bold uppercase leading-none sm:text-4xl">
-                                    Competí en torneos organizados
-                                </h3>
-                                <p className="mb-8 max-w-sm text-sm text-white/45">
-                                    Inscribite, seguí la capacidad en tiempo
-                                    real y jugá contra equipos de tu zona.
-                                </p>
-                                <div className="relative mt-auto">
-                                    <div
-                                        className="absolute inset-0 rounded-xl"
-                                        style={{
-                                            background:
-                                                'radial-gradient(ellipse at center, rgba(245,158,11,0.06) 0%, transparent 70%)',
-                                        }}
-                                    />
-                                    <LandingTournamentPreview />
-                                </div>
-                            </DarkBentoCard>
-                        </div>
-                    </div>
-                </section>
-
-                {/* How it works */}
-                <section
-                    className="py-24 md:py-32"
-                    style={{
-                        borderTop: '1px solid rgba(255,255,255,0.06)',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
-                        background: 'rgba(255,255,255,0.015)',
-                    }}
-                >
-                    <div className="container mx-auto max-w-6xl px-4">
-                        <div className="mx-auto mb-16 flex max-w-2xl flex-col items-center gap-4 text-center">
-                            <span className="text-xs font-semibold tracking-[0.2em] text-green-500 uppercase">
-                                Cómo funciona
-                            </span>
-                            <h2 className="font-display text-5xl font-bold uppercase leading-none tracking-tight sm:text-6xl">
-                                De cero a jugar en minutos.
-                            </h2>
-                        </div>
-
-                        <div className="relative grid gap-10 md:grid-cols-3 md:gap-8">
-                            <div
-                                aria-hidden="true"
-                                className="absolute top-7 right-0 left-0 hidden h-px md:block"
-                                style={{
-                                    background:
-                                        'linear-gradient(to right, transparent, rgba(34,197,94,0.25) 20%, rgba(34,197,94,0.25) 80%, transparent)',
-                                }}
-                            />
-
-                            {[
-                                {
-                                    step: '01',
-                                    icon: Users,
-                                    title: 'Armá tu equipo',
-                                    description:
-                                        'Creá el equipo, invitá jugadores con un enlace y asigná roles de capitán y vice-capitán.',
-                                },
-                                {
-                                    step: '02',
-                                    icon: CalendarDays,
-                                    title: 'Programá el partido',
-                                    description:
-                                        'Publicá fecha, cancha y rival. Los jugadores confirman asistencia desde el celular.',
-                                },
-                                {
-                                    step: '03',
-                                    icon: Trophy,
-                                    title: 'Jugá y registrá',
-                                    description:
-                                        'Anotá goles, seguí resultados y mirá cómo mejora tu equipo partido a partido.',
-                                },
-                            ].map(({ step, icon: Icon, title, description }) => (
-                                <div
-                                    key={step}
-                                    className="relative flex flex-col gap-5"
-                                >
-                                    <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05]">
-                                        <Icon className="h-6 w-6 text-green-400" />
-                                    </span>
-                                    <div>
-                                        <div className="mb-2 flex items-baseline gap-3">
-                                            <span className="font-display text-5xl font-bold leading-none text-white/[0.1]">
-                                                {step}
-                                            </span>
-                                            <h3 className="font-display text-2xl font-bold uppercase leading-none">
+                            <div className="grid gap-4 md:grid-cols-3">
+                                {[
+                                    {
+                                        step: '01',
+                                        icon: Users,
+                                        title: 'Armá tu equipo',
+                                        description:
+                                            'Creá el plantel, invitá jugadores y definí roles de gestión.',
+                                    },
+                                    {
+                                        step: '02',
+                                        icon: CalendarDays,
+                                        title: 'Programá el partido',
+                                        description:
+                                            'Publicá fecha, cancha y rival para que todos confirmen desde el celular.',
+                                    },
+                                    {
+                                        step: '03',
+                                        icon: Trophy,
+                                        title: 'Jugá y registrá',
+                                        description:
+                                            'Cargá resultados, goles y datos útiles para seguir la evolución del equipo.',
+                                    },
+                                ].map(
+                                    ({
+                                        step,
+                                        icon: Icon,
+                                        title,
+                                        description,
+                                    }) => (
+                                        <div
+                                            key={step}
+                                            className="rounded-lg border border-white/[0.08] bg-[#101312] p-6"
+                                        >
+                                            <div className="mb-8 flex items-center justify-between">
+                                                <span className="text-sm font-semibold text-white/35">
+                                                    {step}
+                                                </span>
+                                                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#48d17a]/10 text-[#48d17a]">
+                                                    <Icon className="h-5 w-5" />
+                                                </span>
+                                            </div>
+                                            <h3 className="text-xl font-semibold">
                                                 {title}
                                             </h3>
+                                            <p className="mt-3 text-sm leading-6 text-white/50">
+                                                {description}
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-white/45">
-                                            {description}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                                    ),
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
 
-                {/* Final CTA */}
-                <section className="relative overflow-hidden py-28 md:py-36">
-                    <PitchLines />
-                    <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-0"
-                        style={{
-                            background:
-                                'radial-gradient(ellipse 60% 60% at 50% 60%, rgba(34,197,94,0.09) 0%, transparent 70%)',
-                        }}
-                    />
-
-                    <div className="relative container mx-auto max-w-3xl px-4 text-center">
-                        <div className="mb-6 flex justify-center">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-green-500/25 bg-green-500/[0.1] px-3 py-1 text-xs font-medium text-green-400">
-                                <Globe className="h-3 w-3" />
-                                Empezá hoy
-                            </span>
+                    <section className="relative overflow-hidden py-20 md:py-28">
+                        <PitchLines />
+                        <div className="relative mx-auto max-w-4xl px-4 text-center md:px-6">
+                            <SectionLabel>Empezá hoy</SectionLabel>
+                            <h2 className="mt-4 text-4xl leading-tight font-semibold sm:text-5xl md:text-6xl">
+                                Ordená el próximo partido antes de que empiece
+                                la semana.
+                            </h2>
+                            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-white/55">
+                                Gratis, sin publicidad y preparado para la forma
+                                en que se organiza el fútbol amateur en Uruguay.
+                            </p>
+                            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                                {ctaButtons}
+                            </div>
                         </div>
-                        <h2 className="font-display mb-6 text-6xl font-bold uppercase leading-none tracking-tight sm:text-7xl md:text-8xl">
-                            Dejá el caos atrás.
-                            <br />
-                            <span className="text-green-400">
-                                Armá el próximo partido.
-                            </span>
-                        </h2>
-                        <p className="mx-auto mb-10 max-w-xl text-lg text-white/50">
-                            Gratis, sin publicidad, y hecho por gente que
-                            también juega los sábados.
-                        </p>
-                        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            {ctaButtons}
-                        </div>
-                    </div>
-                </section>
+                    </section>
+                </main>
 
                 <LandingFooter canRegister={canRegister} />
             </div>
