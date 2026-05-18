@@ -28,6 +28,10 @@ final class Tournament extends Model
         'visibility',
         'status',
         'variant',
+        'format',
+        'phase',
+        'group_count',
+        'group_size',
         'max_teams',
         'min_teams',
         'registration_deadline',
@@ -55,6 +59,8 @@ final class Tournament extends Model
             'registration_deadline' => 'datetime',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'group_count' => 'integer',
+            'group_size' => 'integer',
         ];
     }
 
@@ -134,6 +140,39 @@ final class Tournament extends Model
     public function matches(): HasMany
     {
         return $this->hasMany(FootballMatch::class);
+    }
+
+    /**
+     * Get the groups (only populated for group_stage_knockout format).
+     */
+    public function groups(): HasMany
+    {
+        return $this->hasMany(TournamentGroup::class)->orderBy('position');
+    }
+
+    public function isSingleElimination(): bool
+    {
+        return $this->format === 'single_elimination';
+    }
+
+    public function isLeague(): bool
+    {
+        return $this->format === 'league';
+    }
+
+    public function isGroupStageKnockout(): bool
+    {
+        return $this->format === 'group_stage_knockout';
+    }
+
+    public function inGroupStage(): bool
+    {
+        return $this->phase === 'group_stage';
+    }
+
+    public function inKnockout(): bool
+    {
+        return $this->phase === 'knockout';
     }
 
     /**
@@ -225,13 +264,16 @@ final class Tournament extends Model
 
         $approvedCount = $this->getApprovedTeamsCount();
 
-        // Must have at least min_teams
         if ($approvedCount < $this->min_teams) {
             return false;
         }
 
-        // Must be a power of 2
-        return $this->isPowerOfTwo($approvedCount);
+        return match ($this->format) {
+            'league' => $approvedCount >= 2,
+            'group_stage_knockout' => $approvedCount === ($this->group_count * $this->group_size)
+                && $this->approvedTeams()->whereNull('tournament_group_id')->doesntExist(),
+            default => $this->isPowerOfTwo($approvedCount),
+        };
     }
 
     /**

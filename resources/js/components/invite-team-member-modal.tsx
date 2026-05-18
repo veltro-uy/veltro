@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import teams from '@/routes/teams';
 import { router } from '@inertiajs/react';
 import { Check, Copy, Link as LinkIcon, UserPlus } from 'lucide-react';
 import { useState } from 'react';
@@ -38,7 +39,7 @@ export function InviteTeamMemberModal({ teamId, teamName }: Props) {
         setProcessing(true);
 
         try {
-            const response = await fetch(`/teams/${teamId}/invitations`, {
+            const response = await fetch(teams.invitations.create(teamId).url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

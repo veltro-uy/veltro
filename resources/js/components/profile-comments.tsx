@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
 import { UserNameLink } from '@/components/user-name-link';
+import commentsRoute from '@/routes/comments';
+import userComments from '@/routes/users/comments';
 import type { ProfileComment, SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
@@ -56,7 +58,7 @@ export function ProfileComments({
 
             try {
                 const response = await fetch(
-                    `/api/users/${userId}/comments?page=${page}`,
+                    userComments.index(userId, { query: { page } }).url,
                 );
                 if (!response.ok) {
                     throw new Error('Error al cargar comentarios');
@@ -90,7 +92,7 @@ export function ProfileComments({
         setDeletingId(commentId);
 
         try {
-            const response = await fetch(`/api/comments/${commentId}`, {
+            const response = await fetch(commentsRoute.destroy(commentId).url, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN':

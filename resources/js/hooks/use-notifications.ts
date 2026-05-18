@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import notificationsRoute from '@/routes/notifications';
 import type { Notification, PaginatedNotifications, SharedData } from '@/types';
 
 interface UseNotificationsReturn {
@@ -35,7 +36,7 @@ export function useNotifications(): UseNotificationsReturn {
         if (!isAuthenticated) return;
 
         try {
-            const response = await fetch('/notifications/unread-count', {
+            const response = await fetch(notificationsRoute.unreadCount().url, {
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -61,12 +62,15 @@ export function useNotifications(): UseNotificationsReturn {
 
             setIsLoading(true);
             try {
-                const response = await fetch(`/notifications?page=${page}`, {
-                    headers: {
-                        Accept: 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
+                const response = await fetch(
+                    notificationsRoute.index({ query: { page } }).url,
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                     },
-                });
+                );
                 // Only parse JSON for successful responses with correct content type
                 if (response.ok) {
                     const contentType = response.headers.get('content-type');
@@ -101,18 +105,21 @@ export function useNotifications(): UseNotificationsReturn {
     // Mark single notification as read
     const markAsRead = useCallback(async (id: string) => {
         try {
-            const response = await fetch(`/notifications/${id}/read`, {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN':
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute('content') || '',
+            const response = await fetch(
+                notificationsRoute.markAsRead(id).url,
+                {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN':
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute('content') || '',
+                    },
                 },
-            });
+            );
 
             if (response.ok) {
                 setNotifications((prev) =>
@@ -132,7 +139,7 @@ export function useNotifications(): UseNotificationsReturn {
     // Mark all notifications as read
     const markAllAsRead = useCallback(async () => {
         try {
-            const response = await fetch('/notifications/mark-all-read', {
+            const response = await fetch(notificationsRoute.markAllRead().url, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
@@ -163,7 +170,7 @@ export function useNotifications(): UseNotificationsReturn {
     // Delete single notification
     const deleteNotification = useCallback(async (id: string) => {
         try {
-            const response = await fetch(`/notifications/${id}`, {
+            const response = await fetch(notificationsRoute.destroy(id).url, {
                 method: 'DELETE',
                 headers: {
                     Accept: 'application/json',
@@ -188,7 +195,7 @@ export function useNotifications(): UseNotificationsReturn {
     // Clear all read notifications
     const clearRead = useCallback(async () => {
         try {
-            const response = await fetch('/notifications/clear-read', {
+            const response = await fetch(notificationsRoute.clearRead().url, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',

@@ -1,617 +1,216 @@
 # Veltro
 
-> Una plataforma web para equipos de fútbol amateur en Uruguay para gestionar equipos, organizar partidos, registrar estadísticas y conectar con otros equipos.
+Veltro is a Laravel, React, and Inertia platform for amateur football teams in Uruguay. Teams can manage rosters, discover opponents, schedule matches, track player availability, record results, run tournaments, and build player profiles with comments and commendations.
 
-[![Laravel](https://img.shields.io/badge/Laravel-12.0+-FF2D20?style=flat&logo=laravel&logoColor=white)](https://laravel.com)
-[![React](https://img.shields.io/badge/React-19.2+-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat&logo=php&logoColor=white)](https://www.php.net)
+## Tech Stack
 
-## Tabla de Contenidos
+- **Backend:** Laravel 12, PHP 8.2+, Laravel Fortify, Socialite, Wayfinder
+- **Frontend:** React 19, TypeScript, Inertia 2, Tailwind CSS 4, Radix/Shadcn-style components
+- **Data:** MySQL 8 in development/production, SQLite in tests
+- **Tooling:** Bun, Vite, Pest, Pint, Prettier, ESLint
 
-- [Acerca de](#acerca-de)
-- [Características](#características)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Requisitos](#requisitos)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
-- [Desarrollo](#desarrollo)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Pruebas](#pruebas)
-- [Limitación de Tasa](#limitación-de-tasa)
-- [Configuración de Docker](#configuración-de-docker)
-- [Recursos Adicionales](#recursos-adicionales)
+## Core Features
 
-## Acerca de
+- Email/password auth, Google OAuth, email verification, and two-factor auth
+- Team creation, discovery, join requests, invitations, member roles, and logos
+- Match creation, opponent requests, lineups, availability tracking, score/event recording
+- Tournament formats: single elimination, league, and group stage plus knockout
+- User profiles with match/team stats, comments, commendations, avatars, and public profile pages
+- Notifications, scheduled availability reminders, rate limiting, dark mode, and responsive UI
 
-Veltro es una aplicación web integral diseñada específicamente para equipos de fútbol amateur en Uruguay. Proporciona una plataforma centralizada donde los equipos pueden:
+## Requirements
 
-- **Gestionar Equipos**: Crear y administrar plantillas, roles y configuraciones de equipos
-- **Organizar Partidos**: Encontrar oponentes, programar partidos y rastrear asistencia
-- **Registrar Estadísticas**: Registrar resultados de partidos, ver historial del equipo y analizar rendimiento
-- **Conectar**: Descubrir y conectar con otros equipos amateur en tu área
+- PHP 8.2+
+- Composer
+- Node.js 20.19+ or 22.12+
+- Bun
+- MySQL 8.0+
 
-La plataforma soporta múltiples variantes de fútbol incluyendo Fútbol 11, Fútbol 7, Fútbol 5 y Futsal.
+Docker/Sail is available through `compose.yaml`, but local PHP/MySQL/Bun works fine.
 
-Para documentación detallada de características, consulta [project.md](project.md).
-
-## Características
-
-### Gestión de Usuarios
-
-- Autenticación con email y contraseña
-- Integración con OAuth de Google
-- Soporte para autenticación de dos factores
-- Perfiles de usuario con información personalizable
-- Verificación de email
-
-### Gestión de Equipos
-
-- Crear y gestionar equipos
-- Descubrimiento y búsqueda de equipos
-- Sistema de solicitudes de unión con flujo de aprobación
-- Acceso basado en roles (Capitán, Sub-capitán, Jugador)
-- Gestión de plantilla del equipo
-- Estadísticas e historial del equipo
-
-### Organización de Partidos
-
-- Crear partidos con información detallada
-- Tablero de partidos para encontrar oponentes
-- Invitaciones y solicitudes de partidos
-- Sistema de confirmación de partidos
-- Seguimiento de asistencia
-- Registro de resultados de partidos
-- Historial y estadísticas de partidos
-
-### Características Adicionales
-
-- Notificaciones en tiempo real
-- Diseño responsivo para móvil y escritorio
-- Soporte para modo oscuro
-- Soporte para renderizado del lado del servidor (SSR)
-
-## Stack Tecnológico
-
-### Backend
-
-- **Framework**: Laravel 12.0+
-- **PHP**: 8.2+
-- **Base de Datos**: MySQL 8.0
-- **Autenticación**: Laravel Fortify
-- **OAuth**: Laravel Socialite (Google)
-- **Pruebas**: Pest PHP
-
-### Frontend
-
-- **Framework**: React 19.2+
-- **Lenguaje**: TypeScript 5.7+
-- **Framework UI**: Inertia.js 2.0+
-- **Componentes**: Shadcn UI (primitivos de Radix UI)
-- **Estilos**: Tailwind CSS 4.0
-- **Herramienta de Build**: Vite 7.0
-- **Gestor de Paquetes**: Bun
-
-### Herramientas de Desarrollo
-
-- **Docker**: Laravel Sail
-- **Calidad de Código**: ESLint, Prettier, Laravel Pint
-- **Verificación de Tipos**: TypeScript
-- **Registro**: Laravel Pail
-
-## Requisitos
-
-Antes de comenzar, asegúrate de tener instalado lo siguiente:
-
-- **PHP**: 8.2 o superior
-- **Composer**: Última versión
-- **Node.js**: 20.19.0+ o 22.12.0+
-- **Bun**: Última versión (recomendado) o npm/yarn
-- **MySQL**: 8.0 o superior
-- **Docker & Docker Compose**: (Opcional, para Laravel Sail)
-
-## Instalación
-
-### 1. Clonar el Repositorio
-
-```bash
-git clone <repository-url>
-cd veltro-new
-```
-
-### 2. Instalar Dependencias de PHP
+## Setup
 
 ```bash
 composer install
-```
-
-### 3. Instalar Dependencias de JavaScript
-
-```bash
 bun install
-```
-
-O si usas npm:
-
-```bash
-npm install
-```
-
-### 4. Configuración del Entorno
-
-Copia el archivo de entorno:
-
-```bash
 cp .env.example .env
-```
-
-Genera la clave de la aplicación:
-
-```bash
 php artisan key:generate
-```
-
-### 5. Configuración de la Base de Datos
-
-Configura tu conexión a la base de datos en `.env`:
-
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=veltro
-DB_USERNAME=tu_usuario
-DB_PASSWORD=tu_contraseña
-```
-
-Ejecuta las migraciones:
-
-```bash
 php artisan migrate
-```
-
-### 6. Compilar Assets
-
-```bash
 bun run build
 ```
 
-O con npm:
-
-```bash
-npm run build
-```
-
-### 7. Configuración Rápida (Alternativa)
-
-Puedes usar el script de configuración que automatiza los pasos anteriores:
-
-```bash
-composer setup
-```
-
-Este comando realizará:
-
-- Instalar dependencias de Composer
-- Crear archivo `.env` si no existe
-- Generar clave de aplicación
-- Ejecutar migraciones de base de datos
-- Instalar dependencias de JavaScript
-- Compilar assets
-
-## Configuración
-
-### Variables de Entorno
-
-Variables de entorno clave para configurar en tu archivo `.env`:
-
-#### Aplicación
+Configure at least these values in `.env`:
 
 ```env
-APP_NAME="Veltro"
-APP_ENV=local
-APP_KEY=
-APP_DEBUG=true
 APP_URL=http://localhost
-```
 
-#### Base de Datos
-
-```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=veltro
 DB_USERNAME=root
 DB_PASSWORD=
-```
 
-#### OAuth de Google
-
-```env
-GOOGLE_CLIENT_ID=tu_google_client_id
-GOOGLE_CLIENT_SECRET=tu_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost/auth/google/callback
-```
-
-#### Configuración de Correo
-
-```env
-MAIL_MAILER=smtp
-MAIL_HOST=mailpit
-MAIL_PORT=1025
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-```
-
-#### Configuración de Cola
-
-```env
 QUEUE_CONNECTION=database
 ```
 
-### Configuración de Laravel Fortify
+Optional Google OAuth:
 
-Fortify está configurado en `config/fortify.php`. Características clave habilitadas:
+```env
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost/auth/google/callback
+```
 
-- Registro
-- Verificación de email
-- Autenticación de dos factores
-- Restablecimiento de contraseña
+## Development
 
-### Configuración de Inertia.js
-
-Inertia.js está configurado en `config/inertia.php`. La aplicación usa:
-
-- React como framework frontend
-- Soporte para renderizado del lado del servidor (SSR)
-- Wayfinder para generación de rutas
-
-## Desarrollo
-
-### Iniciar el Servidor de Desarrollo
-
-El proyecto incluye un script de desarrollo conveniente que ejecuta todos los servicios necesarios de forma concurrente:
+Start the standard local stack:
 
 ```bash
 composer dev
 ```
 
-Este comando inicia:
-
-- Servidor de desarrollo de Laravel (puerto 8000)
-- Worker de cola
-- Servidor de desarrollo de Vite (puerto 5173)
-
-### Desarrollo con SSR
-
-Para ejecutar el servidor de desarrollo con renderizado del lado del servidor:
+Start with Inertia SSR:
 
 ```bash
 composer dev:ssr
 ```
 
-Esto inicia:
-
-- Servidor de desarrollo de Laravel
-- Worker de cola
-- Laravel Pail (registro)
-- Servidor SSR de Inertia
-
-### Comandos Disponibles
-
-#### Scripts de Composer
+Frontend-only Vite server:
 
 ```bash
-# Configuración inicial del proyecto
-composer setup
-
-# Iniciar servidor de desarrollo
-composer dev
-
-# Iniciar servidor de desarrollo con SSR
-composer dev:ssr
-
-# Ejecutar pruebas
-composer test
-```
-
-#### Scripts de Frontend (Bun/npm)
-
-```bash
-# Iniciar servidor de desarrollo de Vite
 bun run dev
-
-# Compilar para producción
-bun run build
-
-# Compilar con SSR
-bun run build:ssr
-
-# Lint del código
-bun run lint
-
-# Formatear código
-bun run format
-
-# Verificar formato
-bun run format:check
-
-# Verificación de tipos
-bun run types
 ```
 
-#### Comandos de Laravel Artisan
+Common commands:
 
 ```bash
-# Ejecutar migraciones
-php artisan migrate
-
-# Ejecutar migraciones con seeders
-php artisan migrate --seed
-
-# Limpiar caché
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-
-# Generar archivos de ayuda para IDE
-php artisan ide-helper:generate
+bun run build          # production frontend build
+bun run build:ssr      # client and SSR builds
+bun run types          # TypeScript checks
+bun run format         # Prettier write for resources/
+bun run format:check   # Prettier check for resources/
+bun run lint           # ESLint with fixes
+./vendor/bin/pint      # PHP formatting
+php artisan test       # PHP test suite
 ```
 
-### Estilo de Código
-
-El proyecto sigue los estándares de codificación PSR-12 para PHP y usa ESLint/Prettier para JavaScript/TypeScript.
-
-#### Estilo de Código PHP
+After adding or changing Laravel routes, regenerate Wayfinder output:
 
 ```bash
-# Formatear código PHP
-./vendor/bin/pint
+php artisan wayfinder:generate
 ```
 
-#### Estilo de Código JavaScript/TypeScript
+## Project Structure
+
+```text
+app/
+  Http/Controllers/      Thin HTTP controllers
+  Http/Middleware/       Auth, onboarding, appearance, and request middleware
+  Http/Requests/         Form request validation
+  Models/                Eloquent models
+  Notifications/         User notification classes
+  Policies/              Authorization policies
+  Services/              Business logic and tournament/match/team services
+
+resources/js/
+  components/            Shared React components
+  components/ui/         Reusable UI primitives
+  hooks/                 React hooks
+  layouts/               App, auth, and settings layouts
+  pages/                 Inertia pages
+  routes/                Generated Wayfinder route helpers
+  types/                 Shared TypeScript types
+
+routes/
+  web.php                Home, dashboard, profiles, auth-adjacent routes
+  teams.php              Teams, members, invitations, join requests
+  matches.php            Matches, requests, lineups, events, availability
+  tournaments.php        Tournaments, registrations, groups, scheduling
+  settings.php           Profile, password, appearance, 2FA
+  notifications.php      Notification API endpoints
+
+tests/
+  Feature/               HTTP and workflow tests
+  Unit/                  Isolated service tests
+```
+
+## Testing
+
+Run the full suite:
 
 ```bash
-# Formatear código
-bun run format
-
-# Lint del código
-bun run lint
-```
-
-## Estructura del Proyecto
-
-```
-veltro-new/
-├── app/                    # Código de la aplicación Laravel
-│   ├── Actions/           # Clases de acción (Fortify)
-│   ├── Http/              # Capa HTTP
-│   │   ├── Controllers/   # Controladores de la aplicación
-│   │   ├── Middleware/    # Middleware personalizado
-│   │   └── Requests/      # Validación de solicitudes de formulario
-│   ├── Models/            # Modelos Eloquent
-│   ├── Providers/         # Proveedores de servicios
-│   └── Services/          # Servicios de lógica de negocio
-├── bootstrap/             # Archivos de bootstrap de la aplicación
-├── config/                # Archivos de configuración
-├── database/              # Archivos de base de datos
-│   ├── factories/         # Factories de modelos
-│   ├── migrations/        # Migraciones de base de datos
-│   └── seeders/          # Seeders de base de datos
-├── public/                # Raíz web pública
-├── resources/             # Recursos frontend
-│   ├── css/              # Hojas de estilo
-│   ├── js/               # Código fuente JavaScript/TypeScript
-│   │   ├── actions/      # Utilidades de acción
-│   │   ├── components/   # Componentes React
-│   │   ├── hooks/        # Hooks personalizados de React
-│   │   ├── layouts/      # Componentes de diseño
-│   │   ├── lib/          # Bibliotecas de utilidades
-│   │   ├── pages/        # Componentes de página Inertia
-│   │   ├── routes/       # Definiciones de rutas
-│   │   ├── types/        # Definiciones de tipos TypeScript
-│   │   └── wayfinder/    # Ayudantes de rutas Wayfinder
-│   └── views/            # Plantillas Blade
-├── routes/                # Definiciones de rutas
-│   ├── web.php           # Rutas web
-│   ├── teams.php         # Rutas de equipos
-│   ├── matches.php       # Rutas de partidos
-│   └── settings.php      # Rutas de configuración
-├── storage/               # Directorio de almacenamiento
-├── tests/                 # Archivos de prueba
-│   ├── Feature/          # Pruebas de características
-│   └── Unit/             # Pruebas unitarias
-├── vendor/                # Dependencias de Composer
-├── node_modules/         # Dependencias de NPM/Bun
-├── compose.yaml          # Configuración de Docker Compose
-├── composer.json         # Dependencias de PHP
-├── package.json          # Dependencias de JavaScript
-├── phpunit.xml           # Configuración de PHPUnit
-├── tsconfig.json         # Configuración de TypeScript
-├── vite.config.ts        # Configuración de Vite
-└── project.md            # Documentación detallada del proyecto
-```
-
-## Pruebas
-
-El proyecto usa [Pest PHP](https://pestphp.com) para las pruebas.
-
-### Ejecutar Pruebas
-
-```bash
-# Ejecutar todas las pruebas
 composer test
+```
 
-# O directamente con Pest
+Run focused tests:
+
+```bash
+php artisan test tests/Feature/TeamTest.php
+php artisan test tests/Feature/Tournament
+php artisan test tests/Unit/Services/StandingsServiceTest.php
+```
+
+Before merging substantial work, run:
+
+```bash
+bun run types
+bun run format:check
+bun run build
 php artisan test
-
-# Ejecutar archivo de prueba específico
-php artisan test tests/Feature/Auth/LoginTest.php
-
-# Ejecutar con cobertura
-php artisan test --coverage
 ```
 
-### Estructura de Pruebas
+See [TESTING.md](TESTING.md) for additional testing notes.
 
-- **Pruebas de Características**: Ubicadas en `tests/Feature/` - Prueban características completas y endpoints de API
-- **Pruebas Unitarias**: Ubicadas en `tests/Unit/` - Prueban clases y métodos individuales
+## Operations
 
-### Configuración de Pruebas
-
-Las pruebas usan base de datos SQLite en memoria para velocidad. La configuración está en `phpunit.xml`.
-
-## Limitación de Tasa
-
-El proyecto implementa limitación de tasa (rate limiting) para proteger contra abuso y ataques DoS.
-
-### Límites Configurados
-
-- **Rutas de Autenticación**: 5 solicitudes/minuto (login, 2FA)
-- **Rutas Públicas**: 30 solicitudes/minuto (página de inicio)
-- **Rutas OAuth**: 10 solicitudes/minuto (Google OAuth)
-- **Rutas Autenticadas**: 60 solicitudes/minuto (equipos, partidos, dashboard)
-- **Operaciones de Configuración**:
-  - Lectura: 60 solicitudes/minuto
-  - Escritura: 6 solicitudes/minuto (actualizaciones de perfil, contraseña, eliminación)
-
-### Detalles Técnicos
-
-Los limitadores de tasa están configurados en `app/Providers/FortifyServiceProvider.php` y se aplican mediante middleware en los archivos de rutas. Cada grupo de rutas tiene su propio limitador independiente para evitar conflictos.
-
-Para más información, consulta [RATE_LIMITING.md](RATE_LIMITING.md).
-
-## Tareas Programadas (Scheduler)
-
-La aplicación utiliza el programador de tareas de Laravel para ejecutar comandos automáticamente en segundo plano.
-
-### Comandos Programados
-
-- **Recordatorios de Disponibilidad**: Envía notificaciones a los jugadores 48 horas antes de un partido si no han confirmado su disponibilidad
-  - Comando: `availability:send-reminders`
-  - Frecuencia: Cada 30 minutos
-  - Configurado en: `routes/console.php`
-
-### Configurar Cron Job (Producción)
-
-Para que el programador de Laravel funcione en producción, debes agregar una entrada de cron en tu servidor:
-
-```bash
-* * * * * cd /ruta-a-tu-proyecto && php artisan schedule:run >> /dev/null 2>&1
-```
-
-Esta entrada ejecutará el programador de Laravel cada minuto, y Laravel determinará qué tareas deben ejecutarse.
-
-### Modo Desarrollo
-
-Durante el desarrollo, puedes ejecutar el programador manualmente:
-
-```bash
-# Ejecutar el programador una vez
-php artisan schedule:run
-
-# O ejecutar un comando específico directamente
-php artisan availability:send-reminders
-
-# Mantener el programador ejecutándose en desarrollo
-php artisan schedule:work
-```
-
-### Verificar Tareas Programadas
-
-Para ver todas las tareas programadas y su próxima ejecución:
+The scheduler sends availability reminders for upcoming matches:
 
 ```bash
 php artisan schedule:list
+php artisan schedule:run
+php artisan availability:send-reminders
 ```
 
-## Configuración de Docker
+Production cron:
 
-El proyecto incluye configuración de Docker vía Laravel Sail para facilitar la configuración de desarrollo.
+```bash
+* * * * * cd /path/to/veltro && php artisan schedule:run >> /dev/null 2>&1
+```
 
-### Usando Laravel Sail
+Additional operational docs:
 
-#### Iniciar Contenedores
+- [RATE_LIMITING.md](RATE_LIMITING.md)
+- [PRODUCTION_STORAGE_SETUP.md](PRODUCTION_STORAGE_SETUP.md)
+
+## Docker / Sail
+
+Start containers:
 
 ```bash
 ./vendor/bin/sail up -d
 ```
 
-#### Ejecutar Comandos
+Run commands through Sail:
 
 ```bash
-# Ejecutar comandos de Artisan
 ./vendor/bin/sail artisan migrate
-
-# Ejecutar comandos de Composer
 ./vendor/bin/sail composer install
-
-# Ejecutar comandos de NPM/Bun
 ./vendor/bin/sail bun install
-
-# Acceder a MySQL
-./vendor/bin/sail mysql
 ```
 
-#### Detener Contenedores
-
-```bash
-./vendor/bin/sail down
-```
-
-### Servicios de Docker
-
-El archivo `compose.yaml` incluye:
-
-- **Aplicación Laravel**: PHP 8.4 con todas las extensiones requeridas
-- **MySQL 8.0**: Servidor de base de datos
-- **Puertos**:
-    - Aplicación: `80` (configurable vía `APP_PORT`)
-    - Vite: `5173` (configurable vía `VITE_PORT`)
-    - MySQL: `3307` (configurable vía `FORWARD_DB_PORT`)
-
-### Variables de Entorno para Docker
-
-Cuando uses Sail, asegúrate de que tu archivo `.env` tenga:
+When using Sail, set:
 
 ```env
 DB_HOST=mysql
 DB_PORT=3306
 ```
 
-## Recursos Adicionales
+## Conventions
 
-### Documentación
+- Keep controllers thin; put business behavior in services.
+- Prefer generated Wayfinder helpers from `resources/js/routes` over hardcoded internal URLs.
+- Keep generated frontend route files synchronized with backend route changes.
+- Use Pest for PHP tests, Pint for PHP formatting, and Prettier/TypeScript checks for frontend work.
+- Do not commit `.env`, secrets, or local build artifacts.
 
-- [Documentación de Laravel](https://laravel.com/docs)
-- [Documentación de Inertia.js](https://inertiajs.com)
-- [Documentación de React](https://react.dev)
-- [Documentación de Shadcn UI](https://ui.shadcn.com)
-- [Documentación de Tailwind CSS](https://tailwindcss.com)
-- [Documentación de Pest PHP](https://pestphp.com)
-
-### Documentación del Proyecto
-
-- [project.md](project.md) - Documentación detallada de requisitos del producto y características
-
-### Obtener Ayuda
-
-Si encuentras algún problema:
-
-1. Consulta [project.md](project.md) para documentación detallada de características
-2. Revisa la documentación de Laravel e Inertia.js
-3. Verifica los issues existentes en el repositorio
-4. Asegúrate de que todos los requisitos estén cumplidos y las dependencias instaladas
-
-## Licencia
-
-Este proyecto es software de código abierto licenciado bajo la [licencia MIT](LICENSE).
-
----
-
-**Construido con ❤️ para equipos de fútbol amateur en Uruguay**

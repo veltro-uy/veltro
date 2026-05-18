@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import userComments from '@/routes/users/comments';
 import type { ProfileComment, SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
@@ -40,7 +41,7 @@ export function AddCommentForm({
         setSubmitting(true);
 
         try {
-            const response = await fetch(`/api/users/${userId}/comments`, {
+            const response = await fetch(userComments.store(userId).url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

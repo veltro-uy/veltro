@@ -113,6 +113,16 @@ final class TournamentPolicy
     }
 
     /**
+     * Determine whether the user can draw teams into groups (pre-start only).
+     */
+    public function drawGroups(User $user, Tournament $tournament): bool
+    {
+        return $tournament->isOrganizer($user->id)
+            && $tournament->isGroupStageKnockout()
+            && in_array($tournament->status, ['draft', 'registration_open'], true);
+    }
+
+    /**
      * Determine whether the user can register a team for the tournament.
      */
     public function register(User $user, Tournament $tournament, Team $team): bool

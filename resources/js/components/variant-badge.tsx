@@ -29,7 +29,7 @@ const variantConfig = {
 export function VariantBadge({ variant, className }: VariantBadgeProps) {
     const config = variantConfig[variant as keyof typeof variantConfig] || {
         label: variant,
-        color: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
+        color: 'bg-muted text-muted-foreground hover:bg-muted',
     };
 
     return (

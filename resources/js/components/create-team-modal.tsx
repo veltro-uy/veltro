@@ -30,23 +30,6 @@ interface Props {
 
 export function CreateTeamModal({ trigger }: Props) {
     const [open, setOpen] = useState(false);
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        variant: 'football_11',
-        description: '',
-    });
-
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-        post(teams.store().url, {
-            onSuccess: () => {
-                setOpen(false);
-                reset();
-            },
-            onError: () => toast.error('Error al crear el equipo'),
-        });
-    };
-
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -64,93 +47,102 @@ export function CreateTeamModal({ trigger }: Props) {
                         Configura tu equipo y comienza a organizar partidos
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={submit} className="space-y-4">
-                    {/* Team Name */}
-                    <div className="space-y-2">
-                        <Label htmlFor="name">
-                            Nombre del Equipo{' '}
-                            <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                            id="name"
-                            value={data.name}
-                            onChange={(e) => setData('name', e.target.value)}
-                            placeholder="Ingresa el nombre del equipo"
-                            required
-                        />
-                        {errors.name && (
-                            <p className="text-sm text-destructive">
-                                {errors.name}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Variant */}
-                    <div className="space-y-2">
-                        <Label htmlFor="variant">
-                            Variante de Fútbol{' '}
-                            <span className="text-destructive">*</span>
-                        </Label>
-                        <Select
-                            value={data.variant}
-                            onValueChange={(value) => setData('variant', value)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="football_11">
-                                    Fútbol 11
-                                </SelectItem>
-                                <SelectItem value="football_7">
-                                    Fútbol 7
-                                </SelectItem>
-                                <SelectItem value="football_5">
-                                    Fútbol 5
-                                </SelectItem>
-                                <SelectItem value="futsal">Futsal</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {errors.variant && (
-                            <p className="text-sm text-destructive">
-                                {errors.variant}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Descripción</Label>
-                        <Textarea
-                            id="description"
-                            value={data.description}
-                            onChange={(e) =>
-                                setData('description', e.target.value)
-                            }
-                            placeholder="Cuéntanos sobre tu equipo..."
-                            rows={3}
-                        />
-                        {errors.description && (
-                            <p className="text-sm text-destructive">
-                                {errors.description}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setOpen(false)}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button type="submit" disabled={processing}>
-                            {processing ? 'Creando...' : 'Crear Equipo'}
-                        </Button>
-                    </div>
-                </form>
+                <CreateTeamForm onSuccess={() => setOpen(false)} />
             </DialogContent>
         </Dialog>
+    );
+}
+
+export function CreateTeamForm({ onSuccess }: { onSuccess?: () => void }) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
+        variant: 'football_11',
+        description: '',
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        post(teams.store().url, {
+            onSuccess: () => {
+                reset();
+                onSuccess?.();
+            },
+            onError: () => toast.error('Error al crear el equipo'),
+        });
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-4">
+            {/* Team Name */}
+            <div className="space-y-2">
+                <Label htmlFor="name">
+                    Nombre del Equipo{' '}
+                    <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                    id="name"
+                    value={data.name}
+                    onChange={(e) => setData('name', e.target.value)}
+                    placeholder="Ingresa el nombre del equipo"
+                    required
+                />
+                {errors.name && (
+                    <p className="text-sm text-destructive">{errors.name}</p>
+                )}
+            </div>
+
+            {/* Variant */}
+            <div className="space-y-2">
+                <Label htmlFor="variant">
+                    Variante de Fútbol{' '}
+                    <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                    value={data.variant}
+                    onValueChange={(value) => setData('variant', value)}
+                >
+                    <SelectTrigger>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="football_11">Fútbol 11</SelectItem>
+                        <SelectItem value="football_7">Fútbol 7</SelectItem>
+                        <SelectItem value="football_5">Fútbol 5</SelectItem>
+                        <SelectItem value="futsal">Futsal</SelectItem>
+                    </SelectContent>
+                </Select>
+                {errors.variant && (
+                    <p className="text-sm text-destructive">{errors.variant}</p>
+                )}
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                    id="description"
+                    value={data.description}
+                    onChange={(e) => setData('description', e.target.value)}
+                    placeholder="Cuéntanos sobre tu equipo..."
+                    rows={3}
+                />
+                {errors.description && (
+                    <p className="text-sm text-destructive">
+                        {errors.description}
+                    </p>
+                )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+                {onSuccess && (
+                    <Button type="button" variant="outline" onClick={onSuccess}>
+                        Cancelar
+                    </Button>
+                )}
+                <Button type="submit" disabled={processing}>
+                    {processing ? 'Creando...' : 'Crear Equipo'}
+                </Button>
+            </div>
+        </form>
     );
 }

@@ -255,6 +255,42 @@ export type TournamentTeamStatus =
     | 'rejected'
     | 'withdrawn';
 
+export type TournamentFormat =
+    | 'single_elimination'
+    | 'league'
+    | 'group_stage_knockout';
+
+export type TournamentPhase =
+    | 'not_started'
+    | 'league'
+    | 'group_stage'
+    | 'knockout'
+    | 'completed';
+
+export interface StandingRow {
+    team_id: number;
+    team?: Team;
+    played: number;
+    wins: number;
+    draws: number;
+    losses: number;
+    goals_for: number;
+    goals_against: number;
+    goal_difference: number;
+    points: number;
+    position: number;
+    tied_with_above: boolean;
+}
+
+export interface TournamentGroup {
+    id: number;
+    tournament_id: number;
+    name: string;
+    position: number;
+    teams?: TournamentTeam[];
+    standings?: StandingRow[];
+}
+
 export interface Tournament {
     id: number;
     name: string;
@@ -266,6 +302,10 @@ export interface Tournament {
     visibility: TournamentVisibility;
     status: TournamentStatus;
     variant: string;
+    format: TournamentFormat;
+    phase: TournamentPhase;
+    group_count?: number | null;
+    group_size?: number | null;
     max_teams: number;
     min_teams: number;
     registered_teams_count?: number;
@@ -276,6 +316,7 @@ export interface Tournament {
     updated_at: string;
     tournament_teams?: TournamentTeam[];
     rounds?: TournamentRound[];
+    groups?: TournamentGroup[];
     [key: string]: unknown;
 }
 
@@ -286,6 +327,7 @@ export interface TournamentTeam {
     team?: Team;
     status: TournamentTeamStatus;
     seed?: number;
+    tournament_group_id?: number | null;
     registered_by: number;
     registered_at: string;
     approved_at?: string;
@@ -312,7 +354,10 @@ export interface FootballMatch {
     tournament?: Tournament;
     tournament_round_id?: number;
     tournament_round?: TournamentRound;
+    tournament_group_id?: number | null;
+    tournament_group?: TournamentGroup;
     bracket_position?: number;
+    matchday?: number | null;
     variant: string;
     scheduled_at: string | null;
     location: string | null;
