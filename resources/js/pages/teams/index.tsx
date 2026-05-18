@@ -84,9 +84,13 @@ interface Props {
 }
 
 export default function Index({ myTeams, discoverTeams }: Props) {
-    const { auth } = usePage<{ auth: { user: { id: number } } }>().props;
+    const page = usePage<{ auth: { user: { id: number } } }>();
+    const { auth } = page.props;
+    const initialView = new URLSearchParams(page.url.split('?')[1] ?? '').get(
+        'view',
+    );
     const [activeView, setActiveView] = useState<'my-teams' | 'discover'>(
-        'my-teams',
+        initialView === 'discover' ? 'discover' : 'my-teams',
     );
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedVariant, setSelectedVariant] = useState<string>('all');

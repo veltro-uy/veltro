@@ -18,14 +18,15 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import tournaments from '@/routes/tournaments';
 import type { BreadcrumbItem, TournamentFormat } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, ImagePlus, Save, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Torneos', href: '/tournaments' },
-    { title: 'Crear Torneo', href: '/tournaments/create' },
+    { title: 'Torneos', href: tournaments.index().url },
+    { title: 'Crear Torneo', href: tournaments.create().url },
 ];
 
 interface FormData {
@@ -146,7 +147,7 @@ export default function TournamentCreate() {
             formData.append('logo', selectedLogo);
         }
 
-        router.post('/tournaments', formData, {
+        router.post(tournaments.store().url, formData, {
             onSuccess: () => setProcessing(false),
             onError: (errs) => {
                 setProcessing(false);

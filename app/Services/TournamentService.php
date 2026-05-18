@@ -12,11 +12,18 @@ use App\Models\TournamentRound;
 use App\Models\TournamentTeam;
 use App\Models\User;
 use App\Services\Tournament\RoundRobinScheduler;
+use App\Services\Tournament\TournamentFormatRules;
+use App\Services\Tournament\TournamentRegistrationService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class TournamentService
 {
+    public function __construct(
+        private readonly TournamentRegistrationService $registrationService,
+        private readonly TournamentFormatRules $formatRules,
+    ) {}
+
     /**
      * Create a new tournament.
      */
@@ -26,8 +33,8 @@ final class TournamentService
         $groupCount = isset($data['group_count']) ? (int) $data['group_count'] : null;
         $groupSize = isset($data['group_size']) ? (int) $data['group_size'] : null;
 
-        $maxTeams = $this->resolveMaxTeams($format, $data, $groupCount, $groupSize);
-        $this->validateFormatConfig($format, $maxTeams, $groupCount, $groupSize);
+        $maxTeams = $this->formatRules->resolveMaxTeams($format, $data, $groupCount, $groupSize);
+        $this->formatRules->validateFormatConfig($format, $maxTeams, $groupCount, $groupSize);
 
         $tournament = Tournament::create([
             'name' => $data['name'],
@@ -75,8 +82,8 @@ final class TournamentService
         $groupCount = $data['group_count'] ?? $tournament->group_count;
         $groupSize = $data['group_size'] ?? $tournament->group_size;
 
-        $maxTeams = $this->resolveMaxTeams($format, $data, $groupCount, $groupSize, fallback: $tournament->max_teams);
-        $this->validateFormatConfig($format, $maxTeams, $groupCount, $groupSize);
+        $maxTeams = $this->formatRules->resolveMaxTeams($format, $data, $groupCount, $groupSize, fallback: $tournament->max_teams);
+        $this->formatRules->validateFormatConfig($format, $maxTeams, $groupCount, $groupSize);
 
         if ($maxTeams < $tournament->getRegisteredTeamsCount()) {
             throw new \InvalidArgumentException('Cannot reduce max teams below current registered count');
@@ -118,61 +125,7 @@ final class TournamentService
      */
     public function registerTeam(Tournament $tournament, Team $team, User $user): TournamentTeam
     {
-        // Check if registration is open
-        if (! $tournament->isRegistrationOpen()) {
-            if ($tournament->registration_deadline && now()->isAfter($tournament->registration_deadline)) {
-                throw new \RuntimeException('Registration deadline has passed');
-            }
-            throw new \RuntimeException('Tournament is not accepting registrations');
-        }
-
-        // Check if tournament has space
-        if (! $tournament->hasSpaceForTeams()) {
-            throw new \RuntimeException('Tournament is full');
-        }
-
-        // Check if team is already registered
-        $existing = $tournament->tournamentTeams()
-            ->where('team_id', $team->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->exists();
-
-        if ($existing) {
-            throw new \RuntimeException('Team is already registered for this tournament');
-        }
-
-        // Validate variant matches
-        if ($tournament->variant !== $team->variant) {
-            throw new \InvalidArgumentException('Team variant must match tournament variant');
-        }
-
-        // Handle re-registration after rejection or withdrawal
-        $previousRegistration = $tournament->tournamentTeams()
-            ->where('team_id', $team->id)
-            ->whereIn('status', ['rejected', 'withdrawn'])
-            ->first();
-
-        if ($previousRegistration) {
-            $previousRegistration->update([
-                'status' => $tournament->visibility === 'public' ? 'approved' : 'pending',
-                'registered_by' => $user->id,
-                'registered_at' => now(),
-                'approved_at' => $tournament->visibility === 'public' ? now() : null,
-            ]);
-
-            return $previousRegistration;
-        }
-
-        $registration = TournamentTeam::create([
-            'tournament_id' => $tournament->id,
-            'team_id' => $team->id,
-            'status' => $tournament->visibility === 'public' ? 'approved' : 'pending',
-            'registered_by' => $user->id,
-            'registered_at' => now(),
-            'approved_at' => $tournament->visibility === 'public' ? now() : null,
-        ]);
-
-        return $registration;
+        return $this->registrationService->registerTeam($tournament, $team, $user);
     }
 
     /**
@@ -180,18 +133,7 @@ final class TournamentService
      */
     public function approveTeam(TournamentTeam $registration): void
     {
-        if ($registration->isApproved()) {
-            throw new \RuntimeException('Registration is already approved');
-        }
-
-        if (! $registration->tournament->hasSpaceForTeams()) {
-            throw new \RuntimeException('Tournament is full');
-        }
-
-        $registration->update([
-            'status' => 'approved',
-            'approved_at' => now(),
-        ]);
+        $this->registrationService->approveTeam($registration);
     }
 
     /**
@@ -199,13 +141,7 @@ final class TournamentService
      */
     public function rejectTeam(TournamentTeam $registration): void
     {
-        if ($registration->isRejected()) {
-            throw new \RuntimeException('Registration is already rejected');
-        }
-
-        $registration->update([
-            'status' => 'rejected',
-        ]);
+        $this->registrationService->rejectTeam($registration);
     }
 
     /**
@@ -213,13 +149,7 @@ final class TournamentService
      */
     public function withdrawTeam(TournamentTeam $registration): void
     {
-        if ($registration->tournament->isInProgress() || $registration->tournament->isCompleted()) {
-            throw new \RuntimeException('Cannot withdraw from a tournament that has started or completed');
-        }
-
-        $registration->update([
-            'status' => 'withdrawn',
-        ]);
+        $this->registrationService->withdrawTeam($registration);
     }
 
     /**
@@ -263,7 +193,7 @@ final class TournamentService
             }
 
             // Default: single-elimination
-            if (! $this->isPowerOfTwo($approvedCount)) {
+            if (! $this->formatRules->isPowerOfTwo($approvedCount)) {
                 throw new \RuntimeException('Number of approved teams must be a power of 2 (4, 8, 16, 32, 64)');
             }
             $tournament->update(['status' => 'in_progress', 'phase' => 'knockout']);
@@ -470,7 +400,7 @@ final class TournamentService
      */
     private function groupKnockoutPairings(int $groupCount): array
     {
-        if (! $this->isPowerOfTwo($groupCount) || $groupCount < 2) {
+        if (! $this->formatRules->isPowerOfTwo($groupCount) || $groupCount < 2) {
             throw new \RuntimeException('Group count must be a power of 2 ≥ 2');
         }
 
@@ -517,58 +447,6 @@ final class TournamentService
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     */
-    private function resolveMaxTeams(string $format, array $data, ?int $groupCount, ?int $groupSize, ?int $fallback = null): int
-    {
-        if ($format === 'group_stage_knockout') {
-            if ($groupCount && $groupSize) {
-                return $groupCount * $groupSize;
-            }
-        }
-
-        if (isset($data['max_teams'])) {
-            return (int) $data['max_teams'];
-        }
-
-        return $fallback ?? 8;
-    }
-
-    private function validateFormatConfig(string $format, int $maxTeams, ?int $groupCount, ?int $groupSize): void
-    {
-        if (! in_array($format, ['single_elimination', 'league', 'group_stage_knockout'], true)) {
-            throw new \InvalidArgumentException('Invalid tournament format');
-        }
-
-        if ($format === 'single_elimination') {
-            if (! in_array($maxTeams, [4, 8, 16, 32, 64], true)) {
-                throw new \InvalidArgumentException('Single-elimination tournaments require max teams in {4, 8, 16, 32, 64}');
-            }
-
-            return;
-        }
-
-        if ($format === 'league') {
-            if ($maxTeams < 2 || $maxTeams > 64) {
-                throw new \InvalidArgumentException('League tournaments require between 2 and 64 teams');
-            }
-
-            return;
-        }
-
-        // group_stage_knockout
-        if (! in_array($groupCount, [2, 4, 8, 16], true)) {
-            throw new \InvalidArgumentException('Group count must be 2, 4, 8 or 16');
-        }
-        if ($groupSize === null || $groupSize < 2 || $groupSize > 16) {
-            throw new \InvalidArgumentException('Group size must be between 2 and 16');
-        }
-        if ($maxTeams !== $groupCount * $groupSize) {
-            throw new \InvalidArgumentException('Max teams must equal group_count × group_size');
-        }
-    }
-
-    /**
      * Generate a single-elimination bracket.
      *
      * When called with no team list, loads approved teams ordered by seed
@@ -599,7 +477,7 @@ final class TournamentService
 
         $teamCount = $teams->count();
 
-        if (! $this->isPowerOfTwo($teamCount)) {
+        if (! $this->formatRules->isPowerOfTwo($teamCount)) {
             throw new \RuntimeException('Number of teams must be a power of 2');
         }
 
@@ -746,13 +624,5 @@ final class TournamentService
             4 => 'Octavos de Final',
             default => "Ronda $roundNumber",
         };
-    }
-
-    /**
-     * Check if a number is a power of 2.
-     */
-    private function isPowerOfTwo(int $number): bool
-    {
-        return $number > 0 && ($number & ($number - 1)) === 0;
     }
 }

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import AppLayout from '@/layouts/app-layout';
 import matches from '@/routes/matches';
+import teamsRoute from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { Calendar, History, Search, Trophy, Users } from 'lucide-react';
@@ -229,7 +230,13 @@ export default function Index({
                                     {hasTeams ? (
                                         <CreateMatchModal teams={teams} />
                                     ) : (
-                                        <Link href="/teams">
+                                        <Link
+                                            href={
+                                                teamsRoute.index({
+                                                    query: { view: 'discover' },
+                                                }).url
+                                            }
+                                        >
                                             <Button
                                                 variant="outline"
                                                 className="gap-2"
