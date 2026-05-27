@@ -1,34 +1,34 @@
 # Veltro
 
-Veltro is a Laravel, React, and Inertia platform for amateur football teams in Uruguay. Teams can manage rosters, discover opponents, schedule matches, track player availability, record results, run tournaments, and build player profiles with comments and commendations.
+Veltro es una plataforma construida con Laravel, React e Inertia para equipos de fútbol amateur en Uruguay. Permite gestionar planteles, encontrar rivales, coordinar partidos, registrar la disponibilidad de los jugadores, cargar resultados, organizar torneos y crear perfiles de jugadores con comentarios y reconocimientos.
 
-## Tech Stack
+## Tecnologías
 
 - **Backend:** Laravel 12, PHP 8.2+, Laravel Fortify, Socialite, Wayfinder
-- **Frontend:** React 19, TypeScript, Inertia 2, Tailwind CSS 4, Radix/Shadcn-style components
-- **Data:** MySQL 8 in development/production, SQLite in tests
-- **Tooling:** Bun, Vite, Pest, Pint, Prettier, ESLint
+- **Frontend:** React 19, TypeScript, Inertia 2, Tailwind CSS 4, componentes estilo Radix/Shadcn
+- **Datos:** MySQL 8 en desarrollo/producción, SQLite en pruebas
+- **Herramientas:** Bun, Vite, Pest, Pint, Prettier, ESLint
 
-## Core Features
+## Funcionalidades principales
 
-- Email/password auth, Google OAuth, email verification, and two-factor auth
-- Team creation, discovery, join requests, invitations, member roles, and logos
-- Match creation, opponent requests, lineups, availability tracking, score/event recording
-- Tournament formats: single elimination, league, and group stage plus knockout
-- User profiles with match/team stats, comments, commendations, avatars, and public profile pages
-- Notifications, scheduled availability reminders, rate limiting, dark mode, and responsive UI
+- Autenticación con email y contraseña, Google OAuth, verificación de email y autenticación en dos factores
+- Creación y búsqueda de equipos, solicitudes de ingreso, invitaciones, roles de miembros y logos
+- Creación de partidos, solicitudes a rivales, alineaciones, seguimiento de disponibilidad y registro de resultados/eventos
+- Formatos de torneo: eliminación directa, liga y fase de grupos con eliminatorias
+- Perfiles de usuario con estadísticas de partidos/equipos, comentarios, reconocimientos, avatares y páginas públicas
+- Notificaciones, recordatorios programados de disponibilidad, limitación de tasa, modo oscuro e interfaz responsive
 
-## Requirements
+## Requisitos
 
 - PHP 8.2+
 - Composer
-- Node.js 20.19+ or 22.12+
+- Node.js 20.19+ o 22.12+
 - Bun
 - MySQL 8.0+
 
-Docker/Sail is available through `compose.yaml`, but local PHP/MySQL/Bun works fine.
+Docker/Sail está disponible mediante `compose.yaml`, aunque también funciona correctamente con PHP, MySQL y Bun instalados localmente.
 
-## Setup
+## Instalación
 
 ```bash
 composer install
@@ -39,7 +39,7 @@ php artisan migrate
 bun run build
 ```
 
-Configure at least these values in `.env`:
+Configura al menos estos valores en `.env`:
 
 ```env
 APP_URL=http://localhost
@@ -54,7 +54,7 @@ DB_PASSWORD=
 QUEUE_CONNECTION=database
 ```
 
-Optional Google OAuth:
+Google OAuth opcional:
 
 ```env
 GOOGLE_CLIENT_ID=
@@ -62,88 +62,88 @@ GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI=http://localhost/auth/google/callback
 ```
 
-## Development
+## Desarrollo
 
-Start the standard local stack:
+Inicia el entorno local estándar:
 
 ```bash
 composer dev
 ```
 
-Start with Inertia SSR:
+Inicia el entorno con SSR de Inertia:
 
 ```bash
 composer dev:ssr
 ```
 
-Frontend-only Vite server:
+Inicia solo el servidor de Vite para el frontend:
 
 ```bash
 bun run dev
 ```
 
-Common commands:
+Comandos frecuentes:
 
 ```bash
-bun run build          # production frontend build
-bun run build:ssr      # client and SSR builds
-bun run types          # TypeScript checks
-bun run format         # Prettier write for resources/
-bun run format:check   # Prettier check for resources/
-bun run lint           # ESLint with fixes
-./vendor/bin/pint      # PHP formatting
-php artisan test       # PHP test suite
+bun run build          # build de producción del frontend
+bun run build:ssr      # builds del cliente y SSR
+bun run types          # chequeos de TypeScript
+bun run format         # formatea resources/ con Prettier
+bun run format:check   # verifica resources/ con Prettier
+bun run lint           # ESLint con fixes
+./vendor/bin/pint      # formato de PHP
+php artisan test       # suite de pruebas PHP
 ```
 
-After adding or changing Laravel routes, regenerate Wayfinder output:
+Después de agregar o modificar rutas de Laravel, regenera la salida de Wayfinder:
 
 ```bash
 php artisan wayfinder:generate
 ```
 
-## Project Structure
+## Estructura del proyecto
 
 ```text
 app/
-  Http/Controllers/      Thin HTTP controllers
-  Http/Middleware/       Auth, onboarding, appearance, and request middleware
-  Http/Requests/         Form request validation
-  Models/                Eloquent models
-  Notifications/         User notification classes
-  Policies/              Authorization policies
-  Services/              Business logic and tournament/match/team services
+  Http/Controllers/      Controladores HTTP livianos
+  Http/Middleware/       Middleware de autenticación, onboarding, apariencia y solicitudes
+  Http/Requests/         Validación mediante solicitudes de formulario
+  Models/                Modelos de Eloquent
+  Notifications/         Clases de notificaciones para usuarios
+  Policies/              Políticas de autorización
+  Services/              Lógica de negocio y servicios de torneos/partidos/equipos
 
 resources/js/
-  components/            Shared React components
-  components/ui/         Reusable UI primitives
-  hooks/                 React hooks
-  layouts/               App, auth, and settings layouts
-  pages/                 Inertia pages
-  routes/                Generated Wayfinder route helpers
-  types/                 Shared TypeScript types
+  components/            Componentes React compartidos
+  components/ui/         Primitivas reutilizables de UI
+  hooks/                 Hooks de React
+  layouts/               Layouts de la app, autenticación y configuración
+  pages/                 Páginas de Inertia
+  routes/                Helpers de rutas generados por Wayfinder
+  types/                 Tipos TypeScript compartidos
 
 routes/
-  web.php                Home, dashboard, profiles, auth-adjacent routes
-  teams.php              Teams, members, invitations, join requests
-  matches.php            Matches, requests, lineups, events, availability
-  tournaments.php        Tournaments, registrations, groups, scheduling
-  settings.php           Profile, password, appearance, 2FA
-  notifications.php      Notification API endpoints
+  web.php                Inicio, dashboard, perfiles y rutas relacionadas con autenticación
+  teams.php              Equipos, miembros, invitaciones y solicitudes de ingreso
+  matches.php            Partidos, solicitudes, alineaciones, eventos y disponibilidad
+  tournaments.php        Torneos, inscripciones, grupos y calendario
+  settings.php           Perfil, contraseña, apariencia y 2FA
+  notifications.php      Endpoints de API para notificaciones
 
 tests/
-  Feature/               HTTP and workflow tests
-  Unit/                  Isolated service tests
+  Feature/               Pruebas HTTP y de flujos completos
+  Unit/                  Pruebas aisladas de servicios
 ```
 
-## Testing
+## Pruebas
 
-Run the full suite:
+Ejecuta toda la suite:
 
 ```bash
 composer test
 ```
 
-Run focused tests:
+Ejecuta pruebas específicas:
 
 ```bash
 php artisan test tests/Feature/TeamTest.php
@@ -151,7 +151,7 @@ php artisan test tests/Feature/Tournament
 php artisan test tests/Unit/Services/StandingsServiceTest.php
 ```
 
-Before merging substantial work, run:
+Antes de fusionar cambios importantes, ejecuta:
 
 ```bash
 bun run types
@@ -160,11 +160,11 @@ bun run build
 php artisan test
 ```
 
-See [TESTING.md](TESTING.md) for additional testing notes.
+Consulta [TESTING.md](TESTING.md) para ver notas adicionales sobre pruebas.
 
-## Operations
+## Operaciones
 
-The scheduler sends availability reminders for upcoming matches:
+El scheduler envía recordatorios de disponibilidad para los próximos partidos:
 
 ```bash
 php artisan schedule:list
@@ -172,26 +172,26 @@ php artisan schedule:run
 php artisan availability:send-reminders
 ```
 
-Production cron:
+Cron de producción:
 
 ```bash
 * * * * * cd /path/to/veltro && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Additional operational docs:
+Documentación operativa adicional:
 
 - [RATE_LIMITING.md](RATE_LIMITING.md)
 - [PRODUCTION_STORAGE_SETUP.md](PRODUCTION_STORAGE_SETUP.md)
 
 ## Docker / Sail
 
-Start containers:
+Inicia los contenedores:
 
 ```bash
 ./vendor/bin/sail up -d
 ```
 
-Run commands through Sail:
+Ejecuta comandos mediante Sail:
 
 ```bash
 ./vendor/bin/sail artisan migrate
@@ -199,18 +199,17 @@ Run commands through Sail:
 ./vendor/bin/sail bun install
 ```
 
-When using Sail, set:
+Cuando uses Sail, configura:
 
 ```env
 DB_HOST=mysql
 DB_PORT=3306
 ```
 
-## Conventions
+## Convenciones
 
-- Keep controllers thin; put business behavior in services.
-- Prefer generated Wayfinder helpers from `resources/js/routes` over hardcoded internal URLs.
-- Keep generated frontend route files synchronized with backend route changes.
-- Use Pest for PHP tests, Pint for PHP formatting, and Prettier/TypeScript checks for frontend work.
-- Do not commit `.env`, secrets, or local build artifacts.
-
+- Mantén los controladores livianos; coloca la lógica de negocio en servicios.
+- Prefiere los helpers generados por Wayfinder desde `resources/js/routes` antes que URLs internas escritas a mano.
+- Mantén sincronizados los archivos de rutas frontend generados con los cambios de rutas backend.
+- Usa Pest para las pruebas PHP, Pint para el formato PHP y Prettier/TypeScript para el trabajo frontend.
+- No commitees `.env`, secretos ni artefactos locales de build.
