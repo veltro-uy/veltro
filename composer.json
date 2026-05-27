@@ -1,11 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "veltro-uy/veltro",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Plataforma para equipos de fútbol amateur en Uruguay.",
     "keywords": [
         "laravel",
-        "framework"
+        "react",
+        "inertia",
+        "futbol",
+        "uruguay"
     ],
     "license": "MIT",
     "require": {
