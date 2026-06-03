@@ -1,11 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "veltro-uy/veltro",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Plataforma para equipos de fútbol amateur en Uruguay.",
     "keywords": [
         "laravel",
-        "framework"
+        "react",
+        "inertia",
+        "futbol",
+        "uruguay"
     ],
     "license": "MIT",
     "require": {
@@ -16,7 +19,8 @@
         "laravel/framework": "^12.0",
         "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.10.1",
-        "laravel/wayfinder": "^0.1.9"
+        "laravel/wayfinder": "^0.1.9",
+        "league/flysystem-aws-s3-v3": "^3.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
