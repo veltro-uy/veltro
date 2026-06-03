@@ -139,7 +139,7 @@ final class TournamentController extends Controller
 
             return redirect()->route('tournaments.show', $tournament->id)
                 ->with('success', 'Torneo creado exitosamente');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage())->withInput();
         }
     }
@@ -366,6 +366,8 @@ final class TournamentController extends Controller
             throw ValidationException::withMessages([
                 'error' => $e->getMessage(),
             ]);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage())->withInput();
         }
     }
 
