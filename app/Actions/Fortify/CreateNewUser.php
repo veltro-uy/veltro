@@ -3,8 +3,8 @@
 namespace App\Actions\Fortify;
 
 use App\Models\TeamInvitation;
-use App\Models\TeamMember;
 use App\Models\User;
+use App\Services\TeamInvitationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -49,20 +49,7 @@ class CreateNewUser implements CreatesNewUsers
                     ->first();
 
                 if ($invitation && $invitation->isValid()) {
-                    // Add user to team
-                    TeamMember::create([
-                        'team_id' => $invitation->team_id,
-                        'user_id' => $user->id,
-                        'role' => $invitation->role,
-                        'status' => 'active',
-                    ]);
-
-                    // Mark invitation as accepted
-                    $invitation->update([
-                        'status' => 'accepted',
-                        'accepted_by' => $user->id,
-                        'accepted_at' => now(),
-                    ]);
+                    app(TeamInvitationService::class)->acceptInvitation($invitation, $user);
                 }
             }
 

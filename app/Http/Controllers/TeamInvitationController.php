@@ -6,19 +6,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\TeamInvitation;
-use App\Models\TeamMember;
 use App\Models\User;
 use App\Notifications\TeamInvitationNotification;
+use App\Services\TeamInvitationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final class TeamInvitationController extends Controller
 {
+    public function __construct(
+        private readonly TeamInvitationService $invitationService,
+    ) {}
+
     /**
      * Generate a new invitation
      */
@@ -134,8 +137,21 @@ final class TeamInvitationController extends Controller
             ]);
         }
 
-        // Redirect to register with invitation token
-        return redirect()->route('register', ['invitation' => $token]);
+        // Guest: show a branded landing page so they can sign up or log in.
+        // Store the invitation URL as the intended destination so that after
+        // authentication (and onboarding) the user is brought back here and
+        // routed into the team.
+        session(['url.intended' => route('teams.invitation.show', $invitation->token)]);
+
+        return Inertia::render('teams/invitation-guest', [
+            'team' => $invitation->team,
+            'inviter' => $invitation->inviter->only(['id', 'name']),
+            'invitation' => [
+                'token' => $invitation->token,
+                'role' => $invitation->role,
+                'expires_at' => $invitation->expires_at->toIso8601String(),
+            ],
+        ]);
     }
 
     /**
@@ -164,27 +180,9 @@ final class TeamInvitationController extends Controller
                 ->with('info', 'Ya eres miembro de este equipo');
         }
 
-        // Check if team is at capacity
-        if ($invitation->team->isFull()) {
+        if (! $this->invitationService->acceptInvitation($invitation, $user)) {
             return back()->with('error', 'El equipo ha alcanzado su capacidad máxima y no puede aceptar más miembros');
         }
-
-        DB::transaction(function () use ($invitation, $user) {
-            // Add user to team
-            TeamMember::create([
-                'team_id' => $invitation->team_id,
-                'user_id' => $user->id,
-                'role' => $invitation->role,
-                'status' => 'active',
-            ]);
-
-            // Mark invitation as accepted
-            $invitation->update([
-                'status' => 'accepted',
-                'accepted_by' => $user->id,
-                'accepted_at' => now(),
-            ]);
-        });
 
         return redirect()->route('teams.show', $invitation->team_id)
             ->with('success', '¡Te has unido al equipo exitosamente!');
