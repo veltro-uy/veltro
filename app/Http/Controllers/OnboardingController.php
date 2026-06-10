@@ -38,7 +38,7 @@ class OnboardingController extends Controller
         ]);
 
         return redirect()
-            ->route('teams.index')
+            ->intended(route('teams.index'))
             ->with('success', '¡Bienvenido a Veltro!');
     }
 
@@ -52,7 +52,7 @@ class OnboardingController extends Controller
         ]);
 
         return redirect()
-            ->route('teams.index')
+            ->intended(route('teams.index'))
             ->with('success', '¡Bienvenido a Veltro! Puedes agregar tu número de teléfono más tarde en configuración.');
     }
 }
