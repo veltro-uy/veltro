@@ -116,6 +116,8 @@ export function CommendationDialog({
         if (isOpen) {
             // If we have initial data, use it; otherwise fetch
             if (initialExistingCommendations != null) {
+                // Seed state from the provided prop when the dialog opens.
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setExistingCommendations(initialExistingCommendations);
             } else {
                 fetchExistingCommendations();

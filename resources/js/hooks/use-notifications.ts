@@ -241,6 +241,8 @@ export function useNotifications(): UseNotificationsReturn {
     useEffect(() => {
         if (!isAuthenticated) return;
 
+        // Polling fetch; setState happens asynchronously after each request.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchUnreadCount();
         const interval = setInterval(fetchUnreadCount, POLLING_INTERVAL);
         return () => clearInterval(interval);
