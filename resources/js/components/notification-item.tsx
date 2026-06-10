@@ -2,8 +2,10 @@ import { router } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
+    Award,
     CheckCircle,
     Clock,
+    MessageCircle,
     Target,
     Trash2,
     Trophy,
@@ -37,6 +39,8 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
     Target,
     Clock,
     Users,
+    Award,
+    MessageCircle,
 };
 
 const iconColorMap: Record<string, string> = {
@@ -47,6 +51,8 @@ const iconColorMap: Record<string, string> = {
     match_score_updated: 'text-amber-600 dark:text-amber-500',
     availability_reminder: 'text-sky-600 dark:text-sky-500',
     team_invitation: 'text-violet-600 dark:text-violet-500',
+    commendation_received: 'text-yellow-600 dark:text-yellow-500',
+    profile_comment: 'text-indigo-600 dark:text-indigo-500',
 };
 
 const iconBgMap: Record<string, string> = {
@@ -57,6 +63,8 @@ const iconBgMap: Record<string, string> = {
     match_score_updated: 'bg-amber-50 dark:bg-amber-950/20',
     availability_reminder: 'bg-sky-50 dark:bg-sky-950/20',
     team_invitation: 'bg-violet-50 dark:bg-violet-950/20',
+    commendation_received: 'bg-yellow-50 dark:bg-yellow-950/20',
+    profile_comment: 'bg-indigo-50 dark:bg-indigo-950/20',
 };
 
 export function NotificationItem({

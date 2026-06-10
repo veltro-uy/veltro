@@ -1,4 +1,5 @@
 import { usePage } from '@inertiajs/react';
+import { useEchoNotification } from '@laravel/echo-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -19,11 +20,13 @@ interface UseNotificationsReturn {
     refresh: () => Promise<void>;
 }
 
-const POLLING_INTERVAL = 45000; // 45 seconds
+// WebSockets carry the real-time load; polling is now just a safety-net fallback.
+const POLLING_INTERVAL = 120000; // 2 minutes
 
 export function useNotifications(): UseNotificationsReturn {
     const page = usePage<SharedData>();
-    const isAuthenticated = !!page.props.auth?.user;
+    const user = page.props.auth?.user;
+    const isAuthenticated = !!user;
 
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -221,6 +224,18 @@ export function useNotifications(): UseNotificationsReturn {
     const refresh = useCallback(async () => {
         await Promise.all([fetchUnreadCount(), fetchNotifications(1)]);
     }, [fetchUnreadCount, fetchNotifications]);
+
+    // Real-time: listen on the user's private notification channel and re-sync
+    // immediately when a broadcast arrives. The bell only renders for
+    // authenticated users, so the channel id is always present here.
+    useEchoNotification(
+        `App.Models.User.${user?.id ?? ''}`,
+        () => {
+            void refresh();
+        },
+        undefined,
+        [refresh],
+    );
 
     // Setup polling for unread count (only when authenticated)
     useEffect(() => {

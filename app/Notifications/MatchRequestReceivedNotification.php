@@ -31,7 +31,7 @@ class MatchRequestReceivedNotification extends Notification implements ShouldQue
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'broadcast'];
     }
 
     /**

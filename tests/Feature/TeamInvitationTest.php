@@ -6,7 +6,9 @@ use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Models\User;
+use App\Notifications\TeamInvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 
 uses(RefreshDatabase::class);
 
@@ -127,6 +129,67 @@ test('expired pending invitations are auto-marked when leader views the page', f
         ->get(route('teams.show', $this->team->id));
 
     expect($invitation->fresh()->status)->toBe('expired');
+});
+
+// ============================================================
+// Create flow
+// ============================================================
+
+test('inviting a registered user by email notifies that user', function () {
+    Notification::fake();
+
+    $invitee = User::factory()->create(['email' => 'someone@example.com']);
+
+    $this->actingAs($this->captain)
+        ->postJson(route('teams.invitations.create', $this->team->id), [
+            'team_id' => $this->team->id,
+            'role' => 'player',
+            'email' => 'someone@example.com',
+        ])
+        ->assertCreated();
+
+    Notification::assertSentTo(
+        $invitee,
+        TeamInvitationNotification::class,
+        function (TeamInvitationNotification $notification) {
+            return $notification->invitedBy->is($this->captain)
+                && $notification->invitation->team_id === $this->team->id;
+        }
+    );
+
+    expect(TeamInvitation::where('email', 'someone@example.com')->exists())->toBeTrue();
+});
+
+test('inviting an unknown email still creates a link invitation without notifying', function () {
+    Notification::fake();
+
+    $this->actingAs($this->captain)
+        ->postJson(route('teams.invitations.create', $this->team->id), [
+            'team_id' => $this->team->id,
+            'role' => 'player',
+            'email' => 'nobody@example.com',
+        ])
+        ->assertCreated();
+
+    Notification::assertNothingSent();
+
+    expect(TeamInvitation::where('email', 'nobody@example.com')->exists())->toBeTrue();
+});
+
+test('inviting without an email creates a shareable link invitation', function () {
+    Notification::fake();
+
+    $this->actingAs($this->captain)
+        ->postJson(route('teams.invitations.create', $this->team->id), [
+            'team_id' => $this->team->id,
+            'role' => 'co_captain',
+        ])
+        ->assertCreated();
+
+    Notification::assertNothingSent();
+
+    expect(TeamInvitation::where('team_id', $this->team->id)->whereNull('email')->exists())
+        ->toBeTrue();
 });
 
 // ============================================================
