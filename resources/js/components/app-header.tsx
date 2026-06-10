@@ -98,9 +98,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                     Navigation Menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <span className="flex size-8 items-center justify-center rounded-md bg-[#48d17a] text-[#07110b]">
-                                        <AppLogoIcon className="size-5 fill-current" />
-                                    </span>
+                                    <AppLogoIcon className="size-7 text-primary" />
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">

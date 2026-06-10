@@ -1,23 +1,22 @@
 import { SVGAttributes } from 'react';
 
+/**
+ * Veltro brand mark — a rounded hexagon ring. Filled with `currentColor`, so it
+ * can be tinted via a Tailwind `text-*` utility (defaults to the brand green
+ * where used). Keep this in sync with the static assets in `public/`.
+ */
 export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
     return (
-        <svg {...props} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+            {...props}
+        >
             <path
                 fillRule="evenodd"
-                d="M4.09 4.25c.5-.83 1.72-.81 2.18.05l5.82 10.86 5.66-10.84a1.25 1.25 0 0 1 2.22 1.16l-6.76 12.95a1.25 1.25 0 0 1-2.21.01L4.05 5.5a1.25 1.25 0 0 1 .04-1.25Z"
                 clipRule="evenodd"
-            />
-            <path
-                fillRule="evenodd"
-                d="M8.18 4.12c.62-.31 1.37-.06 1.68.56l3.9 7.79 1.53-2.97a1.25 1.25 0 1 1 2.22 1.14l-2.65 5.16a1.25 1.25 0 0 1-2.23 0L7.62 5.8a1.25 1.25 0 0 1 .56-1.68Z"
-                clipRule="evenodd"
-                opacity="0.52"
-            />
-            <path
-                fillRule="evenodd"
-                d="M17.95 17.15a1.25 1.25 0 0 1 1.67.58l.71 1.45a1.25 1.25 0 1 1-2.25 1.1l-.71-1.45a1.25 1.25 0 0 1 .58-1.68Z"
-                clipRule="evenodd"
+                d="M21.55 11.05Q22.1 12 21.55 12.95L17.6 19.79Q17.05 20.75 15.95 20.75L8.05 20.75Q6.95 20.75 6.4 19.79L2.45 12.95Q1.9 12 2.45 11.05L6.4 4.21Q6.95 3.25 8.05 3.25L15.95 3.25Q17.05 3.25 17.6 4.21ZM18.47 11.26Q18.9 12 18.47 12.74L15.88 17.24Q15.45 17.98 14.6 17.98L9.4 17.98Q8.55 17.98 8.12 17.24L5.52 12.74Q5.1 12 5.52 11.26L8.12 6.76Q8.55 6.02 9.4 6.02L14.6 6.02Q15.45 6.02 15.88 6.76Z"
             />
         </svg>
     );

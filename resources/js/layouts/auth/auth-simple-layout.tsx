@@ -54,9 +54,7 @@ export default function AuthSimpleLayout({
                         href={home()}
                         className="relative z-10 flex items-center gap-3"
                     >
-                        <span className="flex size-9 items-center justify-center rounded-md bg-[#48d17a]">
-                            <AppLogoIcon className="size-5 fill-[#07110b]" />
-                        </span>
+                        <AppLogoIcon className="size-8 text-primary" />
                         <span className="text-sm font-semibold tracking-wide">
                             Veltro
                         </span>
@@ -111,9 +109,7 @@ export default function AuthSimpleLayout({
                             href={home()}
                             className="mb-8 flex items-center justify-center gap-3 lg:hidden"
                         >
-                            <span className="flex size-9 items-center justify-center rounded-md bg-[#48d17a]">
-                                <AppLogoIcon className="size-5 fill-[#07110b]" />
-                            </span>
+                            <AppLogoIcon className="size-8 text-primary" />
                             <span className="text-sm font-semibold tracking-wide">
                                 Veltro
                             </span>
