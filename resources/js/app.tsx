@@ -8,9 +8,19 @@ import { createRoot } from 'react-dom/client';
 import { TooltipProvider } from './components/ui/tooltip';
 import { initializeTheme } from './hooks/use-appearance';
 
-configureEcho({
-    broadcaster: 'reverb',
-});
+// Only enable real-time broadcasting when a Reverb key was baked into the
+// build. Otherwise use the no-op `null` broadcaster so the app degrades to the
+// polling fallback in use-notifications.ts instead of crashing (Pusher throws
+// "You must pass your app key" when instantiated without a key).
+if (import.meta.env.VITE_REVERB_APP_KEY) {
+    configureEcho({
+        broadcaster: 'reverb',
+    });
+} else {
+    configureEcho({
+        broadcaster: 'null',
+    });
+}
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
