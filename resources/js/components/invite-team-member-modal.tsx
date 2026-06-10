@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { csrfHeaders } from '@/lib/csrf';
 import teams from '@/routes/teams';
 import { router } from '@inertiajs/react';
 import { Check, Copy, Link as LinkIcon, UserPlus } from 'lucide-react';
@@ -44,10 +45,7 @@ export function InviteTeamMemberModal({ teamId, teamName }: Props) {
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN':
-                        document.querySelector<HTMLMetaElement>(
-                            'meta[name="csrf-token"]',
-                        )?.content || '',
+                    ...csrfHeaders(),
                 },
                 body: JSON.stringify({
                     team_id: teamId,

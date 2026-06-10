@@ -143,7 +143,12 @@ export default function Register() {
                     variant="outline"
                     className="w-full"
                     onClick={() =>
-                        window.location.assign('/auth/google/redirect')
+                        window.location.assign(
+                            '/auth/google/redirect' +
+                                (formData.invitation_token
+                                    ? `?invitation=${encodeURIComponent(formData.invitation_token)}`
+                                    : ''),
+                        )
                     }
                 >
                     <svg

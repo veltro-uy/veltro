@@ -238,3 +238,80 @@ test('non-member cannot revoke an invitation', function () {
 
     expect($invitation->fresh()->status)->toBe('pending');
 });
+
+// ============================================================
+// Guest invite link → sign up → land on team
+// ============================================================
+
+test('guest visiting an invite link sees the branded landing page', function () {
+    $invitation = makeInvitation();
+
+    $this->get(route('teams.invitation.show', $invitation->token))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('teams/invitation-guest')
+            ->where('team.id', $this->team->id)
+            ->where('invitation.token', $invitation->token)
+            ->where('invitation.role', 'player')
+        );
+});
+
+test('guest invite link stores the invitation as the intended destination', function () {
+    $invitation = makeInvitation();
+
+    $this->get(route('teams.invitation.show', $invitation->token));
+
+    expect(session('url.intended'))
+        ->toBe(route('teams.invitation.show', $invitation->token));
+});
+
+test('registering with an invitation token auto-joins the team', function () {
+    $invitation = makeInvitation(['email' => null]);
+
+    $this->post(route('register.store'), [
+        'name' => 'New Friend',
+        'email' => 'friend@example.com',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'invitation_token' => $invitation->token,
+    ]);
+
+    $newUser = User::where('email', 'friend@example.com')->first();
+
+    expect($newUser)->not->toBeNull();
+    expect($this->team->fresh()->hasMember($newUser->id))->toBeTrue();
+    expect($invitation->fresh()->status)->toBe('accepted');
+    expect($invitation->fresh()->accepted_by)->toBe($newUser->id);
+});
+
+test('completing onboarding redirects to the intended team after invite signup', function () {
+    $invitation = makeInvitation();
+    $newUser = User::factory()->create(['onboarding_completed' => false]);
+
+    $this->actingAs($newUser)
+        ->withSession(['url.intended' => route('teams.invitation.show', $invitation->token)])
+        ->post(route('onboarding.update'), ['phone_number' => '+59899123456'])
+        ->assertRedirect(route('teams.invitation.show', $invitation->token));
+});
+
+test('an authenticated member visiting the invite link is redirected to the team', function () {
+    $invitation = makeInvitation();
+
+    $this->actingAs($this->player)
+        ->get(route('teams.invitation.show', $invitation->token))
+        ->assertRedirect(route('teams.show', $this->team->id));
+});
+
+test('invitation is not accepted when the team is full', function () {
+    $this->team->update(['max_members' => 2]); // captain + player already fill it
+    $invitation = makeInvitation();
+
+    $this->actingAs($this->outsider)
+        ->from(route('teams.invitation.show', $invitation->token))
+        ->post(route('teams.invitation.accept', $invitation->token))
+        ->assertRedirect(route('teams.invitation.show', $invitation->token))
+        ->assertSessionHas('error');
+
+    expect($this->team->fresh()->hasMember($this->outsider->id))->toBeFalse();
+    expect($invitation->fresh()->status)->toBe('pending');
+});
