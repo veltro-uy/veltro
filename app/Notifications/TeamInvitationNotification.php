@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use App\Models\Team;
+use App\Models\TeamInvitation;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,7 +18,7 @@ class TeamInvitationNotification extends Notification implements ShouldQueue
      * Create a new notification instance.
      */
     public function __construct(
-        public Team $team,
+        public TeamInvitation $invitation,
         public User $invitedBy
     ) {}
 
@@ -29,7 +29,7 @@ class TeamInvitationNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'broadcast'];
     }
 
     /**
@@ -39,14 +39,16 @@ class TeamInvitationNotification extends Notification implements ShouldQueue
      */
     public function toDatabase(object $notifiable): array
     {
+        $team = $this->invitation->team;
+
         return [
             'type' => 'team_invitation',
-            'title' => 'Team Invitation',
-            'message' => "{$this->invitedBy->name} invited you to join {$this->team->name}",
-            'action_url' => route('teams.show', $this->team->id),
+            'title' => 'Invitación a un equipo',
+            'message' => "{$this->invitedBy->name} te invitó a unirte a {$team->name}",
+            'action_url' => route('teams.invitation.show', $this->invitation->token),
             'icon' => 'Users',
             'related_model' => [
-                'team_id' => $this->team->id,
+                'team_id' => $team->id,
                 'invited_by_id' => $this->invitedBy->id,
             ],
             'created_at' => now()->toISOString(),

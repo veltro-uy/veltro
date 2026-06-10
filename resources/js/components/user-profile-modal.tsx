@@ -63,6 +63,8 @@ export function UserProfileModal({
 
     useEffect(() => {
         if (isOpen && userId) {
+            // Data fetch when the modal opens; setState happens after the request.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchProfile();
         }
     }, [isOpen, userId, fetchProfile]);
