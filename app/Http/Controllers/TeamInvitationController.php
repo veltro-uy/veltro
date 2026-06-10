@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\TeamMember;
+use App\Models\User;
+use App\Notifications\TeamInvitationNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +27,7 @@ final class TeamInvitationController extends Controller
         $validated = $request->validate([
             'team_id' => ['required', 'integer', 'exists:teams,id'],
             'role' => ['required', 'in:player,co_captain'],
+            'email' => ['nullable', 'email'],
         ]);
 
         $team = Team::findOrFail($validated['team_id']);
@@ -46,11 +49,21 @@ final class TeamInvitationController extends Controller
         $invitation = TeamInvitation::create([
             'team_id' => $team->id,
             'invited_by' => $user->id,
-            'email' => null,
+            'email' => $validated['email'] ?? null,
             'token' => TeamInvitation::generateToken(),
             'role' => $validated['role'],
             'expires_at' => now()->addDays(7),
         ]);
+
+        // If an email was provided and it belongs to a registered user, notify
+        // them directly. Otherwise the invitation remains a shareable link.
+        if (! empty($validated['email'])) {
+            $invitedUser = User::where('email', $validated['email'])->first();
+
+            if ($invitedUser !== null) {
+                $invitedUser->notify(new TeamInvitationNotification($invitation, $user));
+            }
+        }
 
         return response()->json([
             'success' => true,

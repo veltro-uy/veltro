@@ -19,7 +19,7 @@ class JoinRequestAcceptedNotification extends Notification implements ShouldQueu
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'broadcast'];
     }
 
     public function toDatabase(object $notifiable): array

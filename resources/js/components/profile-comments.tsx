@@ -84,6 +84,8 @@ export function ProfileComments({
     );
 
     useEffect(() => {
+        // Data fetch on mount; setState happens asynchronously after the request.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchComments();
     }, [fetchComments]);
 
