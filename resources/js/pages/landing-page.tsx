@@ -226,9 +226,7 @@ export default function LandingPage({
                             href={home().url}
                             className="flex items-center gap-3"
                         >
-                            <span className="flex size-8 items-center justify-center rounded-md bg-[#48d17a]">
-                                <AppLogoIcon className="size-5 fill-[#07110b]" />
-                            </span>
+                            <AppLogoIcon className="size-7 text-primary" />
                             <span className="text-sm font-semibold tracking-wide text-white">
                                 Veltro
                             </span>
