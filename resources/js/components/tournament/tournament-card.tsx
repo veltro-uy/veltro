@@ -9,6 +9,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
+import { formatDate } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { Tournament } from '@/types';
 import { Link } from '@inertiajs/react';
@@ -101,9 +102,7 @@ export const TournamentCard = ({
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
                             <span>
-                                {new Date(
-                                    tournament.starts_at,
-                                ).toLocaleDateString('es-UY', {
+                                {formatDate(tournament.starts_at, {
                                     day: 'numeric',
                                     month: 'long',
                                     year: 'numeric',

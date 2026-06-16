@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { nowDateTimeLocal, toDateTimeLocal } from '@/lib/datetime';
 import matches from '@/routes/matches';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -58,17 +59,15 @@ export default function Edit({ match }: Props) {
     ];
 
     const { data, setData, put, processing, errors } = useForm({
-        scheduled_at: match.scheduled_at?.slice(0, 16) ?? '',
+        scheduled_at: toDateTimeLocal(match.scheduled_at),
         location: match.location ?? '',
         location_coords: match.location_coords || '',
         match_type: match.match_type,
         notes: match.notes || '',
     });
 
-    // Get current datetime for min attribute (format: YYYY-MM-DDTHH:MM)
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Adjust for timezone
-    const minDateTime = now.toISOString().slice(0, 16);
+    // Current datetime (Uruguay) for the min attribute.
+    const minDateTime = nowDateTimeLocal();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

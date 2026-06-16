@@ -25,6 +25,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { UserAvatar } from '@/components/user-avatar';
 import AppLayout from '@/layouts/app-layout';
+import { formatDate, formatDateTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import teams from '@/routes/teams';
 import tournamentRegistrations from '@/routes/tournament-registrations';
@@ -80,8 +81,7 @@ interface PageProps {
 
 function formatScheduledAt(value: string | null): string {
     if (!value) return 'Sin programar';
-    const date = new Date(value);
-    return date.toLocaleString('es-UY', {
+    return formatDateTime(value, {
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
@@ -636,10 +636,13 @@ export default function TournamentShow({
                                                                 {
                                                                     ' · Registrado '
                                                                 }
-                                                                {new Date(
+                                                                {formatDate(
                                                                     tt.registered_at,
-                                                                ).toLocaleDateString(
-                                                                    'es-UY',
+                                                                    {
+                                                                        day: 'numeric',
+                                                                        month: 'numeric',
+                                                                        year: 'numeric',
+                                                                    },
                                                                 )}
                                                             </p>
                                                         </div>
@@ -791,13 +794,14 @@ export default function TournamentShow({
                                     </SidebarLabel>
                                     {tournament.registration_deadline && (
                                         <SidebarLabel label="Cierre inscripción">
-                                            {new Date(
+                                            {formatDate(
                                                 tournament.registration_deadline,
-                                            ).toLocaleDateString('es-UY', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                year: 'numeric',
-                                            })}
+                                                {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                },
+                                            )}
                                         </SidebarLabel>
                                     )}
                                 </div>

@@ -3,6 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
 import { useMatchCountdown } from '@/hooks/use-match-countdown';
+import {
+    formatDate as formatDateTz,
+    formatTime as formatTimeTz,
+} from '@/lib/datetime';
 import matches from '@/routes/matches';
 import { Link } from '@inertiajs/react';
 import { CalendarDays, Clock, MapPin, Trophy } from 'lucide-react';
@@ -36,8 +40,7 @@ interface MatchCardProps {
 
 const formatDate = (dateString: string | null): string => {
     if (!dateString) return 'Por programar';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    return formatDateTz(dateString, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -46,8 +49,7 @@ const formatDate = (dateString: string | null): string => {
 
 const formatTime = (dateString: string | null): string => {
     if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('es-ES', {
+    return formatTimeTz(dateString, {
         hour: 'numeric',
         minute: '2-digit',
     });

@@ -8,6 +8,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
+import { formatDateTime } from '@/lib/datetime';
 import { Head, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 
@@ -105,9 +106,7 @@ export default function AcceptInvitation({ invitation, team, inviter }: Props) {
                         <div>
                             <h3 className="mb-2 font-semibold">Expira</h3>
                             <p className="text-sm text-muted-foreground">
-                                {new Date(
-                                    invitation.expires_at,
-                                ).toLocaleDateString('es-UY', {
+                                {formatDateTime(invitation.expires_at, {
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric',

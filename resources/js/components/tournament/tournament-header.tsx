@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { VariantBadge } from '@/components/variant-badge';
+import { formatDate } from '@/lib/datetime';
 import tournaments from '@/routes/tournaments';
 import type { Tournament } from '@/types';
 import { Link } from '@inertiajs/react';
@@ -90,9 +91,7 @@ export function TournamentHeader({
                             <div className="flex items-center gap-1.5">
                                 <Calendar className="size-4" />
                                 <span>
-                                    {new Date(
-                                        tournament.starts_at,
-                                    ).toLocaleDateString('es-UY', {
+                                    {formatDate(tournament.starts_at, {
                                         day: 'numeric',
                                         month: 'long',
                                         year: 'numeric',
