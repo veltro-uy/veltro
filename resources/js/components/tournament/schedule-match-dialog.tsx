@@ -9,19 +9,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toDateTimeLocal } from '@/lib/datetime';
 import tournamentMatches from '@/routes/tournaments/matches';
 import type { FootballMatch } from '@/types';
 import { router } from '@inertiajs/react';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-
-function toLocalDatetimeInputValue(value: string | null): string {
-    if (!value) return '';
-    const date = new Date(value);
-    const offsetMs = date.getTimezoneOffset() * 60_000;
-    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
-}
 
 export function ScheduleMatchDialog({
     match,
@@ -60,7 +54,7 @@ function ScheduleMatchForm({
     onClose: () => void;
 }) {
     const [scheduledAt, setScheduledAt] = useState(() =>
-        toLocalDatetimeInputValue(match.scheduled_at),
+        toDateTimeLocal(match.scheduled_at),
     );
     const [location, setLocation] = useState(() => match.location ?? '');
     const [submitting, setSubmitting] = useState(false);

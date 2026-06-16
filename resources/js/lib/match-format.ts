@@ -1,3 +1,5 @@
+import { formatDate, formatTime } from '@/lib/datetime';
+
 export const getMatchStatusColor = (status: string): string => {
     switch (status) {
         case 'available':
@@ -34,8 +36,7 @@ export const getMatchStatusText = (status: string): string => {
 
 export const formatMatchDate = (dateString: string | null): string => {
     if (!dateString) return 'Por programar';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    return formatDate(dateString, {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
@@ -45,8 +46,7 @@ export const formatMatchDate = (dateString: string | null): string => {
 
 export const formatMatchTime = (dateString: string | null): string => {
     if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('es-ES', {
+    return formatTime(dateString, {
         hour: 'numeric',
         minute: '2-digit',
     });
