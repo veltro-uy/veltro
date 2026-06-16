@@ -17,6 +17,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { nowDateTimeLocal } from '@/lib/datetime';
 import matches from '@/routes/matches';
 import { useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
@@ -46,10 +47,8 @@ export function CreateMatchModal({ teams, trigger }: Props) {
         notes: '',
     });
 
-    // Get current datetime for min attribute (format: YYYY-MM-DDTHH:MM)
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // Adjust for timezone
-    const minDateTime = now.toISOString().slice(0, 16);
+    // Current datetime (Uruguay) for the min attribute.
+    const minDateTime = nowDateTimeLocal();
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select';
 import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
+import { formatDate as formatDateTz } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import tournamentsRoute from '@/routes/tournaments';
 import type { BreadcrumbItem, Tournament, TournamentStatus } from '@/types';
@@ -107,7 +108,7 @@ const statusConfig: Record<
 const formatDate = (value?: string) => {
     if (!value) return 'Sin fecha';
 
-    return new Date(value).toLocaleDateString('es-UY', {
+    return formatDateTz(value, {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
