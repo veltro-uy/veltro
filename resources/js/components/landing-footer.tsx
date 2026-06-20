@@ -18,7 +18,7 @@ interface LandingFooterProps {
 }
 
 const footerLink =
-    'flex items-center gap-2 text-sm text-white/50 transition-colors hover:text-white';
+    'flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground';
 
 export default function LandingFooter({
     canRegister = true,
@@ -26,22 +26,20 @@ export default function LandingFooter({
     const { auth } = usePage<SharedData>().props;
 
     return (
-        <footer className="border-t border-white/[0.08] bg-[#0c0f0d]">
+        <footer className="border-t border-border bg-sidebar">
             <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
                 <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.25fr_1fr_1fr_1fr]">
                     <div className="max-w-sm">
                         <Link
                             href={auth?.user ? teams.index().url : home().url}
-                            className="flex items-center gap-3"
+                            className="flex items-center gap-2.5"
                         >
-                            <span className="flex size-8 items-center justify-center rounded-md bg-[#48d17a]">
-                                <AppLogoIcon className="size-5 fill-[#07110b]" />
-                            </span>
-                            <span className="text-sm font-semibold tracking-wide text-white">
+                            <AppLogoIcon className="size-7 text-primary" />
+                            <span className="text-display text-lg tracking-wide text-foreground">
                                 Veltro
                             </span>
                         </Link>
-                        <p className="mt-4 text-sm leading-6 text-white/50">
+                        <p className="mt-4 text-sm leading-6 text-muted-foreground">
                             Plataforma centralizada para gestionar equipos de
                             fútbol amateur en Uruguay: partidos, disponibilidad,
                             estadísticas y torneos en un solo lugar.
@@ -49,7 +47,7 @@ export default function LandingFooter({
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-semibold text-white">
+                        <h3 className="text-sm font-semibold text-foreground">
                             Plataforma
                         </h3>
                         <nav className="mt-4 grid gap-3">
@@ -94,7 +92,7 @@ export default function LandingFooter({
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-semibold text-white">
+                        <h3 className="text-sm font-semibold text-foreground">
                             Recursos
                         </h3>
                         <nav className="mt-4 grid gap-3">
@@ -114,7 +112,7 @@ export default function LandingFooter({
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-semibold text-white">
+                        <h3 className="text-sm font-semibold text-foreground">
                             Legal
                         </h3>
                         <nav className="mt-4 grid gap-3">
@@ -130,7 +128,7 @@ export default function LandingFooter({
                     </div>
                 </div>
 
-                <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/[0.08] pt-8 text-sm text-white/40 sm:flex-row">
+                <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 text-sm text-muted-foreground sm:flex-row">
                     <p className="text-center sm:text-left">
                         © {new Date().getFullYear()} Veltro. Todos los derechos
                         reservados.

@@ -6,6 +6,7 @@ import {
     LandingTournamentPreview,
 } from '@/components/landing/previews';
 import { Button } from '@/components/ui/button';
+import { useReveal } from '@/hooks/use-reveal';
 import { home, login, register } from '@/routes';
 import teams from '@/routes/teams';
 import type { SharedData } from '@/types';
@@ -14,28 +15,29 @@ import {
     ArrowRight,
     BellRing,
     CalendarDays,
-    CheckCircle2,
+    CreditCard,
+    Eye,
+    MapPin,
     ShieldCheck,
+    Sparkles,
     Trophy,
     Users,
 } from 'lucide-react';
-import type { ElementType, ReactNode } from 'react';
-
-const accent = '#48d17a';
+import type { CSSProperties, ElementType, ReactNode } from 'react';
 
 const PitchLines = () => (
     <svg
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full"
+        className="pointer-events-none absolute inset-0 h-full w-full text-foreground"
         viewBox="0 0 1200 700"
         preserveAspectRatio="xMidYMid slice"
-        style={{ opacity: 0.045 }}
+        style={{ opacity: 0.04 }}
     >
-        <g fill="none" stroke="white" strokeWidth="1.4">
+        <g fill="none" stroke="currentColor" strokeWidth="1.4">
             <rect x="90" y="70" width="1020" height="560" rx="8" />
             <line x1="600" y1="70" x2="600" y2="630" />
             <circle cx="600" cy="350" r="96" />
-            <circle cx="600" cy="350" r="4" fill="white" stroke="none" />
+            <circle cx="600" cy="350" r="4" fill="currentColor" stroke="none" />
             <rect x="90" y="215" width="164" height="270" rx="4" />
             <rect x="946" y="215" width="164" height="270" rx="4" />
             <rect x="90" y="285" width="56" height="130" rx="3" />
@@ -44,24 +46,28 @@ const PitchLines = () => (
     </svg>
 );
 
-const SectionLabel = ({ children }: { children: ReactNode }) => (
-    <span className="text-xs font-semibold tracking-[0.18em] text-[#48d17a] uppercase">
-        {children}
-    </span>
+/** Atmospheric backdrop: brand glow + pitch motif + film grain. */
+const Decor = () => (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="bg-pitch-glow absolute inset-0" />
+        <PitchLines />
+        <div className="bg-grain absolute inset-0 opacity-[0.035] mix-blend-soft-light" />
+    </div>
 );
 
-const ProductCard = ({
+const Eyebrow = ({
     children,
     className = '',
 }: {
     children: ReactNode;
     className?: string;
 }) => (
-    <div
-        className={`flex h-full flex-col rounded-lg border border-white/[0.08] bg-[#171b19] p-6 shadow-[0_18px_70px_rgba(0,0,0,0.28)] ${className}`}
+    <span
+        className={`inline-flex items-center gap-2 text-xs font-semibold tracking-[0.22em] text-primary uppercase ${className}`}
     >
+        <span className="h-px w-6 bg-primary/50" />
         {children}
-    </div>
+    </span>
 );
 
 const FeatureIcon = ({
@@ -72,19 +78,24 @@ const FeatureIcon = ({
     label: string;
 }) => (
     <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[#48d17a]/20 bg-[#48d17a]/10 text-[#48d17a]">
+        <span className="flex h-9 w-9 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
             <Icon className="h-4 w-4" />
         </span>
-        <span className="text-xs font-semibold tracking-[0.16em] text-white/40 uppercase">
+        <span className="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">
             {label}
         </span>
     </div>
 );
 
-const stats = [
-    { value: '500+', label: 'Partidos organizados' },
-    { value: '80+', label: 'Equipos registrados' },
-    { value: '1.200+', label: 'Jugadores activos' },
+const valueProps = [
+    { icon: Sparkles, title: 'Sin publicidad', detail: 'Una interfaz limpia' },
+    { icon: CreditCard, title: 'Gratis', detail: 'Sin tarjeta de crédito' },
+    { icon: Trophy, title: 'Fútbol 11 · 7 · 5', detail: 'Y futsal' },
+    {
+        icon: MapPin,
+        title: 'Hecho en Uruguay',
+        detail: 'Para el fútbol de acá',
+    },
 ];
 
 const features = [
@@ -113,16 +124,16 @@ const features = [
         description:
             'Recordatorios puntuales para quienes todavía no confirmaron asistencia al próximo partido.',
         preview: (
-            <div className="space-y-3 rounded-lg border border-white/[0.08] bg-[#101312] p-4">
+            <div className="space-y-3 rounded-lg border border-border bg-background p-4">
                 <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#48d17a]/10 text-[#48d17a]">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
                         <BellRing className="h-4 w-4" />
                     </span>
                     <div>
-                        <span className="block text-sm font-medium text-white">
+                        <span className="block text-sm font-medium text-foreground">
                             Partido mañana
                         </span>
-                        <span className="text-xs text-white/45">
+                        <span className="text-xs text-muted-foreground">
                             3 jugadores pendientes
                         </span>
                     </div>
@@ -133,8 +144,8 @@ const features = [
                             key={item}
                             className={`rounded-md border px-3 py-2 text-center text-xs font-semibold ${
                                 index === 0
-                                    ? 'border-[#48d17a]/30 bg-[#48d17a]/10 text-[#48d17a]'
-                                    : 'border-white/[0.08] bg-white/[0.035] text-white/50'
+                                    ? 'border-primary/30 bg-primary/10 text-primary'
+                                    : 'border-border bg-white/[0.035] text-muted-foreground'
                             }`}
                         >
                             {item}
@@ -156,6 +167,35 @@ const features = [
     },
 ];
 
+const steps = [
+    {
+        step: '01',
+        icon: Users,
+        title: 'Armá tu equipo',
+        description:
+            'Creá el plantel, invitá jugadores y definí roles de gestión.',
+    },
+    {
+        step: '02',
+        icon: CalendarDays,
+        title: 'Programá el partido',
+        description:
+            'Publicá fecha, cancha y rival para que todos confirmen desde el celular.',
+    },
+    {
+        step: '03',
+        icon: Trophy,
+        title: 'Jugá y registrá',
+        description:
+            'Cargá resultados, goles y datos útiles para seguir la evolución del equipo.',
+    },
+];
+
+/** Inline transition-delay helper for staggered reveals. */
+const stagger = (index: number): CSSProperties => ({
+    transitionDelay: `${index * 90}ms`,
+});
+
 export default function LandingPage({
     canRegister = true,
 }: {
@@ -163,13 +203,13 @@ export default function LandingPage({
 }) {
     const { auth } = usePage<SharedData>().props;
     const isLoggedIn = !!auth?.user;
+    const revealRef = useReveal<HTMLDivElement>();
+
+    const primaryCtaClasses =
+        'h-12 rounded-md bg-primary px-6 text-base font-semibold text-primary-foreground shadow-[0_14px_40px_-8px_rgba(72,209,122,0.5)] transition-transform hover:-translate-y-0.5 hover:bg-primary/90';
 
     const primaryCta = isLoggedIn ? (
-        <Button
-            size="lg"
-            className="h-11 rounded-md bg-[#48d17a] px-5 font-semibold text-[#07110b] shadow-[0_12px_34px_rgba(72,209,122,0.22)] hover:bg-[#60df8b]"
-            asChild
-        >
+        <Button size="lg" className={primaryCtaClasses} asChild>
             <Link href={teams.index().url}>
                 Ver equipos
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -177,11 +217,7 @@ export default function LandingPage({
         </Button>
     ) : (
         canRegister && (
-            <Button
-                size="lg"
-                className="h-11 rounded-md bg-[#48d17a] px-5 font-semibold text-[#07110b] shadow-[0_12px_34px_rgba(72,209,122,0.22)] hover:bg-[#60df8b]"
-                asChild
-            >
+            <Button size="lg" className={primaryCtaClasses} asChild>
                 <Link href={register().url}>
                     Comenzar gratis
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -197,7 +233,7 @@ export default function LandingPage({
                 <Button
                     size="lg"
                     variant="outline"
-                    className="h-11 rounded-md border-white/15 bg-white/[0.03] px-5 text-white hover:bg-white/[0.07] hover:text-white"
+                    className="h-12 rounded-md border-border bg-white/[0.03] px-6 text-base text-foreground hover:bg-white/[0.07] hover:text-foreground"
                     asChild
                 >
                     <Link href={login().url}>Iniciar sesión</Link>
@@ -219,15 +255,18 @@ export default function LandingPage({
                 />
             </Head>
 
-            <div className="min-h-screen bg-[#101312] text-white">
-                <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#101312]/90 backdrop-blur-xl">
+            <div
+                ref={revealRef}
+                className="min-h-screen bg-background text-foreground"
+            >
+                <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
                         <Link
                             href={home().url}
-                            className="flex items-center gap-3"
+                            className="flex items-center gap-2.5"
                         >
                             <AppLogoIcon className="size-7 text-primary" />
-                            <span className="text-sm font-semibold tracking-wide text-white">
+                            <span className="text-display text-xl tracking-wide text-foreground">
                                 Veltro
                             </span>
                         </Link>
@@ -236,7 +275,7 @@ export default function LandingPage({
                             {isLoggedIn ? (
                                 <Button
                                     size="sm"
-                                    className="h-9 rounded-md bg-[#48d17a] px-3 font-semibold text-[#07110b] hover:bg-[#60df8b]"
+                                    className="h-9 rounded-md bg-primary px-3 font-semibold text-primary-foreground hover:bg-primary/90"
                                     asChild
                                 >
                                     <Link href={teams.index().url}>
@@ -249,7 +288,7 @@ export default function LandingPage({
                                     <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="hidden h-9 rounded-md px-3 text-white/60 hover:bg-white/[0.06] hover:text-white sm:inline-flex"
+                                        className="hidden h-9 rounded-md px-3 text-muted-foreground hover:bg-white/[0.06] hover:text-foreground sm:inline-flex"
                                         asChild
                                     >
                                         <Link href={login().url}>
@@ -259,7 +298,7 @@ export default function LandingPage({
                                     {canRegister && (
                                         <Button
                                             size="sm"
-                                            className="h-9 rounded-md bg-[#48d17a] px-3 font-semibold text-[#07110b] hover:bg-[#60df8b]"
+                                            className="h-9 rounded-md bg-primary px-3 font-semibold text-primary-foreground hover:bg-primary/90"
                                             asChild
                                         >
                                             <Link href={register().url}>
@@ -274,72 +313,87 @@ export default function LandingPage({
                 </header>
 
                 <main>
-                    <section className="relative overflow-hidden border-b border-white/[0.08] bg-[#101312]">
-                        <PitchLines />
-                        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-18 md:px-6 md:py-24 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
+                    {/* Hero */}
+                    <section className="relative overflow-hidden border-b border-border">
+                        <Decor />
+                        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 py-20 md:px-6 md:py-28 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
                             <div className="max-w-2xl text-center lg:text-left">
-                                <div className="mb-6 flex justify-center lg:justify-start">
-                                    <span className="inline-flex items-center gap-2 rounded-md border border-[#48d17a]/25 bg-[#48d17a]/10 px-3 py-1.5 text-xs font-semibold text-[#8df0ad]">
+                                <div className="reveal mb-7 flex justify-center lg:justify-start">
+                                    <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-accent-foreground">
                                         <ShieldCheck className="h-3.5 w-3.5" />
                                         Hecho en Uruguay para capitanes amateur
                                     </span>
                                 </div>
 
-                                <h1 className="text-5xl leading-[0.98] font-semibold tracking-normal text-white sm:text-6xl lg:text-7xl">
-                                    Gestioná tu equipo sin depender del grupo de
-                                    WhatsApp.
+                                <h1 className="text-display text-5xl text-foreground sm:text-7xl lg:text-[5.5rem]">
+                                    <span
+                                        className="reveal block"
+                                        style={stagger(1)}
+                                    >
+                                        La casa del
+                                    </span>
+                                    <span
+                                        className="reveal block text-primary"
+                                        style={stagger(2)}
+                                    >
+                                        fútbol amateur
+                                        <span className="text-muted-foreground">
+                                            :
+                                        </span>
+                                    </span>
+                                    <span
+                                        className="reveal block text-balance text-muted-foreground"
+                                        style={stagger(3)}
+                                    >
+                                        todo en un solo lugar
+                                    </span>
                                 </h1>
 
-                                <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-white/60 sm:text-lg lg:mx-0">
+                                <p
+                                    className="reveal mx-auto mt-7 max-w-xl text-base leading-7 text-pretty text-muted-foreground sm:text-lg lg:mx-0"
+                                    style={stagger(4)}
+                                >
                                     Veltro reúne partidos, disponibilidad,
                                     estadísticas y torneos en una experiencia
                                     simple para capitanes y clara para
                                     jugadores.
                                 </p>
 
-                                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+                                <div
+                                    className="reveal mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start"
+                                    style={stagger(5)}
+                                >
                                     {ctaButtons}
                                 </div>
-
-                                <div className="mt-8 grid gap-3 text-left text-sm text-white/55 sm:grid-cols-3">
-                                    {[
-                                        'Sin publicidad',
-                                        'Sin tarjeta de crédito',
-                                        'Fútbol 11, 7, 5 y futsal',
-                                    ].map((text) => (
-                                        <div
-                                            key={text}
-                                            className="flex items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2"
-                                        >
-                                            <CheckCircle2
-                                                className="h-4 w-4 shrink-0"
-                                                style={{ color: accent }}
-                                            />
-                                            <span>{text}</span>
-                                        </div>
-                                    ))}
-                                </div>
                             </div>
 
-                            <div className="mx-auto w-full max-w-[520px] lg:mx-0">
-                                <div className="rounded-lg border border-white/[0.08] bg-[#171b19] p-3 shadow-[0_30px_100px_rgba(0,0,0,0.34)]">
+                            <div
+                                className="reveal relative mx-auto w-full max-w-[480px] lg:mx-0"
+                                style={stagger(3)}
+                            >
+                                <div className="rounded-xl border border-border bg-card p-3 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.7)]">
                                     <LandingMatchPreview />
                                 </div>
-                                <div className="mt-3 grid grid-cols-2 gap-3">
-                                    <div className="rounded-lg border border-white/[0.08] bg-[#171b19] p-4">
-                                        <span className="block text-3xl font-semibold text-[#48d17a]">
-                                            9/11
-                                        </span>
-                                        <span className="text-xs text-white/50">
-                                            jugadores confirmados
-                                        </span>
-                                    </div>
-                                    <div className="rounded-lg border border-white/[0.08] bg-[#171b19] p-4">
-                                        <span className="block text-sm font-semibold text-white">
+
+                                {/* Floating stat chips overlapping the card edges. */}
+                                <div className="absolute -top-5 -right-3 hidden rotate-[2deg] rounded-lg border border-primary/20 bg-card/95 px-4 py-3 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.6)] backdrop-blur sm:block">
+                                    <span className="text-display block text-3xl text-primary">
+                                        9/11
+                                    </span>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        confirmados
+                                    </span>
+                                </div>
+                                <div className="absolute -bottom-6 -left-4 hidden -rotate-[2deg] items-center gap-2.5 rounded-lg border border-border bg-card/95 px-4 py-3 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.6)] backdrop-blur sm:flex">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+                                        <BellRing className="h-4 w-4" />
+                                    </span>
+                                    <div className="leading-tight">
+                                        <span className="block text-xs font-semibold text-foreground">
                                             Recordatorio enviado
                                         </span>
-                                        <span className="text-xs text-white/50">
-                                            a 3 jugadores pendientes
+                                        <span className="text-[11px] text-muted-foreground">
+                                            a 3 pendientes
                                         </span>
                                     </div>
                                 </div>
@@ -347,35 +401,48 @@ export default function LandingPage({
                         </div>
                     </section>
 
-                    <section className="border-b border-white/[0.08] bg-[#141815] py-10">
-                        <div className="mx-auto grid max-w-5xl gap-6 px-4 text-center sm:grid-cols-3 md:px-6">
-                            {stats.map(({ value, label }) => (
-                                <div
-                                    key={label}
-                                    className="rounded-lg border border-white/[0.08] bg-[#101312] px-5 py-6"
-                                >
-                                    <span className="block text-4xl font-semibold tracking-normal text-[#48d17a]">
-                                        {value}
-                                    </span>
-                                    <span className="mt-2 block text-sm text-white/50">
-                                        {label}
-                                    </span>
-                                </div>
-                            ))}
+                    {/* Value props band */}
+                    <section className="border-b border-border bg-secondary/30">
+                        <div className="mx-auto grid max-w-7xl divide-y divide-border px-4 sm:grid-cols-2 sm:divide-y-0 md:px-6 lg:grid-cols-4 lg:divide-x">
+                            {valueProps.map(
+                                ({ icon: Icon, title, detail }, index) => (
+                                    <div
+                                        key={title}
+                                        className="reveal flex items-center gap-3.5 py-6 lg:px-7"
+                                        style={stagger(index)}
+                                    >
+                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-primary/15 bg-primary/[0.07] text-primary">
+                                            <Icon className="h-5 w-5" />
+                                        </span>
+                                        <div className="leading-tight">
+                                            <span className="block text-sm font-semibold text-foreground">
+                                                {title}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {detail}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ),
+                            )}
                         </div>
                     </section>
 
+                    {/* Features */}
                     <section className="py-20 md:py-28">
                         <div className="mx-auto max-w-7xl px-4 md:px-6">
-                            <div className="mb-12 grid gap-4 lg:grid-cols-[0.72fr_1fr] lg:items-end">
-                                <div>
-                                    <SectionLabel>Qué podés hacer</SectionLabel>
-                                    <h2 className="mt-4 max-w-xl text-4xl leading-tight font-semibold sm:text-5xl">
+                            <div className="mb-14 grid gap-5 lg:grid-cols-[0.78fr_1fr] lg:items-end">
+                                <div className="reveal">
+                                    <Eyebrow>Qué podés hacer</Eyebrow>
+                                    <h2 className="text-display mt-5 max-w-xl text-4xl text-foreground sm:text-5xl">
                                         Una plataforma ordenada para cada semana
-                                        de partido.
+                                        de partido
                                     </h2>
                                 </div>
-                                <p className="max-w-2xl text-base leading-7 text-white/55 lg:justify-self-end">
+                                <p
+                                    className="reveal max-w-2xl text-base leading-7 text-muted-foreground lg:justify-self-end"
+                                    style={stagger(1)}
+                                >
                                     Diseñada para reducir fricción operativa:
                                     menos mensajes repetidos, menos dudas de
                                     asistencia y mejor trazabilidad del equipo.
@@ -384,17 +451,21 @@ export default function LandingPage({
 
                             <div className="grid gap-4 lg:grid-cols-12">
                                 {features.map(
-                                    ({
-                                        icon,
-                                        label,
-                                        title,
-                                        description,
-                                        preview,
-                                        className,
-                                    }) => (
-                                        <ProductCard
+                                    (
+                                        {
+                                            icon,
+                                            label,
+                                            title,
+                                            description,
+                                            preview,
+                                            className,
+                                        },
+                                        index,
+                                    ) => (
+                                        <div
                                             key={title}
-                                            className={className}
+                                            className={`reveal group flex h-full flex-col rounded-xl border border-border bg-card p-6 shadow-[0_18px_70px_-30px_rgba(0,0,0,0.5)] transition-colors hover:border-primary/25 ${className}`}
+                                            style={stagger(index)}
                                         >
                                             <FeatureIcon
                                                 icon={icon}
@@ -402,79 +473,63 @@ export default function LandingPage({
                                             />
                                             <div className="grid flex-1 gap-6 md:grid-cols-[0.86fr_1.14fr] md:items-center">
                                                 <div>
-                                                    <h3 className="text-2xl leading-tight font-semibold text-white">
+                                                    <h3 className="text-xl leading-snug font-semibold text-foreground">
                                                         {title}
                                                     </h3>
-                                                    <p className="mt-3 text-sm leading-6 text-white/50">
+                                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
                                                         {description}
                                                     </p>
                                                 </div>
-                                                <div className="min-w-0">
+                                                <div className="min-w-0 transition-transform duration-500 group-hover:-translate-y-1">
                                                     {preview}
                                                 </div>
                                             </div>
-                                        </ProductCard>
+                                        </div>
                                     ),
                                 )}
                             </div>
                         </div>
                     </section>
 
-                    <section className="border-y border-white/[0.08] bg-[#141815] py-20 md:py-24">
+                    {/* How it works */}
+                    <section className="relative overflow-hidden border-y border-border bg-secondary/30 py-20 md:py-24">
                         <div className="mx-auto max-w-7xl px-4 md:px-6">
-                            <div className="mb-12 max-w-2xl">
-                                <SectionLabel>Cómo funciona</SectionLabel>
-                                <h2 className="mt-4 text-4xl leading-tight font-semibold sm:text-5xl">
-                                    De crear el equipo a jugar en minutos.
+                            <div className="reveal mb-14 max-w-2xl">
+                                <Eyebrow>Cómo funciona</Eyebrow>
+                                <h2 className="text-display mt-5 text-4xl text-foreground sm:text-5xl">
+                                    De crear el equipo a jugar en minutos
                                 </h2>
                             </div>
 
                             <div className="grid gap-4 md:grid-cols-3">
-                                {[
-                                    {
-                                        step: '01',
-                                        icon: Users,
-                                        title: 'Armá tu equipo',
-                                        description:
-                                            'Creá el plantel, invitá jugadores y definí roles de gestión.',
-                                    },
-                                    {
-                                        step: '02',
-                                        icon: CalendarDays,
-                                        title: 'Programá el partido',
-                                        description:
-                                            'Publicá fecha, cancha y rival para que todos confirmen desde el celular.',
-                                    },
-                                    {
-                                        step: '03',
-                                        icon: Trophy,
-                                        title: 'Jugá y registrá',
-                                        description:
-                                            'Cargá resultados, goles y datos útiles para seguir la evolución del equipo.',
-                                    },
-                                ].map(
-                                    ({
-                                        step,
-                                        icon: Icon,
-                                        title,
-                                        description,
-                                    }) => (
+                                {steps.map(
+                                    (
+                                        {
+                                            step,
+                                            icon: Icon,
+                                            title,
+                                            description,
+                                        },
+                                        index,
+                                    ) => (
                                         <div
                                             key={step}
-                                            className="rounded-lg border border-white/[0.08] bg-[#101312] p-6"
+                                            className="reveal relative overflow-hidden rounded-xl border border-border bg-background p-7"
+                                            style={stagger(index)}
                                         >
-                                            <div className="mb-8 flex items-center justify-between">
-                                                <span className="text-sm font-semibold text-white/35">
-                                                    {step}
-                                                </span>
-                                                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#48d17a]/10 text-[#48d17a]">
-                                                    <Icon className="h-5 w-5" />
-                                                </span>
-                                            </div>
-                                            <h3 className="text-xl font-semibold">
+                                            <span
+                                                aria-hidden="true"
+                                                className="text-display pointer-events-none absolute -top-6 -right-2 text-[7rem] leading-none text-foreground/[0.05]"
+                                            >
+                                                {step}
+                                            </span>
+                                            <span className="relative flex h-11 w-11 items-center justify-center rounded-md bg-primary/10 text-primary">
+                                                <Icon className="h-5 w-5" />
+                                            </span>
+                                            <h3 className="relative mt-7 text-xl font-semibold text-foreground">
                                                 {title}
                                             </h3>
-                                            <p className="mt-3 text-sm leading-6 text-white/50">
+                                            <p className="relative mt-3 text-sm leading-6 text-muted-foreground">
                                                 {description}
                                             </p>
                                         </div>
@@ -484,21 +539,30 @@ export default function LandingPage({
                         </div>
                     </section>
 
-                    <section className="relative overflow-hidden py-20 md:py-28">
-                        <PitchLines />
-                        <div className="relative mx-auto max-w-4xl px-4 text-center md:px-6">
-                            <SectionLabel>Empezá hoy</SectionLabel>
-                            <h2 className="mt-4 text-4xl leading-tight font-semibold sm:text-5xl md:text-6xl">
+                    {/* Final CTA */}
+                    <section className="relative overflow-hidden py-24 md:py-32">
+                        <Decor />
+                        <div className="reveal relative mx-auto max-w-4xl px-4 text-center md:px-6">
+                            <Eyebrow className="justify-center">
+                                Empezá hoy
+                            </Eyebrow>
+                            <h2 className="text-display mx-auto mt-6 max-w-3xl text-5xl text-foreground sm:text-6xl md:text-7xl">
                                 Ordená el próximo partido antes de que empiece
-                                la semana.
+                                la semana
                             </h2>
-                            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-white/55">
+                            <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                                 Gratis, sin publicidad y preparado para la forma
                                 en que se organiza el fútbol amateur en Uruguay.
                             </p>
-                            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                                 {ctaButtons}
                             </div>
+                            {!isLoggedIn && (
+                                <p className="mt-6 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    Explorá la plataforma sin compromiso
+                                </p>
+                            )}
                         </div>
                     </section>
                 </main>

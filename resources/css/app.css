@@ -198,6 +198,53 @@
         font-family: 'Barlow Condensed', sans-serif;
     }
 
+    /* Editorial display: condensed, tight, uppercase — used for landing headlines. */
+    .text-display {
+        font-family: 'Barlow Condensed', sans-serif;
+        font-weight: 800;
+        line-height: 0.92;
+        letter-spacing: -0.005em;
+        text-transform: uppercase;
+    }
+
+    /* Soft radial brand glow for hero / CTA backdrops. */
+    .bg-pitch-glow {
+        background: radial-gradient(
+            60% 55% at 50% 0%,
+            rgba(72, 209, 122, 0.16) 0%,
+            rgba(72, 209, 122, 0.05) 38%,
+            transparent 72%
+        );
+    }
+
+    /* Fine film grain overlay for premium texture. */
+    .bg-grain {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Scroll-reveal: elements start hidden, .is-revealed (set by useReveal) animates in. */
+    .reveal {
+        opacity: 0;
+        transform: translateY(22px);
+        transition:
+            opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: opacity, transform;
+    }
+
+    .reveal.is-revealed {
+        opacity: 1;
+        transform: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .reveal {
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+    }
+
     .auth-form-surface label {
         color: rgba(255, 255, 255, 0.72);
     }
