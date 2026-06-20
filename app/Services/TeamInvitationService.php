@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Models\User;
+use App\Notifications\TeamInvitationAcceptedNotification;
 use Illuminate\Support\Facades\DB;
 
 final class TeamInvitationService
@@ -48,6 +49,12 @@ final class TeamInvitationService
                 'accepted_at' => now(),
             ]);
         });
+
+        // Notify the inviter that their invitation was accepted
+        $inviter = $invitation->inviter;
+        if ($inviter) {
+            $inviter->notify(new TeamInvitationAcceptedNotification($invitation, $user));
+        }
 
         return true;
     }

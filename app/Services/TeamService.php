@@ -10,10 +10,13 @@ use App\Models\MatchEvent;
 use App\Models\Team;
 use App\Models\TeamMember;
 use App\Models\User;
+use App\Notifications\CaptaincyTransferredNotification;
 use App\Notifications\JoinRequestAcceptedNotification;
+use App\Notifications\JoinRequestCreatedNotification;
 use App\Notifications\JoinRequestRejectedNotification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 final class TeamService
 {
@@ -142,7 +145,7 @@ final class TeamService
      */
     public function transferCaptaincy(Team $team, int $currentCaptainId, int $newCaptainId): bool
     {
-        return DB::transaction(function () use ($team, $currentCaptainId, $newCaptainId) {
+        DB::transaction(function () use ($team, $currentCaptainId, $newCaptainId) {
             // Demote current captain to player
             $team->teamMembers()
                 ->where('user_id', $currentCaptainId)
@@ -152,9 +155,15 @@ final class TeamService
             $team->teamMembers()
                 ->where('user_id', $newCaptainId)
                 ->update(['role' => 'captain']);
-
-            return true;
         });
+
+        // Notify the new captain of their promotion
+        $newCaptain = User::find($newCaptainId);
+        if ($newCaptain) {
+            $newCaptain->notify(new CaptaincyTransferredNotification($team));
+        }
+
+        return true;
     }
 
     /**
@@ -175,12 +184,18 @@ final class TeamService
             ->whereIn('status', ['accepted', 'rejected'])
             ->delete();
 
-        return JoinRequest::create([
+        $joinRequest = JoinRequest::create([
             'user_id' => $userId,
             'team_id' => $teamId,
             'status' => 'pending',
             'message' => $message,
         ]);
+
+        // Notify the team leaders that someone wants to join
+        $leaders = $team->getLeaders()->get()->pluck('user');
+        Notification::send($leaders, new JoinRequestCreatedNotification($joinRequest));
+
+        return $joinRequest;
     }
 
     /**

@@ -1,3 +1,4 @@
+import { isToday, isYesterday } from 'date-fns';
 import { Bell, Check, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
@@ -8,6 +9,33 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import type { Notification } from '@/types';
+
+type DateBucket = {
+    label: string;
+    items: Notification[];
+};
+
+// Split notifications into Hoy / Ayer / Anteriores while preserving order.
+function groupByDate(notifications: Notification[]): DateBucket[] {
+    const buckets: DateBucket[] = [
+        { label: 'Hoy', items: [] },
+        { label: 'Ayer', items: [] },
+        { label: 'Anteriores', items: [] },
+    ];
+
+    for (const notification of notifications) {
+        const date = new Date(notification.created_at);
+        if (isToday(date)) {
+            buckets[0].items.push(notification);
+        } else if (isYesterday(date)) {
+            buckets[1].items.push(notification);
+        } else {
+            buckets[2].items.push(notification);
+        }
+    }
+
+    return buckets.filter((bucket) => bucket.items.length > 0);
+}
 
 interface NotificationListProps {
     notifications: Notification[];
@@ -34,6 +62,7 @@ export function NotificationList({
 }: NotificationListProps) {
     const hasOpenedRef = useRef(false);
     const hasUnread = notifications.some((n) => !n.read_at);
+    const groups = groupByDate(notifications);
 
     useEffect(() => {
         if (!hasOpenedRef.current && notifications.length === 0) {
@@ -97,13 +126,20 @@ export function NotificationList({
                     </div>
                 )}
 
-                {notifications.map((notification) => (
-                    <NotificationItem
-                        key={notification.id}
-                        notification={notification}
-                        onMarkAsRead={markAsRead}
-                        onDelete={deleteNotification}
-                    />
+                {groups.map((group) => (
+                    <div key={group.label}>
+                        <div className="sticky top-0 z-10 bg-background/95 px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase backdrop-blur">
+                            {group.label}
+                        </div>
+                        {group.items.map((notification) => (
+                            <NotificationItem
+                                key={notification.id}
+                                notification={notification}
+                                onMarkAsRead={markAsRead}
+                                onDelete={deleteNotification}
+                            />
+                        ))}
+                    </div>
                 ))}
 
                 {isLoading && (

@@ -8,6 +8,8 @@ use App\Models\Team;
 use App\Models\Tournament;
 use App\Models\TournamentTeam;
 use App\Models\User;
+use App\Notifications\TournamentRegistrationReviewedNotification;
+use Illuminate\Support\Facades\Notification;
 
 final class TournamentRegistrationService
 {
@@ -81,6 +83,8 @@ final class TournamentRegistrationService
             'status' => 'approved',
             'approved_at' => now(),
         ]);
+
+        $this->notifyRegistrationReviewed($registration, true);
     }
 
     public function rejectTeam(TournamentTeam $registration): void
@@ -92,6 +96,20 @@ final class TournamentRegistrationService
         $registration->update([
             'status' => 'rejected',
         ]);
+
+        $this->notifyRegistrationReviewed($registration, false);
+    }
+
+    /**
+     * Notify the registering team's leaders of the review decision.
+     */
+    private function notifyRegistrationReviewed(TournamentTeam $registration, bool $approved): void
+    {
+        $leaders = $registration->team->getLeaders()->get()->pluck('user');
+        Notification::send(
+            $leaders,
+            new TournamentRegistrationReviewedNotification($registration, $approved)
+        );
     }
 
     public function withdrawTeam(TournamentTeam $registration): void

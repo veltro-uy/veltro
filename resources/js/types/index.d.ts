@@ -180,7 +180,12 @@ export type NotificationType =
     | 'commendation_received'
     | 'profile_comment'
     | 'join_request_accepted'
-    | 'join_request_rejected';
+    | 'join_request_rejected'
+    | 'join_request_created'
+    | 'team_invitation_accepted'
+    | 'captaincy_transferred'
+    | 'match_confirmed'
+    | 'tournament_registration_reviewed';
 
 export interface NotificationData {
     type: NotificationType;
@@ -193,6 +198,10 @@ export interface NotificationData {
         team_id?: number;
         match_request_id?: number;
         invited_by_id?: number;
+        join_request_id?: number;
+        invitation_id?: number;
+        tournament_id?: number;
+        approved?: boolean;
     };
     created_at: string;
 }
