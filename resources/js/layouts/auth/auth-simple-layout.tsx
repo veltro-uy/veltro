@@ -1,7 +1,7 @@
 import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, CheckCircle2, Trophy, Users } from 'lucide-react';
+import { CalendarDays, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
 
 interface AuthLayoutProps {
@@ -13,22 +13,31 @@ interface AuthLayoutProps {
 const PitchLines = () => (
     <svg
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full"
+        className="pointer-events-none absolute inset-0 h-full w-full text-foreground"
         viewBox="0 0 800 900"
         preserveAspectRatio="xMidYMid slice"
         style={{ opacity: 0.045 }}
     >
-        <g fill="none" stroke="white" strokeWidth="1.4">
+        <g fill="none" stroke="currentColor" strokeWidth="1.4">
             <rect x="58" y="60" width="684" height="780" rx="8" />
             <line x1="400" y1="60" x2="400" y2="840" />
             <circle cx="400" cy="450" r="98" />
-            <circle cx="400" cy="450" r="4" fill="white" stroke="none" />
+            <circle cx="400" cy="450" r="4" fill="currentColor" stroke="none" />
             <rect x="58" y="274" width="158" height="252" rx="4" />
             <rect x="584" y="274" width="158" height="252" rx="4" />
             <rect x="58" y="342" width="54" height="116" rx="3" />
             <rect x="688" y="342" width="54" height="116" rx="3" />
         </g>
     </svg>
+);
+
+/** Atmospheric backdrop matching the landing page: brand glow + pitch + grain. */
+const Decor = () => (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="bg-pitch-glow absolute inset-0" />
+        <PitchLines />
+        <div className="bg-grain absolute inset-0 opacity-[0.035] mix-blend-soft-light" />
+    </div>
 );
 
 const features = [
@@ -46,47 +55,49 @@ export default function AuthSimpleLayout({
         <>
             <Head />
 
-            <div className="grid min-h-svh bg-[#101312] text-white lg:grid-cols-[0.92fr_1.08fr]">
-                <aside className="relative hidden overflow-hidden border-r border-white/[0.08] bg-[#141815] lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-12">
-                    <PitchLines />
+            <div className="grid min-h-svh bg-background text-foreground lg:grid-cols-[0.92fr_1.08fr]">
+                <aside className="relative hidden overflow-hidden border-r border-border bg-secondary/30 lg:flex lg:flex-col lg:justify-between lg:p-10 xl:p-12">
+                    <Decor />
 
                     <Link
                         href={home()}
-                        className="relative z-10 flex items-center gap-3"
+                        className="relative z-10 flex items-center gap-2.5"
                     >
                         <AppLogoIcon className="size-8 text-primary" />
-                        <span className="text-sm font-semibold tracking-wide">
+                        <span className="text-display text-xl tracking-wide text-foreground">
                             Veltro
                         </span>
                     </Link>
 
                     <div className="relative z-10 max-w-md">
-                        <span className="mb-5 inline-flex items-center gap-2 rounded-md border border-[#48d17a]/25 bg-[#48d17a]/10 px-3 py-1.5 text-xs font-semibold text-[#8df0ad]">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-accent-foreground">
+                            <ShieldCheck className="h-3.5 w-3.5" />
                             Hecho en Uruguay para capitanes amateur
                         </span>
 
-                        <h2 className="text-5xl leading-[1.02] font-semibold tracking-normal xl:text-6xl">
-                            Gestioná tu equipo sin depender del grupo de
-                            WhatsApp.
+                        <h2 className="text-display text-5xl text-foreground xl:text-6xl">
+                            <span className="block">La casa del</span>
+                            <span className="block text-primary">
+                                fútbol amateur
+                            </span>
                         </h2>
 
-                        <p className="mt-5 max-w-sm text-sm leading-6 text-white/55">
+                        <p className="mt-6 max-w-sm text-sm leading-6 text-muted-foreground">
                             Partidos, asistencia, estadísticas y torneos en una
                             experiencia simple para capitanes y clara para
-                            jugadores.
+                            jugadores. Todo en un solo lugar.
                         </p>
 
                         <div className="mt-9 grid gap-3">
                             {features.map(({ icon: Icon, text }) => (
                                 <div
                                     key={text}
-                                    className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-[#101312]/75 px-3 py-3"
+                                    className="flex items-center gap-3 rounded-lg border border-border bg-background/60 px-3 py-3"
                                 >
-                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#48d17a]/10 text-[#48d17a]">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                                         <Icon className="h-4 w-4" />
                                     </span>
-                                    <span className="text-sm text-white/58">
+                                    <span className="text-sm text-muted-foreground">
                                         {text}
                                     </span>
                                 </div>
@@ -94,33 +105,33 @@ export default function AuthSimpleLayout({
                         </div>
                     </div>
 
-                    <p className="relative z-10 text-xs text-white/38">
+                    <p className="relative z-10 text-xs text-muted-foreground">
                         Gratis, sin publicidad y preparado para fútbol 11, 7, 5
                         y futsal.
                     </p>
                 </aside>
 
                 <section className="relative flex min-h-svh items-center justify-center overflow-hidden px-4 py-10 sm:px-6 lg:px-12">
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0))]" />
+                    <div className="bg-pitch-glow absolute inset-0" />
                     <PitchLines />
 
                     <div className="relative z-10 w-full max-w-[430px]">
                         <Link
                             href={home()}
-                            className="mb-8 flex items-center justify-center gap-3 lg:hidden"
+                            className="mb-8 flex items-center justify-center gap-2.5 lg:hidden"
                         >
                             <AppLogoIcon className="size-8 text-primary" />
-                            <span className="text-sm font-semibold tracking-wide">
+                            <span className="text-display text-xl tracking-wide text-foreground">
                                 Veltro
                             </span>
                         </Link>
 
-                        <div className="rounded-lg border border-white/[0.08] bg-[#171b19]/96 p-6 shadow-[0_28px_90px_rgba(0,0,0,0.34)] sm:p-8">
+                        <div className="rounded-xl border border-border bg-card/96 p-6 shadow-[0_28px_90px_-20px_rgba(0,0,0,0.6)] sm:p-8">
                             <div className="mb-7">
-                                <h1 className="text-3xl leading-tight font-semibold tracking-normal">
+                                <h1 className="text-display text-3xl text-foreground">
                                     {title}
                                 </h1>
-                                <p className="mt-2 text-sm leading-6 text-white/55">
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                     {description}
                                 </p>
                             </div>
@@ -131,7 +142,7 @@ export default function AuthSimpleLayout({
                         <div className="mt-6 text-center">
                             <Link
                                 href={home()}
-                                className="text-xs font-medium text-white/40 transition-colors hover:text-white/70"
+                                className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                             >
                                 Volver al inicio
                             </Link>
