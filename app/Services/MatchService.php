@@ -11,6 +11,7 @@ use App\Models\MatchRequest;
 use App\Models\Team;
 use App\Models\User;
 use App\Notifications\MatchCancelledNotification;
+use App\Notifications\MatchConfirmedNotification;
 use App\Notifications\MatchRequestAcceptedNotification;
 use App\Notifications\MatchRequestReceivedNotification;
 use App\Notifications\MatchRequestRejectedNotification;
@@ -202,6 +203,13 @@ final class MatchService
             Notification::send(
                 $requestingTeamLeaders,
                 new MatchRequestAcceptedNotification($match, $matchRequest)
+            );
+
+            // Notify home team leaders that their match is now confirmed
+            $homeTeamLeaders = $match->homeTeam->getLeaders()->get()->pluck('user');
+            Notification::send(
+                $homeTeamLeaders,
+                new MatchConfirmedNotification($match)
             );
 
             // Notify other rejected teams

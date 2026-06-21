@@ -3,12 +3,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
     Award,
+    CalendarCheck,
     CheckCircle,
     Clock,
+    Crown,
     MessageCircle,
     Target,
     Trash2,
     Trophy,
+    UserCheck,
+    UserPlus,
     Users,
     X,
     XCircle,
@@ -41,30 +45,54 @@ const iconMap: Record<string, ComponentType<{ className?: string }>> = {
     Users,
     Award,
     MessageCircle,
+    UserPlus,
+    UserCheck,
+    Crown,
+    CalendarCheck,
 };
 
 const iconColorMap: Record<string, string> = {
+    // Positive / affirmative events lean into the brand green family.
     match_request_received: 'text-emerald-600 dark:text-emerald-500',
     match_request_accepted: 'text-green-600 dark:text-green-500',
-    match_request_rejected: 'text-red-600 dark:text-red-500',
-    match_cancelled: 'text-orange-600 dark:text-orange-500',
-    match_score_updated: 'text-amber-600 dark:text-amber-500',
+    match_confirmed: 'text-green-600 dark:text-green-500',
+    join_request_accepted: 'text-green-600 dark:text-green-500',
+    team_invitation_accepted: 'text-green-600 dark:text-green-500',
+    join_request_created: 'text-teal-600 dark:text-teal-500',
+    team_invitation: 'text-teal-600 dark:text-teal-500',
+    captaincy_transferred: 'text-emerald-600 dark:text-emerald-500',
+    tournament_registration_reviewed: 'text-emerald-600 dark:text-emerald-500',
+    match_score_updated: 'text-lime-600 dark:text-lime-500',
+    // Reminders & social keep distinct accents.
     availability_reminder: 'text-sky-600 dark:text-sky-500',
-    team_invitation: 'text-violet-600 dark:text-violet-500',
-    commendation_received: 'text-yellow-600 dark:text-yellow-500',
+    commendation_received: 'text-amber-600 dark:text-amber-500',
     profile_comment: 'text-indigo-600 dark:text-indigo-500',
+    // Negative outcomes stay semantically red / orange.
+    match_request_rejected: 'text-red-600 dark:text-red-500',
+    join_request_rejected: 'text-red-600 dark:text-red-500',
+    match_cancelled: 'text-orange-600 dark:text-orange-500',
 };
 
 const iconBgMap: Record<string, string> = {
+    // Positive / affirmative events lean into the brand green family.
     match_request_received: 'bg-emerald-50 dark:bg-emerald-950/20',
     match_request_accepted: 'bg-green-50 dark:bg-green-950/20',
-    match_request_rejected: 'bg-red-50 dark:bg-red-950/20',
-    match_cancelled: 'bg-orange-50 dark:bg-orange-950/20',
-    match_score_updated: 'bg-amber-50 dark:bg-amber-950/20',
+    match_confirmed: 'bg-green-50 dark:bg-green-950/20',
+    join_request_accepted: 'bg-green-50 dark:bg-green-950/20',
+    team_invitation_accepted: 'bg-green-50 dark:bg-green-950/20',
+    join_request_created: 'bg-teal-50 dark:bg-teal-950/20',
+    team_invitation: 'bg-teal-50 dark:bg-teal-950/20',
+    captaincy_transferred: 'bg-emerald-50 dark:bg-emerald-950/20',
+    tournament_registration_reviewed: 'bg-emerald-50 dark:bg-emerald-950/20',
+    match_score_updated: 'bg-lime-50 dark:bg-lime-950/20',
+    // Reminders & social keep distinct accents.
     availability_reminder: 'bg-sky-50 dark:bg-sky-950/20',
-    team_invitation: 'bg-violet-50 dark:bg-violet-950/20',
-    commendation_received: 'bg-yellow-50 dark:bg-yellow-950/20',
+    commendation_received: 'bg-amber-50 dark:bg-amber-950/20',
     profile_comment: 'bg-indigo-50 dark:bg-indigo-950/20',
+    // Negative outcomes stay semantically red / orange.
+    match_request_rejected: 'bg-red-50 dark:bg-red-950/20',
+    join_request_rejected: 'bg-red-50 dark:bg-red-950/20',
+    match_cancelled: 'bg-orange-50 dark:bg-orange-950/20',
 };
 
 export function NotificationItem({
@@ -92,7 +120,7 @@ export function NotificationItem({
             className={cn(
                 'group relative flex items-start gap-3.5 border-b px-4 py-3.5 transition-all hover:bg-muted/40',
                 isUnread
-                    ? 'border-l-2 border-l-foreground bg-muted/30 hover:bg-muted/50'
+                    ? 'border-l-2 border-l-primary bg-primary/5 hover:bg-primary/10'
                     : 'border-l-2 border-l-transparent',
             )}
         >
@@ -143,7 +171,7 @@ export function NotificationItem({
                         </p>
                     </div>
                     {isUnread && (
-                        <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-foreground ring-2 ring-background" />
+                        <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-primary ring-2 ring-background" />
                     )}
                 </div>
             </button>

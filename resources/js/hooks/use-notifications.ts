@@ -23,6 +23,63 @@ interface UseNotificationsReturn {
 // WebSockets carry the real-time load; polling is now just a safety-net fallback.
 const POLLING_INTERVAL = 120000; // 2 minutes
 
+// Build headers for notification writes. We read the live `XSRF-TOKEN` cookie
+// (which Laravel refreshes on every response) rather than the
+// `<meta name="csrf-token">` tag — that tag is only rendered on the initial
+// document load and goes stale in the SPA once the session token rotates
+// (e.g. on login), which caused 419 token-mismatch errors on every write.
+function mutationHeaders(): HeadersInit {
+    const xsrfToken = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+
+    return {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-XSRF-TOKEN': xsrfToken ? decodeURIComponent(xsrfToken) : '',
+    };
+}
+
+let audioContext: AudioContext | null = null;
+
+// Short, subtle two-tone chime synthesized via the Web Audio API. Avoids
+// shipping a binary audio asset and degrades silently when blocked by autoplay
+// policies or unsupported browsers.
+function playNotificationSound(): void {
+    try {
+        if (typeof window === 'undefined') return;
+
+        const Ctx =
+            window.AudioContext ||
+            (window as unknown as { webkitAudioContext?: typeof AudioContext })
+                .webkitAudioContext;
+        if (!Ctx) return;
+
+        audioContext ??= new Ctx();
+        const ctx = audioContext;
+        if (ctx.state === 'suspended') void ctx.resume();
+
+        const now = ctx.currentTime;
+        const gain = ctx.createGain();
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(1175, now + 0.12);
+        osc.connect(gain);
+        osc.start(now);
+        osc.stop(now + 0.35);
+    } catch {
+        // Autoplay restrictions or unsupported API — silently skip.
+    }
+}
+
 export function useNotifications(): UseNotificationsReturn {
     const page = usePage<SharedData>();
     const user = page.props.auth?.user;
@@ -112,15 +169,7 @@ export function useNotifications(): UseNotificationsReturn {
                 notificationsRoute.markAsRead(id).url,
                 {
                     method: 'POST',
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN':
-                            document
-                                .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute('content') || '',
-                    },
+                    headers: mutationHeaders(),
                 },
             );
 
@@ -144,15 +193,7 @@ export function useNotifications(): UseNotificationsReturn {
         try {
             const response = await fetch(notificationsRoute.markAllRead().url, {
                 method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN':
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute('content') || '',
-                },
+                headers: mutationHeaders(),
             });
 
             if (response.ok) {
@@ -175,15 +216,7 @@ export function useNotifications(): UseNotificationsReturn {
         try {
             const response = await fetch(notificationsRoute.destroy(id).url, {
                 method: 'DELETE',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN':
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute('content') || '',
-                },
+                headers: mutationHeaders(),
             });
 
             if (response.ok) {
@@ -200,15 +233,7 @@ export function useNotifications(): UseNotificationsReturn {
         try {
             const response = await fetch(notificationsRoute.clearRead().url, {
                 method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN':
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute('content') || '',
-                },
+                headers: mutationHeaders(),
             });
 
             if (response.ok) {
@@ -231,11 +256,23 @@ export function useNotifications(): UseNotificationsReturn {
     useEchoNotification(
         `App.Models.User.${user?.id ?? ''}`,
         () => {
+            // A genuinely new push arrived — cue the sound and re-sync. Sound is
+            // only played here, never in the polling fallback, so it can't fire
+            // on every tab focus.
+            playNotificationSound();
             void refresh();
         },
         undefined,
         [refresh],
     );
+
+    // Reflect the unread count in the browser tab title. Strip any existing
+    // count prefix first so it stays correct across Inertia title changes.
+    useEffect(() => {
+        const baseTitle = document.title.replace(/^\(\d+\)\s*/, '');
+        document.title =
+            unreadCount > 0 ? `(${unreadCount}) ${baseTitle}` : baseTitle;
+    }, [unreadCount]);
 
     // Setup polling for unread count (only when authenticated)
     useEffect(() => {

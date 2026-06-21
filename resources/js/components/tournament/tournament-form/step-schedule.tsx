@@ -103,8 +103,8 @@ export function StepSchedule({
                     </div>
 
                     <p className="text-xs text-muted-foreground">
-                        Las fechas son opcionales, pero deben ir en orden: cierre
-                        → inicio → fin.
+                        Las fechas son opcionales, pero deben ir en orden:
+                        cierre → inicio → fin.
                     </p>
                 </div>
 
