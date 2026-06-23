@@ -5,6 +5,27 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 
+test('unverified user is redirected from protected routes to verification notice', function () {
+    $user = User::factory()->unverified()->create([
+        'onboarding_completed' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('teams.index'))
+        ->assertRedirect(route('verification.notice'));
+});
+
+test('verified user can access protected routes', function () {
+    $user = User::factory()->create([
+        'email_verified_at' => now(),
+        'onboarding_completed' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('teams.index'))
+        ->assertOk();
+});
+
 test('email verification screen can be rendered', function () {
     $user = User::factory()->unverified()->create();
 

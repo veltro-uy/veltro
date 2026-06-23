@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Support\Facades\Notification;
+
 test('registration screen can be rendered', function () {
     $response = $this->get(route('register'));
 
@@ -33,4 +36,22 @@ test('new users can register', function () {
     // Check that we can access the matches page
     $response = $this->get(route('matches.index'));
     $response->assertOk();
+});
+
+test('registration sends an email verification notification', function () {
+    Notification::fake();
+
+    $this->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'verify@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $user = \App\Models\User::where('email', 'verify@example.com')->first();
+
+    expect($user)->not->toBeNull();
+    expect($user->hasVerifiedEmail())->toBeFalse();
+
+    Notification::assertSentTo($user, VerifyEmail::class);
 });
