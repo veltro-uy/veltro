@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\TeamInvitation;
+use App\Rules\CleanText;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -51,7 +52,7 @@ final class TeamController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new CleanText],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -114,7 +115,7 @@ final class TeamController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new CleanText],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
