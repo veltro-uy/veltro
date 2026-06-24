@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\Tournament;
+use App\Rules\CleanText;
 use App\Services\StandingsService;
 use App\Services\TournamentService;
 use Illuminate\Http\Request;
@@ -281,7 +282,7 @@ final class TournamentController extends Controller
         $format = $request->input('format', 'single_elimination');
 
         $rules = [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new CleanText],
             'description' => ['nullable', 'string', 'max:5000'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'visibility' => ['required', 'in:public,invite_only'],

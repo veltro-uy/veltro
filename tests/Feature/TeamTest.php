@@ -106,6 +106,15 @@ test('team creation accepts all valid variants', function (string $variant) {
     $this->assertDatabaseHas('teams', ['variant' => $variant]);
 })->with(['football_11', 'football_7', 'football_5', 'futsal']);
 
+test('team creation rejects injection-looking names', function () {
+    $this->actingAs($this->outsider)
+        ->post(route('teams.store'), [
+            'name' => "' OR '1'='1",
+            'variant' => 'football_11',
+        ])
+        ->assertSessionHasErrors('name');
+});
+
 test('team description cannot exceed 1000 characters', function () {
     $this->actingAs($this->outsider)
         ->post(route('teams.store'), [

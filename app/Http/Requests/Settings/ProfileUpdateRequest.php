@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Models\User;
+use App\Rules\CleanText;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,7 +18,7 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new CleanText],
 
             'email' => [
                 'required',
@@ -46,6 +47,7 @@ class ProfileUpdateRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:100',
+                new CleanText,
             ],
 
             'date_of_birth' => [
