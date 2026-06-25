@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -30,7 +33,38 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->configureActions();
         $this->configureViews();
+        $this->configureNotifications();
         $this->configureRateLimiting();
+    }
+
+    /**
+     * Configure the transactional notification emails (Spanish).
+     */
+    private function configureNotifications(): void
+    {
+        VerifyEmail::toMailUsing(function (object $notifiable, string $url): MailMessage {
+            return (new MailMessage)
+                ->subject('Verificá tu correo electrónico — Veltro')
+                ->greeting("¡Hola {$notifiable->name}!")
+                ->line('Gracias por registrarte en Veltro. Confirmá tu correo electrónico para empezar a armar tu equipo y jugar.')
+                ->action('Verificar correo', $url)
+                ->line('Si no creaste una cuenta, podés ignorar este mensaje.');
+        });
+
+        ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+
+            return (new MailMessage)
+                ->subject('Restablecé tu contraseña — Veltro')
+                ->greeting("¡Hola {$notifiable->name}!")
+                ->line('Recibimos una solicitud para restablecer la contraseña de tu cuenta.')
+                ->action('Restablecer contraseña', $url)
+                ->line('Este enlace expirará en '.config('auth.passwords.users.expire').' minutos.')
+                ->line('Si no solicitaste este cambio, no es necesario que hagas nada.');
+        });
     }
 
     /**

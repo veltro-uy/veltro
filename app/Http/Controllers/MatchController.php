@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\FootballMatch;
 use App\Models\MatchRequest;
 use App\Models\Team;
+use App\Rules\CleanText;
 use App\Services\MatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,7 +64,7 @@ final class MatchController extends Controller
         $validated = $request->validate([
             'team_id' => ['required', 'integer', 'exists:teams,id'],
             'scheduled_at' => ['required', 'date', 'after_or_equal:now'],
-            'location' => ['required', 'string', 'max:255'],
+            'location' => ['required', 'string', 'max:255', new CleanText],
             'location_coords' => ['nullable', 'string', 'max:255'],
             'match_type' => ['required', 'in:friendly,competitive'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -327,7 +328,7 @@ final class MatchController extends Controller
 
         $validated = $request->validate([
             'scheduled_at' => ['required', 'date', 'after_or_equal:now'],
-            'location' => ['required', 'string', 'max:255'],
+            'location' => ['required', 'string', 'max:255', new CleanText],
             'location_coords' => ['nullable', 'string', 'max:255'],
             'match_type' => ['required', 'in:friendly,competitive'],
             'notes' => ['nullable', 'string', 'max:1000'],
