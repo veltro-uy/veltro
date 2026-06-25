@@ -43,20 +43,20 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
             ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'TBD')
             : $this->match->homeTeam->name;
 
-        $scheduledDate = $this->match->scheduled_at->format('l, F j, Y');
-        $scheduledTime = $this->match->scheduled_at->format('g:i A');
+        $scheduledDate = $this->match->scheduled_at->locale('es')->isoFormat('dddd D [de] MMMM [de] YYYY');
+        $scheduledTime = $this->match->scheduled_at->format('H:i').' hs';
 
         return (new MailMessage)
-            ->subject('Confirm Your Availability - Match in 48 Hours')
-            ->greeting("Hello {$notifiable->name}!")
-            ->line("Your team **{$this->team->name}** has a match in 48 hours.")
-            ->line("**Opponent:** {$opponent}")
-            ->line("**Date:** {$scheduledDate}")
-            ->line("**Time:** {$scheduledTime}")
-            ->line("**Location:** {$this->match->location}")
-            ->line('Please confirm your availability so your team can plan accordingly.')
-            ->action('Confirm Availability', $matchUrl)
-            ->line('Thank you for helping your team stay organized!');
+            ->subject('Confirmá tu disponibilidad — Partido en 48 horas')
+            ->greeting("¡Hola {$notifiable->name}!")
+            ->line("Tu equipo **{$this->team->name}** tiene un partido en 48 horas.")
+            ->line("**Rival:** {$opponent}")
+            ->line("**Fecha:** {$scheduledDate}")
+            ->line("**Hora:** {$scheduledTime}")
+            ->line("**Lugar:** {$this->match->location}")
+            ->line('Confirmá tu disponibilidad para que tu equipo pueda organizarse.')
+            ->action('Confirmar disponibilidad', $matchUrl)
+            ->line('¡Gracias por ayudar a tu equipo a estar organizado!');
     }
 
     /**
@@ -72,8 +72,8 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
 
         return [
             'type' => 'availability_reminder',
-            'title' => 'Confirm Your Availability',
-            'message' => "Match against {$opponent} is in 48 hours",
+            'title' => 'Confirmá tu disponibilidad',
+            'message' => "El partido contra {$opponent} es en 48 horas",
             'action_url' => route('matches.show', $this->match->id),
             'icon' => 'Clock',
             'related_model' => [
