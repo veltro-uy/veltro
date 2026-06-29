@@ -31,3 +31,6 @@ yarn-error.log
 project.md
 diseño_tecnico.md
 package-lock.json
+
+# DBML generator error log
+docs/dbml-error.log
