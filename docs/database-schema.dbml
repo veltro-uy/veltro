@@ -1,0 +1,471 @@
+// Veltro — Database structure (Modelo Entidad-Relación)
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+//
+// Domain tables only. Laravel infrastructure tables (cache, jobs, sessions,
+// password_reset_tokens, failed_jobs, job_batches, cache_locks) are omitted.
+// Note: the `matches` table is mapped by the `FootballMatch` Eloquent model.
+
+Project veltro {
+  database_type: 'MySQL'
+  Note: 'Amateur football platform — teams, matches, tournaments, statistics.'
+}
+
+//
+// Enums
+//
+
+Enum team_variant {
+  football_11
+  football_7
+  football_5
+  futsal
+}
+
+Enum team_member_role {
+  captain
+  co_captain
+  player
+}
+
+Enum player_position {
+  goalkeeper
+  defender
+  midfielder
+  forward
+}
+
+Enum membership_status {
+  active
+  inactive
+}
+
+Enum request_status {
+  pending
+  accepted
+  rejected
+}
+
+Enum invitation_role {
+  player
+  co_captain
+}
+
+Enum invitation_status {
+  pending
+  accepted
+  expired
+  revoked
+}
+
+Enum match_type {
+  friendly
+  competitive
+}
+
+Enum match_status {
+  available
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+}
+
+Enum availability_status {
+  pending
+  available
+  maybe
+  unavailable
+}
+
+Enum match_event_type {
+  goal
+  assist
+  yellow_card
+  red_card
+  substitution_in
+  substitution_out
+}
+
+Enum commendation_category {
+  friendly
+  skilled
+  teamwork
+  leadership
+}
+
+Enum tournament_visibility {
+  public
+  invite_only
+}
+
+Enum tournament_status {
+  draft
+  registration_open
+  in_progress
+  completed
+  cancelled
+}
+
+Enum tournament_format {
+  single_elimination
+  league
+  group_stage_knockout
+}
+
+Enum tournament_phase {
+  not_started
+  league
+  group_stage
+  knockout
+  completed
+}
+
+Enum tournament_team_status {
+  pending
+  approved
+  rejected
+  withdrawn
+}
+
+//
+// Tables
+//
+
+Table users {
+  id bigint [pk, increment]
+  name varchar
+  email varchar [unique, not null]
+  phone_number varchar(20) [null]
+  email_verified_at timestamp [null]
+  password varchar [null, note: 'nullable for Google OAuth users']
+  remember_token varchar(100) [null]
+  google_id varchar [unique, null]
+  google_token text [null]
+  google_avatar_url varchar [null]
+  two_factor_secret text [null]
+  two_factor_recovery_codes text [null]
+  two_factor_confirmed_at timestamp [null]
+  bio text [null]
+  location varchar(100) [null]
+  date_of_birth date [null]
+  avatar_path varchar [null]
+  onboarding_completed boolean [not null, default: false]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    phone_number
+  }
+}
+
+Table teams {
+  id bigint [pk, increment]
+  name varchar
+  variant team_variant [not null]
+  logo_url varchar [null, note: 'legacy']
+  logo_path varchar [null]
+  description text [null]
+  max_members int [null]
+  created_by bigint [ref: > users.id, null, note: 'SET NULL on delete']
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    variant
+  }
+}
+
+Table team_members {
+  id bigint [pk, increment]
+  user_id bigint [ref: > users.id, not null, note: 'cascade']
+  team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  role team_member_role [not null, default: 'player']
+  position player_position [null]
+  joined_at timestamp
+  status membership_status [not null, default: 'active']
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (user_id, team_id) [unique]
+    (team_id, role, status)
+    (team_id, status)
+    (user_id, status)
+  }
+}
+
+Table join_requests {
+  id bigint [pk, increment]
+  user_id bigint [ref: > users.id, not null, note: 'cascade']
+  team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  status request_status [not null, default: 'pending']
+  message text [null]
+  reviewed_at timestamp [null]
+  reviewed_by bigint [ref: > users.id, null, note: 'SET NULL on delete']
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (user_id, team_id) [unique]
+    (team_id, status)
+    (user_id, status)
+  }
+}
+
+Table team_invitations {
+  id bigint [pk, increment]
+  team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  invited_by bigint [ref: > users.id, not null, note: 'cascade']
+  email varchar [null]
+  token varchar [unique, not null]
+  role invitation_role [not null, default: 'player']
+  status invitation_status [not null, default: 'pending']
+  expires_at timestamp
+  accepted_by bigint [ref: > users.id, null, note: 'SET NULL on delete']
+  accepted_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (token, status)
+    (team_id, email)
+  }
+}
+
+Table matches {
+  id bigint [pk, increment]
+  home_team_id bigint [ref: > teams.id, null, note: 'cascade']
+  away_team_id bigint [ref: > teams.id, null, note: 'cascade']
+  tournament_id bigint [ref: > tournaments.id, null, note: 'cascade']
+  tournament_round_id bigint [ref: > tournament_rounds.id, null, note: 'SET NULL on delete']
+  tournament_group_id bigint [ref: > tournament_groups.id, null, note: 'SET NULL on delete']
+  bracket_position int [null]
+  matchday smallint [null]
+  variant team_variant [not null]
+  scheduled_at datetime [null]
+  location varchar [null]
+  location_coords varchar [null]
+  match_type match_type [not null, default: 'friendly']
+  status match_status [not null, default: 'available']
+  home_score int [null]
+  away_score int [null]
+  notes text [null]
+  created_by bigint [ref: > users.id, not null, note: 'cascade']
+  confirmed_at timestamp [null]
+  started_at timestamp [null]
+  completed_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    status
+    variant
+    scheduled_at
+    (home_team_id, status)
+    (away_team_id, status)
+    tournament_id
+    tournament_round_id
+    tournament_group_id
+    (tournament_id, matchday)
+  }
+
+  Note: 'Mapped by the FootballMatch model'
+}
+
+Table match_requests {
+  id bigint [pk, increment]
+  match_id bigint [ref: > matches.id, not null, note: 'cascade']
+  requesting_team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  status request_status [not null, default: 'pending']
+  message text [null]
+  reviewed_at timestamp [null]
+  reviewed_by bigint [ref: > users.id, null, note: 'SET NULL on delete']
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    status
+  }
+}
+
+Table match_lineups {
+  id bigint [pk, increment]
+  match_id bigint [ref: > matches.id, not null, note: 'cascade']
+  team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  user_id bigint [ref: > users.id, not null, note: 'cascade']
+  position player_position [null]
+  is_starter boolean [not null, default: true]
+  is_substitute boolean [not null, default: false]
+  minutes_played int [not null, default: 0]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (match_id, team_id, user_id) [unique]
+  }
+}
+
+Table match_events {
+  id bigint [pk, increment]
+  match_id bigint [ref: > matches.id, not null, note: 'cascade']
+  team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  user_id bigint [ref: > users.id, null, note: 'cascade']
+  event_type match_event_type [not null]
+  minute int [null]
+  description text [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (match_id, event_type)
+  }
+}
+
+Table match_availability {
+  id bigint [pk, increment]
+  match_id bigint [ref: > matches.id, not null, note: 'cascade']
+  user_id bigint [ref: > users.id, not null, note: 'cascade']
+  team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  status availability_status [not null, default: 'pending']
+  confirmed_at timestamp [null]
+  reminded_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (match_id, user_id, team_id) [unique]
+    status
+  }
+}
+
+Table tournaments {
+  id bigint [pk, increment]
+  name varchar
+  description text [null]
+  logo_url varchar [null, note: 'legacy']
+  logo_path varchar [null]
+  organizer_id bigint [ref: > users.id, not null, note: 'cascade']
+  visibility tournament_visibility [not null, default: 'public']
+  status tournament_status [not null, default: 'draft']
+  variant team_variant [not null]
+  format tournament_format [not null, default: 'single_elimination']
+  phase tournament_phase [not null, default: 'not_started']
+  group_count smallint [null]
+  group_size smallint [null]
+  max_teams int [not null, default: 8]
+  min_teams int [not null, default: 4]
+  registration_deadline timestamp [null]
+  starts_at timestamp [null]
+  ends_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    organizer_id
+    status
+    visibility
+    variant
+    starts_at
+    format
+  }
+}
+
+Table tournament_teams {
+  id bigint [pk, increment]
+  tournament_id bigint [ref: > tournaments.id, not null, note: 'cascade']
+  team_id bigint [ref: > teams.id, not null, note: 'cascade']
+  status tournament_team_status [not null, default: 'pending']
+  seed int [null]
+  tournament_group_id bigint [ref: > tournament_groups.id, null, note: 'SET NULL on delete']
+  registered_by bigint [ref: > users.id, not null, note: 'cascade']
+  registered_at timestamp
+  approved_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (tournament_id, team_id) [unique]
+    tournament_id
+    team_id
+    status
+    seed
+    tournament_group_id
+  }
+}
+
+Table tournament_rounds {
+  id bigint [pk, increment]
+  tournament_id bigint [ref: > tournaments.id, not null, note: 'cascade']
+  round_number int [not null]
+  name varchar
+  starts_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    tournament_id
+    round_number
+    (tournament_id, round_number) [unique]
+  }
+}
+
+Table tournament_groups {
+  id bigint [pk, increment]
+  tournament_id bigint [ref: > tournaments.id, not null, note: 'cascade']
+  name varchar(8) [not null, note: 'group label, e.g. A, B']
+  position smallint [not null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (tournament_id, name) [unique]
+    (tournament_id, position) [unique]
+    tournament_id
+  }
+}
+
+Table profile_comments {
+  id bigint [pk, increment]
+  user_id bigint [ref: > users.id, null, note: 'author, SET NULL on delete']
+  profile_user_id bigint [ref: > users.id, null, note: 'profile owner, SET NULL on delete']
+  comment text [not null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (profile_user_id, created_at)
+  }
+}
+
+Table user_commendations {
+  id bigint [pk, increment]
+  from_user_id bigint [ref: > users.id, null, note: 'SET NULL on delete']
+  to_user_id bigint [ref: > users.id, null, note: 'SET NULL on delete']
+  category commendation_category [not null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (from_user_id, to_user_id, category) [unique]
+    from_user_id
+    to_user_id
+  }
+}
+
+Table notifications {
+  id varchar [pk, note: 'UUID']
+  type varchar [not null]
+  notifiable_type varchar [not null, note: 'polymorphic']
+  notifiable_id bigint [not null, note: 'polymorphic — typically users.id']
+  data text [not null]
+  read_at timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (notifiable_type, notifiable_id, read_at)
+    created_at
+  }
+}
