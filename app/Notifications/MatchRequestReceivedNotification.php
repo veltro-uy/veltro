@@ -43,8 +43,8 @@ class MatchRequestReceivedNotification extends Notification implements ShouldQue
     {
         return [
             'type' => 'match_request_received',
-            'title' => 'New Match Request',
-            'message' => "{$this->requestingTeam->name} wants to play your match",
+            'title' => 'Nueva solicitud de partido',
+            'message' => "{$this->requestingTeam->name} quiere jugar tu partido",
             'action_url' => route('matches.show', $this->match->id),
             'icon' => 'Trophy',
             'related_model' => [

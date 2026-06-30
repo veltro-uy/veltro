@@ -43,8 +43,8 @@ class MatchRequestRejectedNotification extends Notification implements ShouldQue
 
         return [
             'type' => 'match_request_rejected',
-            'title' => 'Match Request Declined',
-            'message' => "{$homeTeamName} declined your match request",
+            'title' => 'Solicitud de partido rechazada',
+            'message' => "{$homeTeamName} rechazó tu solicitud de partido",
             'action_url' => route('matches.show', $this->match->id),
             'icon' => 'XCircle',
             'related_model' => [
