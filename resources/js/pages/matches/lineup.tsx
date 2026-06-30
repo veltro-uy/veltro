@@ -77,7 +77,7 @@ export default function Lineup({
             href: matches.index().url,
         },
         {
-            title: 'Lineup',
+            title: 'Alineación',
             href: matches.lineup.edit(match.id).url,
         },
     ];
@@ -129,7 +129,7 @@ export default function Lineup({
             },
             {
                 onSuccess: () => {
-                    toast.success('Lineup updated successfully!');
+                    toast.success('¡Alineación actualizada exitosamente!');
                     router.visit(matches.show(match.id).url);
                 },
                 onError: (errors) => {
@@ -153,27 +153,27 @@ export default function Lineup({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Select Lineup" />
+            <Head title="Seleccionar alineación" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                        Select Lineup
+                        Seleccionar alineación
                     </h1>
                     <p className="text-muted-foreground">
-                        Choose at least {minimumPlayers} players for your
-                        starting lineup
+                        Elegí al menos {minimumPlayers} jugadores para tu
+                        alineación titular
                     </p>
                 </div>
 
                 <Card className="max-w-3xl">
                     <CardHeader>
-                        <CardTitle>{team.name} - Starting Lineup</CardTitle>
+                        <CardTitle>{team.name} - Alineación titular</CardTitle>
                         <CardDescription>
-                            Selected {selectedPlayers.length} / {minimumPlayers}{' '}
-                            minimum players
+                            Seleccionados {selectedPlayers.length} /{' '}
+                            {minimumPlayers} mínimo
                             {selectedPlayers.length < minimumPlayers && (
                                 <span className="mt-1 block text-amber-600 dark:text-amber-500">
-                                    ⚠️ Below minimum recommended players
+                                    ⚠️ Por debajo del mínimo recomendado
                                 </span>
                             )}
                         </CardDescription>
@@ -219,20 +219,20 @@ export default function Lineup({
                                                 }
                                             >
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Position" />
+                                                    <SelectValue placeholder="Posición" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="goalkeeper">
-                                                        Goalkeeper
+                                                        Arquero
                                                     </SelectItem>
                                                     <SelectItem value="defender">
-                                                        Defender
+                                                        Defensor
                                                     </SelectItem>
                                                     <SelectItem value="midfielder">
-                                                        Midfielder
+                                                        Mediocampista
                                                     </SelectItem>
                                                     <SelectItem value="forward">
-                                                        Forward
+                                                        Delantero
                                                     </SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -248,7 +248,7 @@ export default function Lineup({
                                 disabled={selectedPlayers.length === 0}
                             >
                                 <Check className="mr-2 h-4 w-4" />
-                                Save Lineup
+                                Guardar alineación
                             </Button>
                             <Button
                                 type="button"
@@ -257,7 +257,7 @@ export default function Lineup({
                                     router.visit(matches.show(match.id).url)
                                 }
                             >
-                                Cancel
+                                Cancelar
                             </Button>
                         </div>
                     </CardContent>

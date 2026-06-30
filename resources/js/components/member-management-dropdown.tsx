@@ -73,7 +73,7 @@ export function MemberManagementDropdown({
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success('Role updated successfully!');
+                    toast.success('¡Rol actualizado exitosamente!');
                 },
                 onError: (
                     errors:
@@ -97,7 +97,7 @@ export function MemberManagementDropdown({
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success('Position updated successfully!');
+                    toast.success('¡Posición actualizada exitosamente!');
                 },
                 onError: (
                     errors:
@@ -121,7 +121,7 @@ export function MemberManagementDropdown({
                 preserveScroll: true,
                 onSuccess: () => {
                     setShowTransferDialog(false);
-                    toast.success('Captaincy transferred successfully!');
+                    toast.success('¡Capitanía transferida exitosamente!');
                 },
                 onError: (
                     errors:
@@ -145,7 +145,7 @@ export function MemberManagementDropdown({
                 preserveScroll: true,
                 onSuccess: () => {
                     setShowRemoveDialog(false);
-                    toast.success('Member removed successfully!');
+                    toast.success('¡Miembro eliminado exitosamente!');
                 },
                 onError: (
                     errors:

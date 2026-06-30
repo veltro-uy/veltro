@@ -44,7 +44,7 @@ class MatchAvailabilityController extends Controller
         }
 
         if (! $teamId) {
-            abort(403, 'You are not a member of any team playing in this match.');
+            abort(403, 'No sos miembro de ninguno de los equipos que juegan este partido.');
         }
 
         // Update or create availability
@@ -66,9 +66,9 @@ class MatchAvailabilityController extends Controller
             $minimumPlayers = $match->getMinimumPlayers();
             $availableCount = $match->getAvailablePlayersCount($teamId);
 
-            session()->flash('warning', "Warning: Only {$availableCount}/{$minimumPlayers} players confirmed available.");
+            session()->flash('warning', "Atención: solo {$availableCount}/{$minimumPlayers} jugadores confirmaron disponibilidad.");
         }
 
-        return redirect()->back()->with('success', 'Availability updated successfully.');
+        return redirect()->back()->with('success', 'Disponibilidad actualizada exitosamente.');
     }
 }

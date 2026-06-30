@@ -40,7 +40,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
     {
         $matchUrl = route('matches.show', $this->match->id);
         $opponent = $this->match->home_team_id === $this->team->id
-            ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'TBD')
+            ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'A definir')
             : $this->match->homeTeam->name;
 
         $scheduledDate = $this->match->scheduled_at->locale('es')->isoFormat('dddd D [de] MMMM [de] YYYY');
@@ -67,7 +67,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
     public function toDatabase(object $notifiable): array
     {
         $opponent = $this->match->home_team_id === $this->team->id
-            ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'TBD')
+            ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'A definir')
             : $this->match->homeTeam->name;
 
         return [
