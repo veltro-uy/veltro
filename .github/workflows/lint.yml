@@ -50,8 +50,10 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      # --with-form matches vite.config.ts (formVariants: true), which the
+      # app relies on for the .form route helpers.
       - name: Generate Wayfinder Routes
-        run: php artisan wayfinder:generate
+        run: php artisan wayfinder:generate --with-form
 
       - name: Type Check
         run: bun run types
