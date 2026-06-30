@@ -27,11 +27,11 @@ import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Teams',
+        title: 'Equipos',
         href: teams.index().url,
     },
     {
-        title: 'Search',
+        title: 'Buscar',
         href: teams.search().url,
     },
 ];
@@ -82,59 +82,63 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Search Teams" />
+            <Head title="Buscar equipos" />
             <div className="flex h-full flex-1 flex-col gap-6 p-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                        Search Teams
+                        Buscar equipos
                     </h1>
-                    <p className="text-muted-foreground">Find and join teams</p>
+                    <p className="text-muted-foreground">
+                        Encontrá y unite a equipos
+                    </p>
                 </div>
 
-                {/* Search Filters */}
+                {/* Filtros de búsqueda */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Search Filters</CardTitle>
+                        <CardTitle>Filtros de búsqueda</CardTitle>
                         <CardDescription>
-                            Refine your search to find the perfect team
+                            Refiná tu búsqueda para encontrar el equipo ideal
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSearch} className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Team Name</Label>
+                                    <Label htmlFor="name">
+                                        Nombre del equipo
+                                    </Label>
                                     <Input
                                         id="name"
                                         value={name}
                                         onChange={(e) =>
                                             setName(e.target.value)
                                         }
-                                        placeholder="Search by name..."
+                                        placeholder="Buscar por nombre..."
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="variant">Variant</Label>
+                                    <Label htmlFor="variant">Variante</Label>
                                     <Select
                                         value={variant}
                                         onValueChange={setVariant}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="All variants" />
+                                            <SelectValue placeholder="Todas las variantes" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="">
-                                                All variants
+                                                Todas las variantes
                                             </SelectItem>
                                             <SelectItem value="football_11">
-                                                Football 11
+                                                Fútbol 11
                                             </SelectItem>
                                             <SelectItem value="football_7">
-                                                Football 7
+                                                Fútbol 7
                                             </SelectItem>
                                             <SelectItem value="football_5">
-                                                Football 5
+                                                Fútbol 5
                                             </SelectItem>
                                             <SelectItem value="futsal">
                                                 Futsal
@@ -146,7 +150,7 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
 
                             <Button type="submit">
                                 <SearchIcon className="mr-2 h-4 w-4" />
-                                Search
+                                Buscar
                             </Button>
                         </form>
                     </CardContent>
@@ -155,7 +159,7 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                 {/* Results */}
                 <div>
                     <h2 className="mb-4 text-xl font-semibold">
-                        Search Results{' '}
+                        Resultados{' '}
                         {searchResults && `(${searchResults.length})`}
                     </h2>
 
@@ -167,10 +171,10 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                 </div>
                                 <div className="text-center">
                                     <h3 className="text-lg font-semibold">
-                                        No teams found
+                                        No se encontraron equipos
                                     </h3>
                                     <p className="text-sm text-muted-foreground">
-                                        Try adjusting your search filters
+                                        Probá ajustar los filtros de búsqueda
                                     </p>
                                 </div>
                             </CardContent>
@@ -212,7 +216,7 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                             <div className="flex items-center gap-2">
                                                 <Users className="h-4 w-4 text-muted-foreground" />
                                                 <span className="text-sm font-medium">
-                                                    Members
+                                                    Miembros
                                                 </span>
                                             </div>
                                             <span className="text-sm font-bold">
@@ -228,7 +232,7 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                             <Link
                                                 href={teams.show(team.id).url}
                                             >
-                                                View Team
+                                                Ver equipo
                                                 <ArrowRight className="ml-2 h-4 w-4" />
                                             </Link>
                                         </Button>
