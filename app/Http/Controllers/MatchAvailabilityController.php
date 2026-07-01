@@ -5,66 +5,42 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\FootballMatch;
-use App\Models\MatchAvailability;
-use App\Models\Team;
+use App\Services\MatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class MatchAvailabilityController extends Controller
 {
+    public function __construct(
+        private readonly MatchService $matchService
+    ) {}
+
     /**
      * Update the availability status for a match.
      */
     public function update(Request $request, int $matchId): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|in:available,maybe,unavailable',
         ]);
 
         $match = FootballMatch::findOrFail($matchId);
-        $user = Auth::user();
+        $user = $request->user();
 
-        // Determine which team the user belongs to that's playing in this match
-        // This prevents IDOR - users cannot manipulate team_id parameter
-        $teamId = null;
+        // Derive the team from membership (IDOR guard - the client cannot
+        // supply an arbitrary team_id).
+        $team = $this->matchService->resolveUserTeam($match, $user->id);
 
-        if ($match->home_team_id) {
-            $homeTeam = Team::find($match->home_team_id);
-            if ($homeTeam && $homeTeam->hasMember($user->id)) {
-                $teamId = $match->home_team_id;
-            }
-        }
-
-        if (! $teamId && $match->away_team_id) {
-            $awayTeam = Team::find($match->away_team_id);
-            if ($awayTeam && $awayTeam->hasMember($user->id)) {
-                $teamId = $match->away_team_id;
-            }
-        }
-
-        if (! $teamId) {
+        if (! $team) {
             abort(403, 'No sos miembro de ninguno de los equipos que juegan este partido.');
         }
 
-        // Update or create availability
-        $availability = MatchAvailability::updateOrCreate(
-            [
-                'match_id' => $matchId,
-                'user_id' => $user->id,
-                'team_id' => $teamId,
-            ],
-            [
-                'status' => $request->input('status'),
-                'confirmed_at' => now(),
-            ]
-        );
+        $this->matchService->recordPlayerAvailability($match, $user->id, $team->id, $validated['status']);
 
-        // Check if team needs alert for minimum players
-        $team = Team::find($teamId);
-        if ($team && $match->needsPlayerAlert($teamId) && $team->isLeader($user->id)) {
+        // Warn leaders when the team is short of the minimum players.
+        if ($match->needsPlayerAlert($team->id) && $team->isLeader($user->id)) {
             $minimumPlayers = $match->getMinimumPlayers();
-            $availableCount = $match->getAvailablePlayersCount($teamId);
+            $availableCount = $match->getAvailablePlayersCount($team->id);
 
             session()->flash('warning', "Atención: solo {$availableCount}/{$minimumPlayers} jugadores confirmaron disponibilidad.");
         }
