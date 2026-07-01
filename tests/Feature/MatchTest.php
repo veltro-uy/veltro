@@ -619,3 +619,71 @@ test('guest cannot access matches index', function () {
     $this->get(route('matches.index'))
         ->assertRedirect(route('login'));
 });
+
+// ============================================================
+// Available Matches Pagination & Search
+// ============================================================
+
+test('available matches are paginated', function () {
+    FootballMatch::factory()->count(15)->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.index'))
+        ->assertInertia(fn ($page) => $page
+            ->component('matches/index')
+            ->has('availableMatches.data', 12)
+            ->where('availableMatches.total', 15)
+            ->where('availableMatches.last_page', 2)
+        );
+});
+
+test('available matches can be searched by home team name', function () {
+    $special = Team::factory()->create([
+        'name' => 'Searchable Rovers',
+        'variant' => 'football_11',
+    ]);
+    FootballMatch::factory()->create([
+        'home_team_id' => $special->id,
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+    ]);
+    FootballMatch::factory()->count(4)->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.index', ['search' => 'Searchable']))
+        ->assertInertia(fn ($page) => $page
+            ->has('availableMatches.data', 1)
+            ->where('availableMatches.total', 1)
+            ->where('filters.search', 'Searchable')
+        );
+});
+
+test('available matches can be searched by location', function () {
+    FootballMatch::factory()->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+        'location' => 'Estadio Centenario Unico',
+    ]);
+    FootballMatch::factory()->count(3)->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+        'location' => 'Otra Cancha',
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.index', ['search' => 'Centenario']))
+        ->assertInertia(fn ($page) => $page
+            ->where('availableMatches.total', 1)
+        );
+});

@@ -38,8 +38,9 @@ final class MatchController extends Controller
                 ->where('status', 'active');
         })->pluck('variant')->unique()->toArray();
 
-        // Get available matches with matching variants
-        $availableMatches = $this->matchService->getAvailableMatches($userTeamVariants);
+        // Get available matches with matching variants, filtered by search
+        $search = trim((string) $request->string('search'));
+        $availableMatches = $this->matchService->getAvailableMatches($userTeamVariants, $search);
 
         // Get teams where user is a leader (for creating matches)
         $teams = Team::whereHas('teamMembers', function ($query) use ($user) {
@@ -53,6 +54,9 @@ final class MatchController extends Controller
             'availableMatches' => $availableMatches,
             'teams' => $teams,
             'hasTeams' => $user->teams()->exists(),
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 

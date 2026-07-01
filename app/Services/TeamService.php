@@ -14,6 +14,7 @@ use App\Notifications\CaptaincyTransferredNotification;
 use App\Notifications\JoinRequestAcceptedNotification;
 use App\Notifications\JoinRequestCreatedNotification;
 use App\Notifications\JoinRequestRejectedNotification;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -267,20 +268,29 @@ final class TeamService
     /**
      * Get teams that the user is not part of.
      */
-    public function getTeamsNotJoined(int $userId): Collection
+    public function getTeamsNotJoined(int $userId, array $filters = []): LengthAwarePaginator
     {
-        return Team::whereDoesntHave('teamMembers', function ($query) use ($userId) {
+        $query = Team::whereDoesntHave('teamMembers', function ($query) use ($userId) {
             $query->where('user_id', $userId);
         })
             ->with(['teamMembers.user', 'creator'])
-            ->latest()
-            ->get();
+            ->latest();
+
+        if (! empty($filters['search'])) {
+            $query->where('name', 'like', '%'.$filters['search'].'%');
+        }
+
+        if (! empty($filters['variant'])) {
+            $query->where('variant', $filters['variant']);
+        }
+
+        return $query->paginate(12)->withQueryString();
     }
 
     /**
      * Search teams.
      */
-    public function searchTeams(array $filters): Collection
+    public function searchTeams(array $filters): LengthAwarePaginator
     {
         $query = Team::query()->with(['teamMembers.user', 'creator']);
 
@@ -292,7 +302,7 @@ final class TeamService
             $query->where('variant', $filters['variant']);
         }
 
-        return $query->get();
+        return $query->paginate(12)->withQueryString();
     }
 
     /**

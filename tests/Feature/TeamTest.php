@@ -458,3 +458,82 @@ test('transfer captaincy requires valid user id', function () {
         ])
         ->assertSessionHasErrors('new_captain_id');
 });
+
+// ============================================================
+// Discovery & Search Pagination
+// ============================================================
+
+test('discover teams are paginated', function () {
+    // beforeEach already creates one discoverable team (Test Team)
+    Team::factory()->count(15)->create();
+
+    $this->actingAs($this->outsider)
+        ->get(route('teams.index'))
+        ->assertInertia(fn ($page) => $page
+            ->component('teams/index')
+            ->has('discoverTeams.data', 12)
+            ->where('discoverTeams.total', 16)
+            ->where('discoverTeams.last_page', 2)
+        );
+});
+
+test('discover teams can be filtered by search server-side', function () {
+    Team::factory()->create(['name' => 'Zalgiris Unique FC']);
+    Team::factory()->count(5)->create();
+
+    $this->actingAs($this->outsider)
+        ->get(route('teams.index', ['search' => 'Zalgiris']))
+        ->assertInertia(fn ($page) => $page
+            ->component('teams/index')
+            ->has('discoverTeams.data', 1)
+            ->where('discoverTeams.total', 1)
+            ->where('filters.search', 'Zalgiris')
+        );
+});
+
+test('discover teams can be filtered by variant server-side', function () {
+    Team::factory()->count(3)->create(['variant' => 'futsal']);
+    Team::factory()->count(4)->create(['variant' => 'football_7']);
+
+    $this->actingAs($this->outsider)
+        ->get(route('teams.index', ['variant' => 'futsal']))
+        ->assertInertia(fn ($page) => $page
+            ->where('discoverTeams.total', 3)
+            ->where('filters.variant', 'futsal')
+        );
+});
+
+test('my teams are returned as a full array, not paginated', function () {
+    $this->actingAs($this->captain)
+        ->get(route('teams.index'))
+        ->assertInertia(fn ($page) => $page
+            ->component('teams/index')
+            ->has('myTeams', 1)
+            ->has('discoverTeams.data')
+        );
+});
+
+test('team search results are paginated with filters preserved across pages', function () {
+    for ($i = 0; $i < 15; $i++) {
+        Team::factory()->create(['name' => "Searchclub {$i}"]);
+    }
+
+    // Page 1
+    $this->actingAs($this->outsider)
+        ->get(route('teams.search', ['name' => 'Searchclub']))
+        ->assertInertia(fn ($page) => $page
+            ->component('teams/search')
+            ->has('teams.data', 12)
+            ->where('teams.total', 15)
+            ->where('teams.last_page', 2)
+        );
+
+    // Page 2 keeps the name filter applied
+    $this->actingAs($this->outsider)
+        ->get(route('teams.search', ['name' => 'Searchclub', 'page' => 2]))
+        ->assertInertia(fn ($page) => $page
+            ->has('teams.data', 3)
+            ->where('teams.current_page', 2)
+            ->where('filters.name', 'Searchclub')
+        );
+});

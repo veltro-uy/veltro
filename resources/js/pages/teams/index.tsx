@@ -22,9 +22,17 @@ import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
 import teams from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Search, Shield, Star, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    ArrowRight,
+    ChevronLeft,
+    ChevronRight,
+    Search,
+    Shield,
+    Star,
+    Users,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -78,12 +86,26 @@ const getCapacityColor = (current: number, max: number): string => {
     return 'text-muted-foreground';
 };
 
-interface Props {
-    myTeams: Team[];
-    discoverTeams: Team[];
+interface PaginatedTeams {
+    data: Team[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    per_page: number;
+    total: number;
 }
 
-export default function Index({ myTeams, discoverTeams }: Props) {
+interface Props {
+    myTeams: Team[];
+    discoverTeams: PaginatedTeams;
+    filters: {
+        search: string;
+        variant: string;
+    };
+}
+
+export default function Index({ myTeams, discoverTeams, filters }: Props) {
     const page = usePage<{ auth: { user: { id: number } } }>();
     const { auth } = page.props;
     const initialView = new URLSearchParams(page.url.split('?')[1] ?? '').get(
@@ -92,20 +114,65 @@ export default function Index({ myTeams, discoverTeams }: Props) {
     const [activeView, setActiveView] = useState<'my-teams' | 'discover'>(
         initialView === 'discover' ? 'discover' : 'my-teams',
     );
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedVariant, setSelectedVariant] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
+    const selectedVariant = filters.variant ?? 'all';
 
-    // Filter discover teams based on search and variant
-    const filteredDiscoverTeams = useMemo(() => {
-        return discoverTeams.filter((team) => {
-            const matchesSearch = team.name
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase());
-            const matchesVariant =
-                selectedVariant === 'all' || team.variant === selectedVariant;
-            return matchesSearch && matchesVariant;
-        });
-    }, [discoverTeams, searchQuery, selectedVariant]);
+    const updateFilters = useCallback(
+        (updates: {
+            search?: string;
+            variant?: string;
+            page?: number | null;
+        }) => {
+            const search =
+                updates.search !== undefined ? updates.search : filters.search;
+            const variant =
+                updates.variant !== undefined
+                    ? updates.variant
+                    : filters.variant;
+
+            router.get(
+                teams.index().url,
+                {
+                    view: 'discover',
+                    search: search.trim() === '' ? undefined : search.trim(),
+                    variant: variant === 'all' ? undefined : variant,
+                    page: updates.page ?? undefined,
+                },
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    replace: true,
+                },
+            );
+        },
+        [filters.search, filters.variant],
+    );
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            if (searchQuery !== (filters.search ?? '')) {
+                updateFilters({ search: searchQuery, page: null });
+            }
+        }, 350);
+
+        return () => window.clearTimeout(timeout);
+    }, [filters.search, searchQuery, updateFilters]);
+
+    const pageNumbers = useMemo(() => {
+        const start = Math.max(1, discoverTeams.current_page - 2);
+        const end = Math.min(
+            discoverTeams.last_page,
+            discoverTeams.current_page + 2,
+        );
+
+        return Array.from(
+            { length: end - start + 1 },
+            (_, index) => start + index,
+        );
+    }, [discoverTeams.current_page, discoverTeams.last_page]);
+
+    const hasActiveFilters =
+        (filters.search ?? '') !== '' || (filters.variant ?? 'all') !== 'all';
 
     const renderTeamCard = (team: Team, showRole: boolean = false) => {
         const maxMembers =
@@ -255,7 +322,7 @@ export default function Index({ myTeams, discoverTeams }: Props) {
                             <Search className="h-4 w-4" />
                             Descubrir
                             <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {filteredDiscoverTeams.length}
+                                {discoverTeams.total}
                             </span>
                         </ToggleGroupItem>
                     </ToggleGroup>
@@ -313,7 +380,12 @@ export default function Index({ myTeams, discoverTeams }: Props) {
                             {/* Variant Filter */}
                             <Select
                                 value={selectedVariant}
-                                onValueChange={setSelectedVariant}
+                                onValueChange={(value) =>
+                                    updateFilters({
+                                        variant: value,
+                                        page: null,
+                                    })
+                                }
                             >
                                 <SelectTrigger className="w-full sm:w-[180px]">
                                     <SelectValue placeholder="Seleccionar variante" />
@@ -339,55 +411,135 @@ export default function Index({ myTeams, discoverTeams }: Props) {
                         </div>
 
                         {/* Results */}
-                        {discoverTeams.length === 0 ? (
-                            <Card className="flex flex-col items-center justify-center py-12">
-                                <CardContent className="flex flex-col items-center gap-4 pt-6">
-                                    <div className="rounded-full bg-muted p-4">
-                                        <Search className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-semibold">
-                                            No hay equipos disponibles
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            No hay equipos disponibles para
-                                            unirse en este momento
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ) : filteredDiscoverTeams.length === 0 ? (
-                            <Card className="flex flex-col items-center justify-center py-12">
-                                <CardContent className="flex flex-col items-center gap-4 pt-6">
-                                    <div className="rounded-full bg-muted p-4">
-                                        <Search className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-semibold">
-                                            No se encontraron equipos
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Intenta ajustar tus criterios de
-                                            búsqueda o filtro
-                                        </p>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setSearchQuery('');
-                                            setSelectedVariant('all');
-                                        }}
-                                    >
-                                        Limpiar Filtros
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                        {discoverTeams.total === 0 ? (
+                            hasActiveFilters ? (
+                                <Card className="flex flex-col items-center justify-center py-12">
+                                    <CardContent className="flex flex-col items-center gap-4 pt-6">
+                                        <div className="rounded-full bg-muted p-4">
+                                            <Search className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-lg font-semibold">
+                                                No se encontraron equipos
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Intenta ajustar tus criterios de
+                                                búsqueda o filtro
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setSearchQuery('');
+                                                updateFilters({
+                                                    search: '',
+                                                    variant: 'all',
+                                                    page: null,
+                                                });
+                                            }}
+                                        >
+                                            Limpiar Filtros
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <Card className="flex flex-col items-center justify-center py-12">
+                                    <CardContent className="flex flex-col items-center gap-4 pt-6">
+                                        <div className="rounded-full bg-muted p-4">
+                                            <Search className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-lg font-semibold">
+                                                No hay equipos disponibles
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                No hay equipos disponibles para
+                                                unirse en este momento
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
                         ) : (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {filteredDiscoverTeams.map((team) =>
-                                    renderTeamCard(team),
+                            <>
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {discoverTeams.data.map((team) =>
+                                        renderTeamCard(team),
+                                    )}
+                                </div>
+
+                                {discoverTeams.last_page > 1 && (
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-sm text-muted-foreground">
+                                            Mostrando {discoverTeams.from} a{' '}
+                                            {discoverTeams.to} de{' '}
+                                            {discoverTeams.total}
+                                        </p>
+
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={
+                                                    discoverTeams.current_page ===
+                                                    1
+                                                }
+                                                onClick={() =>
+                                                    updateFilters({
+                                                        page:
+                                                            discoverTeams.current_page -
+                                                            1,
+                                                    })
+                                                }
+                                            >
+                                                <ChevronLeft className="size-4" />
+                                            </Button>
+
+                                            {pageNumbers.map((pageNumber) => (
+                                                <Button
+                                                    key={pageNumber}
+                                                    type="button"
+                                                    variant={
+                                                        pageNumber ===
+                                                        discoverTeams.current_page
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
+                                                    size="sm"
+                                                    className="min-w-9"
+                                                    onClick={() =>
+                                                        updateFilters({
+                                                            page: pageNumber,
+                                                        })
+                                                    }
+                                                >
+                                                    {pageNumber}
+                                                </Button>
+                                            ))}
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={
+                                                    discoverTeams.current_page ===
+                                                    discoverTeams.last_page
+                                                }
+                                                onClick={() =>
+                                                    updateFilters({
+                                                        page:
+                                                            discoverTeams.current_page +
+                                                            1,
+                                                    })
+                                                }
+                                            >
+                                                <ChevronRight className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
                                 )}
-                            </div>
+                            </>
                         )}
                     </div>
                 )}
