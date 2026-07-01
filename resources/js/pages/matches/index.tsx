@@ -4,13 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useNavigationPending } from '@/hooks/use-navigation-pending';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import matches from '@/routes/matches';
 import teamsRoute from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { Calendar, History, Search, Trophy, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import {
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    History,
+    Search,
+    Trophy,
+    Users,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -42,11 +52,24 @@ interface Match {
     away_team?: Team;
 }
 
+interface PaginatedMatches {
+    data: Match[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    per_page: number;
+    total: number;
+}
+
 interface Props {
     myMatches: Match[];
-    availableMatches: Match[];
+    availableMatches: PaginatedMatches;
     teams: Team[];
     hasTeams: boolean;
+    filters: {
+        search: string;
+    };
 }
 
 export default function Index({
@@ -54,6 +77,7 @@ export default function Index({
     availableMatches,
     teams,
     hasTeams,
+    filters,
 }: Props) {
     const [activeView, setActiveView] = useState<'my-matches' | 'find-matches'>(
         'my-matches',
@@ -61,7 +85,53 @@ export default function Index({
     const [matchesTab, setMatchesTab] = useState<'upcoming' | 'history'>(
         'upcoming',
     );
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
+    const [isPending, pendingHandlers] = useNavigationPending();
+
+    const updateFilters = useCallback(
+        (updates: { search?: string; page?: number | null }) => {
+            const search =
+                updates.search !== undefined ? updates.search : filters.search;
+
+            router.get(
+                matches.index().url,
+                {
+                    search: search.trim() === '' ? undefined : search.trim(),
+                    page: updates.page ?? undefined,
+                },
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    replace: true,
+                    ...pendingHandlers,
+                },
+            );
+        },
+        [filters.search, pendingHandlers],
+    );
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            if (searchQuery !== (filters.search ?? '')) {
+                updateFilters({ search: searchQuery, page: null });
+            }
+        }, 350);
+
+        return () => window.clearTimeout(timeout);
+    }, [filters.search, searchQuery, updateFilters]);
+
+    const pageNumbers = useMemo(() => {
+        const start = Math.max(1, availableMatches.current_page - 2);
+        const end = Math.min(
+            availableMatches.last_page,
+            availableMatches.current_page + 2,
+        );
+
+        return Array.from(
+            { length: end - start + 1 },
+            (_, index) => start + index,
+        );
+    }, [availableMatches.current_page, availableMatches.last_page]);
 
     // Split matches into upcoming and past
     const { upcomingMatches, pastMatches } = useMemo(() => {
@@ -99,19 +169,6 @@ export default function Index({
 
         return { upcomingMatches: upcoming, pastMatches: past };
     }, [myMatches]);
-
-    const filteredAvailableMatches = useMemo(() => {
-        return availableMatches.filter((match) => {
-            return (
-                match.home_team.name
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                (match.location ?? '')
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-            );
-        });
-    }, [availableMatches, searchQuery]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -161,7 +218,7 @@ export default function Index({
                             <Search className="h-4 w-4" />
                             Buscar Partidos
                             <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {filteredAvailableMatches.length}
+                                {availableMatches.total}
                             </span>
                         </ToggleGroupItem>
                     </ToggleGroup>
@@ -312,52 +369,138 @@ export default function Index({
                             />
                         </div>
 
-                        {availableMatches.length === 0 ? (
-                            <Card className="flex flex-col items-center justify-center py-12">
-                                <CardContent className="flex flex-col items-center gap-4 pt-6">
-                                    <div className="rounded-full bg-muted p-4">
-                                        <Search className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-semibold">
-                                            No hay partidos disponibles
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            No hay partidos disponibles en este
-                                            momento
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ) : filteredAvailableMatches.length === 0 ? (
-                            <Card className="flex flex-col items-center justify-center py-12">
-                                <CardContent className="flex flex-col items-center gap-4 pt-6">
-                                    <div className="rounded-full bg-muted p-4">
-                                        <Search className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-semibold">
-                                            No se encontraron partidos
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Intenta ajustar tus criterios de
-                                            búsqueda
-                                        </p>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setSearchQuery('')}
-                                    >
-                                        Limpiar Búsqueda
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                        {availableMatches.total === 0 ? (
+                            filters.search ? (
+                                <Card className="flex flex-col items-center justify-center py-12">
+                                    <CardContent className="flex flex-col items-center gap-4 pt-6">
+                                        <div className="rounded-full bg-muted p-4">
+                                            <Search className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-lg font-semibold">
+                                                No se encontraron partidos
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Intenta ajustar tus criterios de
+                                                búsqueda
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setSearchQuery('')}
+                                        >
+                                            Limpiar Búsqueda
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <Card className="flex flex-col items-center justify-center py-12">
+                                    <CardContent className="flex flex-col items-center gap-4 pt-6">
+                                        <div className="rounded-full bg-muted p-4">
+                                            <Search className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="text-lg font-semibold">
+                                                No hay partidos disponibles
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                No hay partidos disponibles en
+                                                este momento
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
                         ) : (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {filteredAvailableMatches.map((match) => (
-                                    <MatchCard key={match.id} match={match} />
-                                ))}
-                            </div>
+                            <>
+                                <div
+                                    className={cn(
+                                        'grid gap-4 transition-opacity md:grid-cols-2 lg:grid-cols-3',
+                                        isPending &&
+                                            'pointer-events-none opacity-50',
+                                    )}
+                                >
+                                    {availableMatches.data.map((match) => (
+                                        <MatchCard
+                                            key={match.id}
+                                            match={match}
+                                        />
+                                    ))}
+                                </div>
+
+                                {availableMatches.last_page > 1 && (
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-sm text-muted-foreground">
+                                            Mostrando {availableMatches.from} a{' '}
+                                            {availableMatches.to} de{' '}
+                                            {availableMatches.total}
+                                        </p>
+
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={
+                                                    isPending ||
+                                                    availableMatches.current_page ===
+                                                        1
+                                                }
+                                                onClick={() =>
+                                                    updateFilters({
+                                                        page:
+                                                            availableMatches.current_page -
+                                                            1,
+                                                    })
+                                                }
+                                            >
+                                                <ChevronLeft className="size-4" />
+                                            </Button>
+
+                                            {pageNumbers.map((page) => (
+                                                <Button
+                                                    key={page}
+                                                    type="button"
+                                                    variant={
+                                                        page ===
+                                                        availableMatches.current_page
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
+                                                    size="sm"
+                                                    className="min-w-9"
+                                                    disabled={isPending}
+                                                    onClick={() =>
+                                                        updateFilters({ page })
+                                                    }
+                                                >
+                                                    {page}
+                                                </Button>
+                                            ))}
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={
+                                                    isPending ||
+                                                    availableMatches.current_page ===
+                                                        availableMatches.last_page
+                                                }
+                                                onClick={() =>
+                                                    updateFilters({
+                                                        page:
+                                                            availableMatches.current_page +
+                                                            1,
+                                                    })
+                                                }
+                                            >
+                                                <ChevronRight className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
