@@ -139,6 +139,50 @@ test('authenticated user can view a match', function () {
         ->assertSuccessful();
 });
 
+test('match availability and opposing leaders are deferred', function () {
+    $match = createMatch([
+        'away_team_id' => $this->awayTeam->id,
+        'status' => 'confirmed',
+    ]);
+
+    $this->actingAs($this->homeCaptain);
+
+    // The below-the-fold blocks are deferred → absent on the initial page load.
+    $this->get(route('matches.show', $match->id))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('matches/show')
+            ->has('match')
+            ->has('userAvailability')
+            ->missing('homeAvailability')
+            ->missing('homeAvailabilityStats')
+            ->missing('opposingTeamLeaders')
+        );
+
+    // ...and delivered by the follow-up deferred (partial) request.
+    $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
+    $this->get(route('matches.show', $match->id), [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $version,
+        'X-Inertia-Partial-Component' => 'matches/show',
+        'X-Inertia-Partial-Data' => 'homeAvailabilityStats',
+    ])
+        ->assertOk()
+        ->assertJsonPath('component', 'matches/show')
+        ->assertJsonStructure([
+            'props' => [
+                'homeAvailabilityStats' => [
+                    'available',
+                    'maybe',
+                    'unavailable',
+                    'pending',
+                    'total',
+                    'minimum',
+                ],
+            ],
+        ]);
+});
+
 // ============================================================
 // Match Update
 // ============================================================
@@ -618,4 +662,72 @@ test('non-leader cannot complete match', function () {
 test('guest cannot access matches index', function () {
     $this->get(route('matches.index'))
         ->assertRedirect(route('login'));
+});
+
+// ============================================================
+// Available Matches Pagination & Search
+// ============================================================
+
+test('available matches are paginated', function () {
+    FootballMatch::factory()->count(15)->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.index'))
+        ->assertInertia(fn ($page) => $page
+            ->component('matches/index')
+            ->has('availableMatches.data', 12)
+            ->where('availableMatches.total', 15)
+            ->where('availableMatches.last_page', 2)
+        );
+});
+
+test('available matches can be searched by home team name', function () {
+    $special = Team::factory()->create([
+        'name' => 'Searchable Rovers',
+        'variant' => 'football_11',
+    ]);
+    FootballMatch::factory()->create([
+        'home_team_id' => $special->id,
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+    ]);
+    FootballMatch::factory()->count(4)->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.index', ['search' => 'Searchable']))
+        ->assertInertia(fn ($page) => $page
+            ->has('availableMatches.data', 1)
+            ->where('availableMatches.total', 1)
+            ->where('filters.search', 'Searchable')
+        );
+});
+
+test('available matches can be searched by location', function () {
+    FootballMatch::factory()->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+        'location' => 'Estadio Centenario Unico',
+    ]);
+    FootballMatch::factory()->count(3)->create([
+        'variant' => 'football_11',
+        'status' => 'available',
+        'scheduled_at' => now()->addDays(5),
+        'location' => 'Otra Cancha',
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.index', ['search' => 'Centenario']))
+        ->assertInertia(fn ($page) => $page
+            ->where('availableMatches.total', 1)
+        );
 });

@@ -17,6 +17,7 @@ use App\Notifications\MatchRequestAcceptedNotification;
 use App\Notifications\MatchRequestReceivedNotification;
 use App\Notifications\MatchRequestRejectedNotification;
 use App\Notifications\MatchScoreUpdatedNotification;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -490,7 +491,7 @@ final class MatchService
     /**
      * Get available matches for teams with specific variants.
      */
-    public function getAvailableMatches(?array $variants = null): Collection
+    public function getAvailableMatches(?array $variants = null, ?string $search = null): LengthAwarePaginator
     {
         $query = FootballMatch::with(['homeTeam', 'creator'])
             ->where('status', 'available')
@@ -501,7 +502,16 @@ final class MatchService
             $query->whereIn('variant', $variants);
         }
 
-        return $query->get();
+        if ($search !== null && $search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('homeTeam', function ($teamQuery) use ($search) {
+                    $teamQuery->where('name', 'like', '%'.$search.'%');
+                })
+                    ->orWhere('location', 'like', '%'.$search.'%');
+            });
+        }
+
+        return $query->paginate(12)->withQueryString();
     }
 
     /**

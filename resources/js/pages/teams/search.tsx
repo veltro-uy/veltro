@@ -17,13 +17,21 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { VariantBadge } from '@/components/variant-badge';
+import { useNavigationPending } from '@/hooks/use-navigation-pending';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import teams from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, Search as SearchIcon, Users } from 'lucide-react';
+import {
+    ArrowRight,
+    ChevronLeft,
+    ChevronRight,
+    Search as SearchIcon,
+    Users,
+} from 'lucide-react';
 import type { FormEventHandler } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -53,8 +61,18 @@ interface Team {
     team_members: TeamMember[];
 }
 
+interface PaginatedTeams {
+    data: Team[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    per_page: number;
+    total: number;
+}
+
 interface Props {
-    teams: Team[];
+    teams: PaginatedTeams;
     filters?: {
         name?: string;
         variant?: string;
@@ -64,21 +82,42 @@ interface Props {
 export default function SearchTeams({ teams: searchResults, filters }: Props) {
     const [name, setName] = useState(filters?.name || '');
     const [variant, setVariant] = useState(filters?.variant || '');
+    const [isPending, pendingHandlers] = useNavigationPending();
 
-    const handleSearch: FormEventHandler = (e) => {
-        e.preventDefault();
+    const runSearch = (page?: number) => {
         router.get(
             teams.search().url,
             {
-                name,
-                variant,
+                name: name.trim() === '' ? undefined : name.trim(),
+                variant: variant === '' ? undefined : variant,
+                page,
             },
             {
                 preserveState: true,
                 preserveScroll: true,
+                replace: true,
+                ...pendingHandlers,
             },
         );
     };
+
+    const handleSearch: FormEventHandler = (e) => {
+        e.preventDefault();
+        runSearch();
+    };
+
+    const pageNumbers = useMemo(() => {
+        const start = Math.max(1, searchResults.current_page - 2);
+        const end = Math.min(
+            searchResults.last_page,
+            searchResults.current_page + 2,
+        );
+
+        return Array.from(
+            { length: end - start + 1 },
+            (_, index) => start + index,
+        );
+    }, [searchResults.current_page, searchResults.last_page]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -159,11 +198,10 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                 {/* Results */}
                 <div>
                     <h2 className="mb-4 text-xl font-semibold">
-                        Resultados{' '}
-                        {searchResults && `(${searchResults.length})`}
+                        Resultados ({searchResults.total})
                     </h2>
 
-                    {searchResults && searchResults.length === 0 ? (
+                    {searchResults.total === 0 ? (
                         <Card className="flex flex-col items-center justify-center py-12">
                             <CardContent className="flex flex-col items-center gap-4 pt-6">
                                 <div className="rounded-full bg-muted p-4">
@@ -180,8 +218,13 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {searchResults?.map((team) => (
+                        <div
+                            className={cn(
+                                'grid gap-4 transition-opacity md:grid-cols-2 lg:grid-cols-3',
+                                isPending && 'pointer-events-none opacity-50',
+                            )}
+                        >
+                            {searchResults.data.map((team) => (
                                 <Card
                                     key={team.id}
                                     className="group transition-all hover:border-primary/20 hover:shadow-lg"
@@ -239,6 +282,70 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                     </CardContent>
                                 </Card>
                             ))}
+                        </div>
+                    )}
+
+                    {searchResults.last_page > 1 && (
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm text-muted-foreground">
+                                Mostrando {searchResults.from} a{' '}
+                                {searchResults.to} de {searchResults.total}
+                            </p>
+
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={
+                                        isPending ||
+                                        searchResults.current_page === 1
+                                    }
+                                    onClick={() =>
+                                        runSearch(
+                                            searchResults.current_page - 1,
+                                        )
+                                    }
+                                >
+                                    <ChevronLeft className="size-4" />
+                                </Button>
+
+                                {pageNumbers.map((page) => (
+                                    <Button
+                                        key={page}
+                                        type="button"
+                                        variant={
+                                            page === searchResults.current_page
+                                                ? 'default'
+                                                : 'outline'
+                                        }
+                                        size="sm"
+                                        className="min-w-9"
+                                        disabled={isPending}
+                                        onClick={() => runSearch(page)}
+                                    >
+                                        {page}
+                                    </Button>
+                                ))}
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={
+                                        isPending ||
+                                        searchResults.current_page ===
+                                            searchResults.last_page
+                                    }
+                                    onClick={() =>
+                                        runSearch(
+                                            searchResults.current_page + 1,
+                                        )
+                                    }
+                                >
+                                    <ChevronRight className="size-4" />
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>

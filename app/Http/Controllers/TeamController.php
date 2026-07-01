@@ -29,12 +29,21 @@ final class TeamController extends Controller
         // Get user's teams
         $myTeams = $this->teamService->getUserTeams($user->id);
 
-        // Get teams the user is not part of (for discovery)
-        $discoverTeams = $this->teamService->getTeamsNotJoined($user->id);
+        // Get teams the user is not part of (for discovery), filtered by search/variant
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'variant' => ['nullable', 'in:football_11,football_7,football_5,futsal'],
+        ]);
+
+        $discoverTeams = $this->teamService->getTeamsNotJoined($user->id, $filters);
 
         return Inertia::render('teams/index', [
             'myTeams' => $myTeams,
             'discoverTeams' => $discoverTeams,
+            'filters' => [
+                'search' => $filters['search'] ?? '',
+                'variant' => $filters['variant'] ?? 'all',
+            ],
         ]);
     }
 

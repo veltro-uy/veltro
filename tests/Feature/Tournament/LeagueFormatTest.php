@@ -211,14 +211,27 @@ test('tournament show endpoint includes standings for league format', function (
     });
 
     $this->actingAs($organizer);
-    $response = $this->get("/tournaments/{$tournament->id}");
 
+    // standings is a deferred prop, so it is absent on the initial page load...
+    $response = $this->get("/tournaments/{$tournament->id}");
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('tournaments/show')
-        ->has('standings', 4)
-        ->where('standings.0.position', 1)
+        ->missing('standings')
     );
+
+    // ...and is delivered by the follow-up deferred (partial) request.
+    $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
+    $deferred = $this->get("/tournaments/{$tournament->id}", [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $version,
+        'X-Inertia-Partial-Component' => 'tournaments/show',
+        'X-Inertia-Partial-Data' => 'standings',
+    ]);
+    $deferred->assertOk();
+    $deferred->assertJsonPath('component', 'tournaments/show');
+    $deferred->assertJsonCount(4, 'props.standings');
+    $deferred->assertJsonPath('props.standings.0.position', 1);
 });
 
 test('single-elimination regression: existing flow still works', function () {

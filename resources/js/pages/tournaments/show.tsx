@@ -1,3 +1,4 @@
+import { StandingsSkeleton } from '@/components/loading-skeletons';
 import { TeamAvatar } from '@/components/team-avatar';
 import { GroupDraw } from '@/components/tournament/group-draw';
 import { GroupsGrid } from '@/components/tournament/groups-grid';
@@ -39,7 +40,7 @@ import type {
     TournamentGroup,
     TournamentTeam,
 } from '@/types';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     CalendarClock,
     Check,
@@ -365,48 +366,62 @@ export default function TournamentShow({
                         {/* Bracket / Standings / Groups */}
                         {hasBracket ? (
                             <>
-                                {tournament.format === 'league' && standings ? (
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>
-                                                Tabla de Posiciones
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Clasificación general del torneo
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <StandingsTable
-                                                rows={standings}
-                                                highlightTopN={1}
-                                            />
-                                        </CardContent>
-                                    </Card>
+                                {tournament.format === 'league' ? (
+                                    <Deferred
+                                        data="standings"
+                                        fallback={<StandingsSkeleton />}
+                                    >
+                                        {standings ? (
+                                            <Card>
+                                                <CardHeader>
+                                                    <CardTitle>
+                                                        Tabla de Posiciones
+                                                    </CardTitle>
+                                                    <CardDescription>
+                                                        Clasificación general
+                                                        del torneo
+                                                    </CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <StandingsTable
+                                                        rows={standings}
+                                                        highlightTopN={1}
+                                                    />
+                                                </CardContent>
+                                            </Card>
+                                        ) : null}
+                                    </Deferred>
                                 ) : tournament.format ===
                                   'group_stage_knockout' ? (
                                     <>
-                                        {tournament.groups &&
-                                            groupStandings && (
-                                                <section className="space-y-4">
-                                                    <h2 className="text-lg font-semibold">
-                                                        {tournament.phase ===
-                                                            'knockout' ||
-                                                        tournament.phase ===
-                                                            'completed'
-                                                            ? 'Tablas Finales de Grupos'
-                                                            : 'Fase de Grupos'}
-                                                    </h2>
-                                                    <GroupsGrid
-                                                        groups={
-                                                            tournament.groups
-                                                        }
-                                                        standingsByGroup={
-                                                            groupStandings
-                                                        }
-                                                        highlightTopN={2}
-                                                    />
-                                                </section>
-                                            )}
+                                        {tournament.groups && (
+                                            <Deferred
+                                                data="groupStandings"
+                                                fallback={<StandingsSkeleton />}
+                                            >
+                                                {groupStandings ? (
+                                                    <section className="space-y-4">
+                                                        <h2 className="text-lg font-semibold">
+                                                            {tournament.phase ===
+                                                                'knockout' ||
+                                                            tournament.phase ===
+                                                                'completed'
+                                                                ? 'Tablas Finales de Grupos'
+                                                                : 'Fase de Grupos'}
+                                                        </h2>
+                                                        <GroupsGrid
+                                                            groups={
+                                                                tournament.groups
+                                                            }
+                                                            standingsByGroup={
+                                                                groupStandings
+                                                            }
+                                                            highlightTopN={2}
+                                                        />
+                                                    </section>
+                                                ) : null}
+                                            </Deferred>
+                                        )}
                                         {(tournament.phase === 'knockout' ||
                                             tournament.phase ===
                                                 'completed') && (
