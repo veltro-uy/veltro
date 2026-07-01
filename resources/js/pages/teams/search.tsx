@@ -17,7 +17,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { VariantBadge } from '@/components/variant-badge';
+import { useNavigationPending } from '@/hooks/use-navigation-pending';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import teams from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
@@ -80,6 +82,7 @@ interface Props {
 export default function SearchTeams({ teams: searchResults, filters }: Props) {
     const [name, setName] = useState(filters?.name || '');
     const [variant, setVariant] = useState(filters?.variant || '');
+    const [isPending, pendingHandlers] = useNavigationPending();
 
     const runSearch = (page?: number) => {
         router.get(
@@ -93,6 +96,7 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
+                ...pendingHandlers,
             },
         );
     };
@@ -214,7 +218,12 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div
+                            className={cn(
+                                'grid gap-4 transition-opacity md:grid-cols-2 lg:grid-cols-3',
+                                isPending && 'pointer-events-none opacity-50',
+                            )}
+                        >
                             {searchResults.data.map((team) => (
                                 <Card
                                     key={team.id}
@@ -288,7 +297,10 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                     type="button"
                                     variant="outline"
                                     size="icon"
-                                    disabled={searchResults.current_page === 1}
+                                    disabled={
+                                        isPending ||
+                                        searchResults.current_page === 1
+                                    }
                                     onClick={() =>
                                         runSearch(
                                             searchResults.current_page - 1,
@@ -309,6 +321,7 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                         }
                                         size="sm"
                                         className="min-w-9"
+                                        disabled={isPending}
                                         onClick={() => runSearch(page)}
                                     >
                                         {page}
@@ -320,8 +333,9 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                     variant="outline"
                                     size="icon"
                                     disabled={
+                                        isPending ||
                                         searchResults.current_page ===
-                                        searchResults.last_page
+                                            searchResults.last_page
                                     }
                                     onClick={() =>
                                         runSearch(

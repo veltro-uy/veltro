@@ -241,13 +241,26 @@ test('group standings appear in show endpoint props', function () {
 
     // Don't start; just request the page.
     $this->actingAs($organizer);
-    $response = $this->get("/tournaments/{$tournament->id}");
 
+    // groupStandings is a deferred prop, absent on the initial page load...
+    $response = $this->get("/tournaments/{$tournament->id}");
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('tournaments/show')
-        ->has('groupStandings', 2)
+        ->missing('groupStandings')
     );
+
+    // ...and delivered by the follow-up deferred (partial) request.
+    $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
+    $deferred = $this->get("/tournaments/{$tournament->id}", [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $version,
+        'X-Inertia-Partial-Component' => 'tournaments/show',
+        'X-Inertia-Partial-Data' => 'groupStandings',
+    ]);
+    $deferred->assertOk();
+    $deferred->assertJsonPath('component', 'tournaments/show');
+    $deferred->assertJsonCount(2, 'props.groupStandings');
 });
 
 test('non-organizer cannot draw groups', function () {

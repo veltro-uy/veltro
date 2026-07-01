@@ -1,5 +1,9 @@
 import { AvailabilityPanel } from '@/components/availability-panel';
 import { AvailabilitySelector } from '@/components/availability-selector';
+import {
+    AvailabilitySkeleton,
+    CardSkeleton,
+} from '@/components/loading-skeletons';
 import { CompleteMatchDialog } from '@/components/match/complete-match-dialog';
 import { MatchHero } from '@/components/match/match-hero';
 import { MatchRequestsCard } from '@/components/match/match-requests-card';
@@ -37,7 +41,7 @@ import type {
     BreadcrumbItem,
     MatchAvailability,
 } from '@/types';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -51,13 +55,14 @@ interface Props {
     homeLineup: LineupPlayer[];
     awayLineup: LineupPlayer[];
     events: MatchEvent[];
+    // Deferred props (Inertia::defer) — undefined until the 'secondary' group resolves.
     opposingTeamLeaders?: OpposingTeamLeader[];
-    homeAvailability: MatchAvailability[];
-    awayAvailability: MatchAvailability[];
+    homeAvailability?: MatchAvailability[];
+    awayAvailability?: MatchAvailability[];
     userAvailability: MatchAvailability | null;
     userTeamId: number | null;
-    homeAvailabilityStats: AvailabilityStats;
-    awayAvailabilityStats: AvailabilityStats | null;
+    homeAvailabilityStats?: AvailabilityStats;
+    awayAvailabilityStats?: AvailabilityStats | null;
 }
 
 export default function Show({
@@ -205,11 +210,18 @@ export default function Show({
                         {isLeader &&
                             (match.status === 'confirmed' ||
                                 match.status === 'in_progress' ||
-                                match.status === 'completed') &&
-                            opposingTeamLeaders.length > 0 && (
-                                <OpposingLeadersCard
-                                    leaders={opposingTeamLeaders}
-                                />
+                                match.status === 'completed') && (
+                                <Deferred
+                                    data="opposingTeamLeaders"
+                                    fallback={<CardSkeleton />}
+                                >
+                                    {opposingTeamLeaders &&
+                                    opposingTeamLeaders.length > 0 ? (
+                                        <OpposingLeadersCard
+                                            leaders={opposingTeamLeaders}
+                                        />
+                                    ) : null}
+                                </Deferred>
                             )}
                     </div>
 
@@ -227,28 +239,41 @@ export default function Show({
                             )}
 
                         {(match.status === 'confirmed' ||
-                            match.status === 'available') &&
-                            homeAvailabilityStats && (
-                                <AvailabilityPanel
-                                    homeTeam={{
-                                        team: match.home_team,
-                                        stats: homeAvailabilityStats,
-                                        availability: homeAvailability,
-                                        isLeader: isHomeLeader,
-                                    }}
-                                    awayTeam={
-                                        match.away_team && awayAvailabilityStats
-                                            ? {
-                                                  team: match.away_team,
-                                                  stats: awayAvailabilityStats,
-                                                  availability:
-                                                      awayAvailability,
-                                                  isLeader: isAwayLeader,
-                                              }
-                                            : undefined
-                                    }
-                                />
-                            )}
+                            match.status === 'available') && (
+                            <Deferred
+                                data={[
+                                    'homeAvailabilityStats',
+                                    'homeAvailability',
+                                    'awayAvailabilityStats',
+                                    'awayAvailability',
+                                ]}
+                                fallback={<AvailabilitySkeleton />}
+                            >
+                                {homeAvailabilityStats && homeAvailability ? (
+                                    <AvailabilityPanel
+                                        homeTeam={{
+                                            team: match.home_team,
+                                            stats: homeAvailabilityStats,
+                                            availability: homeAvailability,
+                                            isLeader: isHomeLeader,
+                                        }}
+                                        awayTeam={
+                                            match.away_team &&
+                                            awayAvailabilityStats &&
+                                            awayAvailability
+                                                ? {
+                                                      team: match.away_team,
+                                                      stats: awayAvailabilityStats,
+                                                      availability:
+                                                          awayAvailability,
+                                                      isLeader: isAwayLeader,
+                                                  }
+                                                : undefined
+                                        }
+                                    />
+                                ) : null}
+                            </Deferred>
+                        )}
 
                         {isLeader &&
                             (match.status === 'confirmed' ||

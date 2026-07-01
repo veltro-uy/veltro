@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useNavigationPending } from '@/hooks/use-navigation-pending';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import matches from '@/routes/matches';
 import teamsRoute from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
@@ -84,6 +86,7 @@ export default function Index({
         'upcoming',
     );
     const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
+    const [isPending, pendingHandlers] = useNavigationPending();
 
     const updateFilters = useCallback(
         (updates: { search?: string; page?: number | null }) => {
@@ -100,10 +103,11 @@ export default function Index({
                     preserveScroll: true,
                     preserveState: true,
                     replace: true,
+                    ...pendingHandlers,
                 },
             );
         },
-        [filters.search],
+        [filters.search, pendingHandlers],
     );
 
     useEffect(() => {
@@ -409,7 +413,13 @@ export default function Index({
                             )
                         ) : (
                             <>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                <div
+                                    className={cn(
+                                        'grid gap-4 transition-opacity md:grid-cols-2 lg:grid-cols-3',
+                                        isPending &&
+                                            'pointer-events-none opacity-50',
+                                    )}
+                                >
                                     {availableMatches.data.map((match) => (
                                         <MatchCard
                                             key={match.id}
@@ -432,8 +442,9 @@ export default function Index({
                                                 variant="outline"
                                                 size="icon"
                                                 disabled={
+                                                    isPending ||
                                                     availableMatches.current_page ===
-                                                    1
+                                                        1
                                                 }
                                                 onClick={() =>
                                                     updateFilters({
@@ -458,6 +469,7 @@ export default function Index({
                                                     }
                                                     size="sm"
                                                     className="min-w-9"
+                                                    disabled={isPending}
                                                     onClick={() =>
                                                         updateFilters({ page })
                                                     }
@@ -471,8 +483,9 @@ export default function Index({
                                                 variant="outline"
                                                 size="icon"
                                                 disabled={
+                                                    isPending ||
                                                     availableMatches.current_page ===
-                                                    availableMatches.last_page
+                                                        availableMatches.last_page
                                                 }
                                                 onClick={() =>
                                                     updateFilters({

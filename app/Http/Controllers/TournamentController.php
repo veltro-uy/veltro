@@ -186,23 +186,21 @@ final class TournamentController extends Controller
         $canApprove = $user && $user->can('approveTeam', $tournament);
         $canScheduleMatches = $user && $user->can('scheduleMatches', $tournament);
 
-        $standings = null;
-        $groupStandings = null;
-        $canDrawGroups = false;
-
-        if ($tournament->isLeague()) {
-            $standings = $this->buildLeagueStandings($tournament);
-        }
-
-        if ($tournament->isGroupStageKnockout()) {
-            $groupStandings = $this->buildGroupStandings($tournament);
-            $canDrawGroups = $user && $user->can('drawGroups', $tournament);
-        }
+        // Standings/group tables sit below the fold and are the most expensive
+        // computation on this page, so stream them in as deferred props while the
+        // shell renders. Only one applies per format; the other stays an eager null.
+        $isLeague = $tournament->isLeague();
+        $isGroupStage = $tournament->isGroupStageKnockout();
+        $canDrawGroups = $isGroupStage && $user && $user->can('drawGroups', $tournament);
 
         return Inertia::render('tournaments/show', [
             'tournament' => $tournament,
-            'standings' => $standings,
-            'groupStandings' => $groupStandings,
+            'standings' => $isLeague
+                ? Inertia::defer(fn () => $this->buildLeagueStandings($tournament), 'standings')
+                : null,
+            'groupStandings' => $isGroupStage
+                ? Inertia::defer(fn () => $this->buildGroupStandings($tournament), 'standings')
+                : null,
             'userTeams' => $userTeams,
             'permissions' => [
                 'canEdit' => $canEdit,

@@ -139,6 +139,50 @@ test('authenticated user can view a match', function () {
         ->assertSuccessful();
 });
 
+test('match availability and opposing leaders are deferred', function () {
+    $match = createMatch([
+        'away_team_id' => $this->awayTeam->id,
+        'status' => 'confirmed',
+    ]);
+
+    $this->actingAs($this->homeCaptain);
+
+    // The below-the-fold blocks are deferred → absent on the initial page load.
+    $this->get(route('matches.show', $match->id))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('matches/show')
+            ->has('match')
+            ->has('userAvailability')
+            ->missing('homeAvailability')
+            ->missing('homeAvailabilityStats')
+            ->missing('opposingTeamLeaders')
+        );
+
+    // ...and delivered by the follow-up deferred (partial) request.
+    $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
+    $this->get(route('matches.show', $match->id), [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $version,
+        'X-Inertia-Partial-Component' => 'matches/show',
+        'X-Inertia-Partial-Data' => 'homeAvailabilityStats',
+    ])
+        ->assertOk()
+        ->assertJsonPath('component', 'matches/show')
+        ->assertJsonStructure([
+            'props' => [
+                'homeAvailabilityStats' => [
+                    'available',
+                    'maybe',
+                    'unavailable',
+                    'pending',
+                    'total',
+                    'minimum',
+                ],
+            ],
+        ]);
+});
+
 // ============================================================
 // Match Update
 // ============================================================

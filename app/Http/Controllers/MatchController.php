@@ -162,88 +162,9 @@ final class MatchController extends Controller
                 ->get();
         }
 
-        // Get opposing team leaders with phone numbers
-        $opposingLeaders = $this->matchService->getOpposingTeamLeaders($match, $user->id);
-
-        // Determine which leaders to show based on user's team
-        $opposingTeamLeaders = collect();
-        if ($isHomeLeader && $match->away_team_id) {
-            // User is home leader, show away team leaders
-            $opposingTeamLeaders = $opposingLeaders['away_leaders'];
-        } elseif ($isAwayLeader) {
-            // User is away leader, show home team leaders
-            $opposingTeamLeaders = $opposingLeaders['home_leaders'];
-        }
-
-        // Format opposing team leaders for Inertia (ensure user relationship is loaded)
-        $formattedOpposingLeaders = $opposingTeamLeaders->map(function ($leader) {
-            // Ensure user is loaded
-            if (! $leader->relationLoaded('user')) {
-                $leader->load('user:id,name,phone_number');
-            }
-
-            return [
-                'id' => $leader->id,
-                'user_id' => $leader->user_id,
-                'role' => $leader->role,
-                'user' => [
-                    'id' => $leader->user->id,
-                    'name' => $leader->user->name,
-                    'phone_number' => $leader->user->phone_number ?? null,
-                ],
-            ];
-        });
-
-        // Get availability data
-        $homeAvailability = $match->availability()
-            ->where('team_id', $match->home_team_id)
-            ->with('user')
-            ->get()
-            ->map(function ($availability) {
-                return [
-                    'id' => $availability->id,
-                    'match_id' => $availability->match_id,
-                    'user_id' => $availability->user_id,
-                    'team_id' => $availability->team_id,
-                    'status' => $availability->status,
-                    'confirmed_at' => $availability->confirmed_at,
-                    'reminded_at' => $availability->reminded_at,
-                    'created_at' => $availability->created_at,
-                    'updated_at' => $availability->updated_at,
-                    'user' => $availability->user ? [
-                        'id' => $availability->user->id,
-                        'name' => $availability->user->name,
-                        'avatar_url' => $availability->user->avatar_url,
-                    ] : null,
-                ];
-            });
-
-        $awayAvailability = $match->away_team_id
-            ? $match->availability()
-                ->where('team_id', $match->away_team_id)
-                ->with('user')
-                ->get()
-                ->map(function ($availability) {
-                    return [
-                        'id' => $availability->id,
-                        'match_id' => $availability->match_id,
-                        'user_id' => $availability->user_id,
-                        'team_id' => $availability->team_id,
-                        'status' => $availability->status,
-                        'confirmed_at' => $availability->confirmed_at,
-                        'reminded_at' => $availability->reminded_at,
-                        'created_at' => $availability->created_at,
-                        'updated_at' => $availability->updated_at,
-                        'user' => $availability->user ? [
-                            'id' => $availability->user->id,
-                            'name' => $availability->user->name,
-                            'avatar_url' => $availability->user->avatar_url,
-                        ] : null,
-                    ];
-                })
-            : collect();
-
-        // Get user's availability status for their team
+        // Determine the current user's team + their own availability status. This
+        // drives the availability selector (kept eager); the full rosters + stats
+        // and opposing-team leaders sit below the fold and are deferred below.
         $userTeamId = null;
         if ($isHomeLeader || $match->homeTeam->hasMember($user->id)) {
             $userTeamId = $match->home_team_id;
@@ -258,25 +179,6 @@ final class MatchController extends Controller
                 ->first()
             : null;
 
-        // Calculate availability statistics
-        $homeAvailabilityStats = [
-            'available' => $homeAvailability->where('status', 'available')->count(),
-            'maybe' => $homeAvailability->where('status', 'maybe')->count(),
-            'unavailable' => $homeAvailability->where('status', 'unavailable')->count(),
-            'pending' => $homeAvailability->where('status', 'pending')->count(),
-            'total' => $homeAvailability->count(),
-            'minimum' => $match->getMinimumPlayers(),
-        ];
-
-        $awayAvailabilityStats = $match->away_team_id ? [
-            'available' => $awayAvailability->where('status', 'available')->count(),
-            'maybe' => $awayAvailability->where('status', 'maybe')->count(),
-            'unavailable' => $awayAvailability->where('status', 'unavailable')->count(),
-            'pending' => $awayAvailability->where('status', 'pending')->count(),
-            'total' => $awayAvailability->count(),
-            'minimum' => $match->getMinimumPlayers(),
-        ] : null;
-
         return Inertia::render('matches/show', [
             'match' => $match,
             'isHomeLeader' => $isHomeLeader,
@@ -286,14 +188,109 @@ final class MatchController extends Controller
             'homeLineup' => $homeLineup,
             'awayLineup' => $awayLineup,
             'events' => $events,
-            'opposingTeamLeaders' => $formattedOpposingLeaders,
-            'homeAvailability' => $homeAvailability,
-            'awayAvailability' => $awayAvailability,
+            'opposingTeamLeaders' => Inertia::defer(fn () => $this->formatOpposingLeaders($match, $user->id, $isHomeLeader, $isAwayLeader), 'secondary'),
+            'homeAvailability' => Inertia::defer(fn () => $this->loadAvailability($match)['home'], 'secondary'),
+            'awayAvailability' => Inertia::defer(fn () => $this->loadAvailability($match)['away'], 'secondary'),
             'userAvailability' => $userAvailability,
             'userTeamId' => $userTeamId,
-            'homeAvailabilityStats' => $homeAvailabilityStats,
-            'awayAvailabilityStats' => $awayAvailabilityStats,
+            'homeAvailabilityStats' => Inertia::defer(fn () => $this->loadAvailability($match)['homeStats'], 'secondary'),
+            'awayAvailabilityStats' => Inertia::defer(fn () => $this->loadAvailability($match)['awayStats'], 'secondary'),
         ]);
+    }
+
+    /**
+     * Resolve the opposing-team leaders (with phone numbers) to show the viewer,
+     * formatted for Inertia. Deferred — only relevant once the match is confirmed.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function formatOpposingLeaders(FootballMatch $match, int $userId, bool $isHomeLeader, bool $isAwayLeader): array
+    {
+        $opposingLeaders = $this->matchService->getOpposingTeamLeaders($match, $userId);
+
+        $leaders = collect();
+        if ($isHomeLeader && $match->away_team_id) {
+            $leaders = $opposingLeaders['away_leaders'];
+        } elseif ($isAwayLeader) {
+            $leaders = $opposingLeaders['home_leaders'];
+        }
+
+        return $leaders->map(function ($leader) {
+            if (! $leader->relationLoaded('user')) {
+                $leader->load('user:id,name,phone_number');
+            }
+
+            return [
+                'id' => $leader->id,
+                'user_id' => $leader->user_id,
+                'role' => $leader->role,
+                'user' => [
+                    'id' => $leader->user->id,
+                    'name' => $leader->user->name,
+                    'phone_number' => $leader->user->phone_number ?? null,
+                ],
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * Load both teams' availability rosters + summary stats for the match.
+     * Memoized with once() so the deferred prop closures share a single set of
+     * queries when the 'secondary' group is resolved.
+     *
+     * @return array{home: \Illuminate\Support\Collection, away: \Illuminate\Support\Collection, homeStats: array<string, int>, awayStats: array<string, int>|null}
+     */
+    private function loadAvailability(FootballMatch $match): array
+    {
+        return once(function () use ($match) {
+            $mapAvailability = fn ($availability) => [
+                'id' => $availability->id,
+                'match_id' => $availability->match_id,
+                'user_id' => $availability->user_id,
+                'team_id' => $availability->team_id,
+                'status' => $availability->status,
+                'confirmed_at' => $availability->confirmed_at,
+                'reminded_at' => $availability->reminded_at,
+                'created_at' => $availability->created_at,
+                'updated_at' => $availability->updated_at,
+                'user' => $availability->user ? [
+                    'id' => $availability->user->id,
+                    'name' => $availability->user->name,
+                    'avatar_url' => $availability->user->avatar_url,
+                ] : null,
+            ];
+
+            $home = $match->availability()
+                ->where('team_id', $match->home_team_id)
+                ->with('user')
+                ->get()
+                ->map($mapAvailability);
+
+            $away = $match->away_team_id
+                ? $match->availability()
+                    ->where('team_id', $match->away_team_id)
+                    ->with('user')
+                    ->get()
+                    ->map($mapAvailability)
+                : collect();
+
+            $minimum = $match->getMinimumPlayers();
+            $statsFor = fn ($collection) => [
+                'available' => $collection->where('status', 'available')->count(),
+                'maybe' => $collection->where('status', 'maybe')->count(),
+                'unavailable' => $collection->where('status', 'unavailable')->count(),
+                'pending' => $collection->where('status', 'pending')->count(),
+                'total' => $collection->count(),
+                'minimum' => $minimum,
+            ];
+
+            return [
+                'home' => $home,
+                'away' => $away,
+                'homeStats' => $statsFor($home),
+                'awayStats' => $match->away_team_id ? $statsFor($away) : null,
+            ];
+        });
     }
 
     /**

@@ -19,7 +19,9 @@ import {
 } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { VariantBadge } from '@/components/variant-badge';
+import { useNavigationPending } from '@/hooks/use-navigation-pending';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import teams from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -116,6 +118,7 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
     );
     const [searchQuery, setSearchQuery] = useState(filters.search ?? '');
     const selectedVariant = filters.variant ?? 'all';
+    const [isPending, pendingHandlers] = useNavigationPending();
 
     const updateFilters = useCallback(
         (updates: {
@@ -142,10 +145,11 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                     preserveScroll: true,
                     preserveState: true,
                     replace: true,
+                    ...pendingHandlers,
                 },
             );
         },
-        [filters.search, filters.variant],
+        [filters.search, filters.variant, pendingHandlers],
     );
 
     useEffect(() => {
@@ -462,7 +466,13 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                             )
                         ) : (
                             <>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                <div
+                                    className={cn(
+                                        'grid gap-4 transition-opacity md:grid-cols-2 lg:grid-cols-3',
+                                        isPending &&
+                                            'pointer-events-none opacity-50',
+                                    )}
+                                >
                                     {discoverTeams.data.map((team) =>
                                         renderTeamCard(team),
                                     )}
@@ -482,8 +492,9 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                                                 variant="outline"
                                                 size="icon"
                                                 disabled={
+                                                    isPending ||
                                                     discoverTeams.current_page ===
-                                                    1
+                                                        1
                                                 }
                                                 onClick={() =>
                                                     updateFilters({
@@ -508,6 +519,7 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                                                     }
                                                     size="sm"
                                                     className="min-w-9"
+                                                    disabled={isPending}
                                                     onClick={() =>
                                                         updateFilters({
                                                             page: pageNumber,
@@ -523,8 +535,9 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                                                 variant="outline"
                                                 size="icon"
                                                 disabled={
+                                                    isPending ||
                                                     discoverTeams.current_page ===
-                                                    discoverTeams.last_page
+                                                        discoverTeams.last_page
                                                 }
                                                 onClick={() =>
                                                     updateFilters({
