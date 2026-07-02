@@ -2,12 +2,7 @@ import AppLogoIcon from '@/components/app-logo-icon';
 import { UseCaseTable } from '@/components/docs/use-case-table';
 import LandingFooter from '@/components/landing-footer';
 import { Button } from '@/components/ui/button';
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     testSuites,
     type TestCaseStatus,
@@ -89,9 +84,9 @@ export default function Docs() {
                         Casos de uso
                     </h1>
                     <p className="mt-2 max-w-2xl text-muted-foreground">
-                        Casos de prueba de la plataforma. Marcá el estado de cada
-                        caso mientras lo verificás; los estados se guardan en
-                        este navegador.
+                        Casos de prueba de la plataforma. Marcá el estado de
+                        cada caso mientras lo verificás; los estados se guardan
+                        en este navegador.
                     </p>
                 </div>
 

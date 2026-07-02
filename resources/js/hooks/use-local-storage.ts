@@ -61,8 +61,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
                     current === null
                         ? initialValue
                         : (JSON.parse(current) as T);
-                const resolved =
-                    next instanceof Function ? next(prev) : next;
+                const resolved = next instanceof Function ? next(prev) : next;
 
                 window.localStorage.setItem(key, JSON.stringify(resolved));
                 window.dispatchEvent(new Event(WRITE_EVENT));

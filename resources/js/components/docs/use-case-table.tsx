@@ -13,8 +13,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
 import type { TestCase, TestCaseStatus } from '@/data/test-cases';
+import { cn } from '@/lib/utils';
 
 const STATUS_LABELS: Record<TestCaseStatus, string> = {
     pending: 'Pendiente',
@@ -40,7 +40,10 @@ function StatusLabel({ status }: { status: TestCaseStatus }) {
     return (
         <span className="flex min-w-0 flex-1 items-center gap-2">
             <span
-                className={cn('size-2 shrink-0 rounded-full', STATUS_DOT[status])}
+                className={cn(
+                    'size-2 shrink-0 rounded-full',
+                    STATUS_DOT[status],
+                )}
             />
             <span className={cn('truncate', STATUS_TEXT[status])}>
                 {STATUS_LABELS[status]}

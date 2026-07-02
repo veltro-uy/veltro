@@ -52,10 +52,7 @@ const loginCases: TestCase[] = [
         requirement: 'RF-AUTH-006',
         title: 'Inicio de sesión exitoso',
         preconditions: 'Usuario registrado y verificado',
-        testData: [
-            'email: "juan@example.com"',
-            'contraseña: "contraseña123"',
-        ],
+        testData: ['email: "juan@example.com"', 'contraseña: "contraseña123"'],
         steps: [
             'Ir a /login',
             'Ingresar email y contraseña válidos',
@@ -68,10 +65,7 @@ const loginCases: TestCase[] = [
         requirement: 'RF-AUTH-006',
         title: 'Inicio de sesión falla con contraseña incorrecta',
         preconditions: 'Usuario registrado',
-        testData: [
-            'email: "juan@example.com"',
-            'contraseña: "incorrecta"',
-        ],
+        testData: ['email: "juan@example.com"', 'contraseña: "incorrecta"'],
         steps: [
             'Ir a /login',
             'Ingresar email válido y contraseña incorrecta',
@@ -129,10 +123,7 @@ const loginCases: TestCase[] = [
         requirement: 'RF-AUTH-007',
         title: 'Inicio de sesión con 2FA activado',
         preconditions: 'Usuario con doble factor (2FA) activado',
-        testData: [
-            'email: "juan@example.com"',
-            'contraseña: "contraseña123"',
-        ],
+        testData: ['email: "juan@example.com"', 'contraseña: "contraseña123"'],
         steps: [
             'Ir a /login',
             'Ingresar credenciales válidas',
@@ -199,10 +190,7 @@ const loginCases: TestCase[] = [
         title: 'Enlace "¿Olvidaste tu contraseña?"',
         preconditions: 'Usuario no autenticado',
         testData: ['N/A'],
-        steps: [
-            'Ir a /login',
-            'Hacer clic en "¿Olvidaste tu contraseña?"',
-        ],
+        steps: ['Ir a /login', 'Hacer clic en "¿Olvidaste tu contraseña?"'],
         expectedResult:
             'Redirigido a la página de recuperación de contraseña (/forgot-password)',
     },
@@ -256,8 +244,7 @@ const registerCases: TestCase[] = [
             'Llenar email y contraseña',
             'Hacer clic en "Registrarse"',
         ],
-        expectedResult:
-            'Mensaje de error indicando que el nombre es requerido',
+        expectedResult: 'Mensaje de error indicando que el nombre es requerido',
     },
     {
         id: 'AUTH-REG-004',
@@ -435,10 +422,7 @@ const oauthCases: TestCase[] = [
         title: 'Redirección al proveedor de Google',
         preconditions: 'Usuario no autenticado',
         testData: ['N/A'],
-        steps: [
-            'Ir a /login',
-            'Hacer clic en "Continuar con Google"',
-        ],
+        steps: ['Ir a /login', 'Hacer clic en "Continuar con Google"'],
         expectedResult:
             'Redirigido a la pantalla de consentimiento de Google (/auth/google/redirect)',
     },
@@ -472,8 +456,7 @@ const oauthCases: TestCase[] = [
         id: 'AUTH-OAUTH-005',
         requirement: 'RF-AUTH-007',
         title: 'Google OAuth con 2FA activado',
-        preconditions:
-            'Usuario existente con doble factor (2FA) confirmado',
+        preconditions: 'Usuario existente con doble factor (2FA) confirmado',
         testData: ['Cuenta de Google del usuario con 2FA'],
         steps: [
             'Hacer clic en "Continuar con Google"',
@@ -542,8 +525,7 @@ const oauthCases: TestCase[] = [
         id: 'AUTH-OAUTH-010',
         requirement: 'RF-AUTH-013',
         title: 'Usuario no verificado que vincula con Google sigue sin verificar',
-        preconditions:
-            'Usuario existente con email sin verificar y contraseña',
+        preconditions: 'Usuario existente con email sin verificar y contraseña',
         testData: ['Cuenta de Google del usuario no verificado'],
         steps: [
             'Iniciar sesión con Google usando ese email',
@@ -561,10 +543,7 @@ const passwordResetCases: TestCase[] = [
         title: 'Visualizar página de recuperación',
         preconditions: 'Usuario no autenticado',
         testData: ['N/A'],
-        steps: [
-            'Ir a /login',
-            'Hacer clic en "¿Olvidaste tu contraseña?"',
-        ],
+        steps: ['Ir a /login', 'Hacer clic en "¿Olvidaste tu contraseña?"'],
         expectedResult:
             'Se muestra la página /forgot-password con el campo de correo electrónico',
     },
@@ -642,10 +621,7 @@ const passwordResetCases: TestCase[] = [
         requirement: 'RF-AUTH-012',
         title: 'Restablecer con contraseña débil o no coincidente',
         preconditions: 'Enlace de restablecimiento válido abierto',
-        testData: [
-            'contraseña: "123"',
-            'confirmar_contraseña: "456"',
-        ],
+        testData: ['contraseña: "123"', 'confirmar_contraseña: "456"'],
         steps: [
             'Abrir el enlace de restablecimiento',
             'Ingresar una contraseña débil o contraseñas que no coinciden',
@@ -676,7 +652,9 @@ const emailVerificationCases: TestCase[] = [
         title: 'Usuario no verificado es redirigido a verificación',
         preconditions: 'Usuario autenticado con email sin verificar',
         testData: ['N/A'],
-        steps: ['Intentar acceder a una ruta protegida (ej. /dashboard o /teams)'],
+        steps: [
+            'Intentar acceder a una ruta protegida (ej. /dashboard o /teams)',
+        ],
         expectedResult:
             'Redirigido a la página de aviso de verificación (/email/verify)',
     },
@@ -720,8 +698,7 @@ const emailVerificationCases: TestCase[] = [
         preconditions: 'Usuario autenticado y ya verificado',
         testData: ['N/A'],
         steps: ['Navegar a /email/verify'],
-        expectedResult:
-            'Redirigido a la aplicación (dashboard) sin cambios',
+        expectedResult: 'Redirigido a la aplicación (dashboard) sin cambios',
     },
     {
         id: 'AUTH-VER-006',
@@ -729,10 +706,7 @@ const emailVerificationCases: TestCase[] = [
         title: 'Cerrar sesión desde la página de verificación',
         preconditions: 'Usuario autenticado sin verificar en /email/verify',
         testData: ['N/A'],
-        steps: [
-            'Estar en /email/verify',
-            'Hacer clic en "Cerrar sesión"',
-        ],
+        steps: ['Estar en /email/verify', 'Hacer clic en "Cerrar sesión"'],
         expectedResult:
             'Sesión finalizada y usuario redirigido a la página de inicio',
     },
@@ -785,12 +759,8 @@ const twoFactorCases: TestCase[] = [
         title: 'Confirmar activación con código inválido',
         preconditions: 'QR mostrado',
         testData: ['código: "000000" (inválido)'],
-        steps: [
-            'Ingresar un código incorrecto',
-            'Confirmar la activación',
-        ],
-        expectedResult:
-            'Mensaje de error; la 2FA no se activa',
+        steps: ['Ingresar un código incorrecto', 'Confirmar la activación'],
+        expectedResult: 'Mensaje de error; la 2FA no se activa',
     },
     {
         id: 'AUTH-2FA-005',
@@ -934,10 +904,7 @@ const teamCases: TestCase[] = [
         title: 'Eliminar equipo como capitán',
         preconditions: 'Usuario es el capitán del equipo',
         testData: ['N/A'],
-        steps: [
-            'Ir a la página del equipo',
-            'Eliminar el equipo y confirmar',
-        ],
+        steps: ['Ir a la página del equipo', 'Eliminar el equipo y confirmar'],
         expectedResult: 'Equipo eliminado; redirigido a /teams con mensaje',
     },
     {
@@ -1001,10 +968,7 @@ const teamCases: TestCase[] = [
         title: 'Cambiar el rol de un miembro (capitán)',
         preconditions: 'Usuario es capitán del equipo',
         testData: ['rol: "co_captain" o "player"'],
-        steps: [
-            'Ir a la gestión de miembros',
-            'Cambiar el rol de un miembro',
-        ],
+        steps: ['Ir a la gestión de miembros', 'Cambiar el rol de un miembro'],
         expectedResult: 'Rol actualizado; mensaje de éxito',
     },
     {
@@ -1045,10 +1009,7 @@ const teamCases: TestCase[] = [
         title: 'Descubrir y buscar equipos',
         preconditions: 'Usuario autenticado',
         testData: ['búsqueda por nombre y/o variante'],
-        steps: [
-            'Ir a /teams',
-            'Usar el buscador y el filtro de variante',
-        ],
+        steps: ['Ir a /teams', 'Usar el buscador y el filtro de variante'],
         expectedResult:
             'Se listan los equipos que coinciden y a los que el usuario no pertenece',
     },
@@ -1189,8 +1150,7 @@ const joinRequestCases: TestCase[] = [
             'Ir a la gestión del equipo',
             'Aceptar una solicitud de ingreso pendiente',
         ],
-        expectedResult:
-            'El solicitante se agrega como jugador; se le notifica',
+        expectedResult: 'El solicitante se agrega como jugador; se le notifica',
     },
     {
         id: 'JOIN-006',
@@ -1199,7 +1159,8 @@ const joinRequestCases: TestCase[] = [
         preconditions: 'Usuario es líder; la solicitud está pendiente',
         testData: ['N/A'],
         steps: ['Rechazar una solicitud de ingreso pendiente'],
-        expectedResult: 'La solicitud queda rechazada; se notifica al solicitante',
+        expectedResult:
+            'La solicitud queda rechazada; se notifica al solicitante',
     },
     {
         id: 'JOIN-007',
@@ -1264,11 +1225,7 @@ const matchCases: TestCase[] = [
         title: 'Editar partido antes de comenzar',
         preconditions: 'Usuario es líder del equipo local; partido no iniciado',
         testData: ['nuevos datos del partido'],
-        steps: [
-            'Ir a /matches/{id}/edit',
-            'Modificar los datos',
-            'Guardar',
-        ],
+        steps: ['Ir a /matches/{id}/edit', 'Modificar los datos', 'Guardar'],
         expectedResult: 'Partido actualizado correctamente',
     },
     {
@@ -1307,9 +1264,7 @@ const matchCases: TestCase[] = [
         title: 'Actualizar marcador tras el inicio',
         preconditions: 'Partido confirmado y en horario de juego',
         testData: ['home_score: 2', 'away_score: 1'],
-        steps: [
-            'Actualizar el marcador siendo líder de alguno de los equipos',
-        ],
+        steps: ['Actualizar el marcador siendo líder de alguno de los equipos'],
         expectedResult:
             'Marcador actualizado; el partido pasa a "en progreso"; se notifica al rival',
     },
@@ -1327,7 +1282,8 @@ const matchCases: TestCase[] = [
         id: 'MATCH-010',
         requirement: 'RF-MATCH-006',
         title: 'Registrar evento de gol',
-        preconditions: 'Partido confirmado/en progreso; usuario líder del equipo',
+        preconditions:
+            'Partido confirmado/en progreso; usuario líder del equipo',
         testData: ['tipo: gol', 'jugador', 'minuto'],
         steps: ['Registrar un evento de gol para el equipo'],
         expectedResult:
@@ -1364,7 +1320,8 @@ const matchRequestCases: TestCase[] = [
         id: 'MREQ-003',
         requirement: 'RF-MATCH-007',
         title: 'Solicitud de partido duplicada',
-        preconditions: 'El equipo ya tiene una solicitud pendiente en ese partido',
+        preconditions:
+            'El equipo ya tiene una solicitud pendiente en ese partido',
         testData: ['match_id, team_id repetidos'],
         steps: ['Intentar enviar una segunda solicitud con el mismo equipo'],
         expectedResult:
@@ -1399,10 +1356,7 @@ const availabilityCases: TestCase[] = [
         title: 'Confirmar disponibilidad propia',
         preconditions: 'Usuario es miembro de un equipo del partido',
         testData: ['estado: "available" / "maybe" / "unavailable"'],
-        steps: [
-            'Abrir el partido',
-            'Seleccionar el estado de disponibilidad',
-        ],
+        steps: ['Abrir el partido', 'Seleccionar el estado de disponibilidad'],
         expectedResult:
             'La disponibilidad se guarda para el equipo del usuario; se actualizan las estadísticas',
     },
@@ -1422,9 +1376,7 @@ const availabilityCases: TestCase[] = [
         title: 'Estadísticas y alerta de mínimo',
         preconditions: 'Usuario es líder del equipo',
         testData: ['N/A'],
-        steps: [
-            'Abrir el partido y revisar el panel de disponibilidad',
-        ],
+        steps: ['Abrir el partido y revisar el panel de disponibilidad'],
         expectedResult:
             'Se muestran los conteos (disponibles/quizás/no/pendientes) y una alerta si no se alcanza el mínimo de jugadores',
     },
@@ -1550,10 +1502,7 @@ const tournamentRegistrationCases: TestCase[] = [
         preconditions:
             'Usuario es líder; variante del equipo = variante del torneo; inscripción abierta',
         testData: ['team_id'],
-        steps: [
-            'Abrir el torneo',
-            'Inscribir un equipo propio',
-        ],
+        steps: ['Abrir el torneo', 'Inscribir un equipo propio'],
         expectedResult:
             'Inscripción "aprobada" automáticamente (torneo público)',
     },
@@ -1659,11 +1608,7 @@ const settingsCases: TestCase[] = [
         title: 'Actualizar datos de perfil',
         preconditions: 'Usuario autenticado',
         testData: ['nombre, teléfono, bio, ubicación, fecha de nacimiento'],
-        steps: [
-            'Ir a /settings/profile',
-            'Modificar los datos',
-            'Guardar',
-        ],
+        steps: ['Ir a /settings/profile', 'Modificar los datos', 'Guardar'],
         expectedResult: 'Perfil actualizado correctamente',
     },
     {
@@ -1685,10 +1630,7 @@ const settingsCases: TestCase[] = [
         requirement: 'RF-ACC-003',
         title: 'Cambiar contraseña',
         preconditions: 'Usuario autenticado',
-        testData: [
-            'contraseña actual',
-            'nueva contraseña + confirmación',
-        ],
+        testData: ['contraseña actual', 'nueva contraseña + confirmación'],
         steps: [
             'Ir a /settings/password',
             'Ingresar la contraseña actual y la nueva',
@@ -1703,11 +1645,9 @@ const settingsCases: TestCase[] = [
         title: 'Subir y quitar avatar',
         preconditions: 'Usuario autenticado',
         testData: ['imagen (jpg/png/webp)'],
-        steps: [
-            'Ir a /settings/profile',
-            'Subir un avatar y luego eliminarlo',
-        ],
-        expectedResult: 'El avatar se actualiza y luego se elimina correctamente',
+        steps: ['Ir a /settings/profile', 'Subir un avatar y luego eliminarlo'],
+        expectedResult:
+            'El avatar se actualiza y luego se elimina correctamente',
     },
     {
         id: 'SET-005',
@@ -1778,8 +1718,7 @@ const socialCases: TestCase[] = [
         id: 'SOC-005',
         requirement: 'RF-ACC-009',
         title: 'Recomendar a un jugador',
-        preconditions:
-            'Usuario autenticado que ha jugado con el otro usuario',
+        preconditions: 'Usuario autenticado que ha jugado con el otro usuario',
         testData: ['categoría: friendly/skilled/teamwork/leadership'],
         steps: ['Abrir el perfil del jugador', 'Otorgar una recomendación'],
         expectedResult: 'La recomendación se registra en esa categoría',
@@ -1868,7 +1807,8 @@ export const testSuites: UseCaseSuite[] = [
         key: 'join-requests',
         label: 'Solicitudes',
         category: 'Equipos',
-        description: 'Casos de prueba para las solicitudes de ingreso a equipos.',
+        description:
+            'Casos de prueba para las solicitudes de ingreso a equipos.',
         cases: joinRequestCases,
     },
     {
