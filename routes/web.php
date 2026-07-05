@@ -21,6 +21,11 @@ Route::get('/', function () {
     ]);
 })->middleware('throttle:public')->name('home');
 
+// Public project documentation / QA test-case catalogue
+Route::get('/docs', fn () => Inertia::render('docs'))
+    ->middleware('throttle:public')
+    ->name('docs');
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'onboarding', 'throttle:dashboard'])
     ->name('dashboard');
