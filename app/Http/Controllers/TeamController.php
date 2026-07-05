@@ -127,9 +127,21 @@ final class TeamController extends Controller
             'name' => ['required', 'string', 'max:255', new CleanText],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_logo' => ['nullable', 'boolean'],
         ]);
 
-        $team = $this->teamService->updateTeam($team, $validated);
+        $team = $this->teamService->updateTeam($team, [
+            'name' => $validated['name'],
+            'variant' => $validated['variant'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        if ($request->hasFile('logo')) {
+            $this->teamService->updateTeamLogo($team, $request->file('logo'));
+        } elseif ($request->boolean('remove_logo')) {
+            $this->teamService->removeTeamLogo($team);
+        }
 
         return redirect()->route('teams.show', $team->id)
             ->with('success', '¡Equipo actualizado exitosamente!');
