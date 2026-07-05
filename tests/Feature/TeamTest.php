@@ -6,6 +6,8 @@ use App\Models\Team;
 use App\Models\TeamMember;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -186,6 +188,56 @@ test('non-member cannot update team', function () {
             'variant' => 'football_11',
         ])
         ->assertForbidden();
+});
+
+test('captain can update team with a logo', function () {
+    $disk = config('filesystems.default');
+    Storage::fake($disk);
+
+    $this->actingAs($this->captain)
+        ->put(route('teams.update', $this->team->id), [
+            'name' => 'Logo FC',
+            'variant' => 'football_11',
+            'logo' => UploadedFile::fake()->image('logo.png', 600, 600),
+        ])
+        ->assertRedirect(route('teams.show', $this->team->id));
+
+    $this->team->refresh();
+    expect($this->team->logo_path)->not->toBeNull();
+    Storage::disk($disk)->assertExists($this->team->logo_path);
+});
+
+test('captain can remove team logo via update', function () {
+    $disk = config('filesystems.default');
+    Storage::fake($disk);
+
+    // Seed an existing logo
+    Storage::disk($disk)->put("logos/{$this->team->id}/old.png", 'fake');
+    $this->team->update(['logo_path' => "logos/{$this->team->id}/old.png"]);
+
+    $this->actingAs($this->captain)
+        ->put(route('teams.update', $this->team->id), [
+            'name' => 'No Logo FC',
+            'variant' => 'football_11',
+            'remove_logo' => '1',
+        ])
+        ->assertRedirect();
+
+    $this->team->refresh();
+    expect($this->team->logo_path)->toBeNull();
+    Storage::disk($disk)->assertMissing("logos/{$this->team->id}/old.png");
+});
+
+test('team update rejects a non-image logo', function () {
+    Storage::fake(config('filesystems.default'));
+
+    $this->actingAs($this->captain)
+        ->put(route('teams.update', $this->team->id), [
+            'name' => 'Bad Logo FC',
+            'variant' => 'football_11',
+            'logo' => UploadedFile::fake()->create('document.pdf', 100, 'application/pdf'),
+        ])
+        ->assertSessionHasErrors('logo');
 });
 
 test('captain can delete team', function () {

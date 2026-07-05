@@ -16,8 +16,11 @@ use App\Notifications\JoinRequestCreatedNotification;
 use App\Notifications\JoinRequestRejectedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
 
 final class TeamService
 {
@@ -63,6 +66,52 @@ final class TeamService
         $team->update($data);
 
         return $team->load(['teamMembers.user', 'creator']);
+    }
+
+    /**
+     * Store (or replace) a team's logo: resize to 400x400 and persist.
+     */
+    public function updateTeamLogo(Team $team, UploadedFile $file): Team
+    {
+        $disk = config('filesystems.default');
+
+        // Delete old logo if exists
+        if ($team->logo_path) {
+            Storage::disk($disk)->delete($team->logo_path);
+        }
+
+        // Generate unique filename
+        $filename = uniqid().'.'.$file->getClientOriginalExtension();
+        $path = "logos/{$team->id}/{$filename}";
+
+        // Resize and save the image
+        $image = Image::read($file);
+        $image->cover(400, 400);
+
+        Storage::disk($disk)->put(
+            $path,
+            (string) $image->encode()
+        );
+
+        $team->update(['logo_path' => $path]);
+
+        return $team;
+    }
+
+    /**
+     * Remove a team's custom logo and delete the stored file.
+     */
+    public function removeTeamLogo(Team $team): Team
+    {
+        $disk = config('filesystems.default');
+
+        if ($team->logo_path) {
+            Storage::disk($disk)->delete($team->logo_path);
+
+            $team->update(['logo_path' => null]);
+        }
+
+        return $team;
     }
 
     /**
