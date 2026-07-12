@@ -78,6 +78,8 @@ test('team leader can create a match', function () {
         'home_team_id' => $this->homeTeam->id,
         'status' => 'available',
         'location' => 'Stadium A',
+        'home_score' => 0,
+        'away_score' => 0,
     ]);
 });
 
@@ -128,6 +130,12 @@ test('match creation rejects invalid match_type', function () {
 test('authenticated user can view matches index', function () {
     $this->actingAs($this->homeCaptain)
         ->get(route('matches.index'))
+        ->assertSuccessful();
+});
+
+test('team leader can view the create match form', function () {
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.create'))
         ->assertSuccessful();
 });
 

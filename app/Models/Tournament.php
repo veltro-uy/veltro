@@ -70,15 +70,10 @@ final class Tournament extends Model
     public function getLogoUrlAttribute(): ?string
     {
         if ($this->logo_path) {
-            $disk = config('filesystems.default');
-
-            // For S3 and S3-compatible storage (Cloudflare R2), use full URL
-            if ($disk !== 'public') {
-                return \Storage::disk($disk)->url($this->logo_path);
-            }
-
-            // For local public disk, use asset helper
-            return asset('storage/'.$this->logo_path);
+            // Works for the public disk (returns APP_URL/storage/...) as well as
+            // S3 / S3-compatible storage (Cloudflare R2). Do not use the private
+            // "local" disk for public images.
+            return \Storage::disk(config('filesystems.default'))->url($this->logo_path);
         }
 
         return null;

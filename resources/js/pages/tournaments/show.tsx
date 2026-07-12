@@ -27,6 +27,11 @@ import { Separator } from '@/components/ui/separator';
 import { UserAvatar } from '@/components/user-avatar';
 import AppLayout from '@/layouts/app-layout';
 import { formatDate, formatDateTime } from '@/lib/datetime';
+import {
+    TOURNAMENT_STATUS_META,
+    tournamentCapacityColor,
+    tournamentFormatLabel,
+} from '@/lib/tournament';
 import { cn } from '@/lib/utils';
 import teams from '@/routes/teams';
 import tournamentRegistrations from '@/routes/tournament-registrations';
@@ -332,7 +337,6 @@ export default function TournamentShow({
             <div className="mx-auto flex h-full w-full max-w-[1600px] flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
                 <TournamentHeader
                     tournament={tournament}
-                    approvedTeamsCount={approvedTeams.length}
                     countdownLabel={countdownLabel}
                     permissions={permissions}
                     processing={processing}
@@ -341,6 +345,85 @@ export default function TournamentShow({
                     onCancel={() => setShowCancelDialog(true)}
                     onDelete={() => setShowDeleteDialog(true)}
                 />
+
+                {/* Stat strip */}
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                                <Users className="size-3.5" />
+                                Equipos
+                            </span>
+                            <span>mín. {tournament.min_teams}</span>
+                        </div>
+                        <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">
+                            {approvedTeams.length}
+                            <span className="text-base font-medium text-muted-foreground">
+                                /{tournament.max_teams}
+                            </span>
+                        </p>
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                                className={cn(
+                                    'h-full rounded-full transition-all duration-500',
+                                    tournamentCapacityColor(
+                                        approvedTeams.length,
+                                        tournament.max_teams,
+                                    ),
+                                )}
+                                style={{
+                                    width: `${Math.max(
+                                        Math.min(
+                                            100,
+                                            Math.round(
+                                                (approvedTeams.length /
+                                                    tournament.max_teams) *
+                                                    100,
+                                            ),
+                                        ),
+                                        4,
+                                    )}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Trophy className="size-3.5" />
+                            Formato
+                        </p>
+                        <p className="mt-1 text-lg font-semibold tracking-tight">
+                            {tournamentFormatLabel(tournament.format)}
+                        </p>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Info className="size-3.5" />
+                            Estado
+                        </p>
+                        <p className="mt-1 text-lg font-semibold tracking-tight">
+                            {TOURNAMENT_STATUS_META[tournament.status].label}
+                        </p>
+                    </div>
+
+                    <div className="rounded-xl border border-border bg-card p-4">
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <CalendarClock className="size-3.5" />
+                            Inicio
+                        </p>
+                        <p className="mt-1 text-lg font-semibold tracking-tight">
+                            {tournament.starts_at
+                                ? formatDate(tournament.starts_at, {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                  })
+                                : 'Por definir'}
+                        </p>
+                    </div>
+                </div>
 
                 <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
                     <div className="min-w-0 space-y-6">

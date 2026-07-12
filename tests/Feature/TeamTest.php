@@ -108,6 +108,24 @@ test('team creation accepts all valid variants', function (string $variant) {
     $this->assertDatabaseHas('teams', ['variant' => $variant]);
 })->with(['football_11', 'football_7', 'football_5', 'futsal']);
 
+test('team creation accepts a logo', function () {
+    $disk = config('filesystems.default');
+    Storage::fake($disk);
+
+    $this->actingAs($this->outsider)
+        ->post(route('teams.store'), [
+            'name' => 'Crest FC',
+            'variant' => 'football_7',
+            'logo' => UploadedFile::fake()->image('crest.png', 600, 600),
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $team = Team::where('name', 'Crest FC')->first();
+    expect($team->logo_path)->not->toBeNull();
+    Storage::disk($disk)->assertExists($team->logo_path);
+});
+
 test('team creation rejects injection-looking names', function () {
     $this->actingAs($this->outsider)
         ->post(route('teams.store'), [

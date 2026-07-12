@@ -1,16 +1,15 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
 import { formatDate } from '@/lib/datetime';
+import {
+    TOURNAMENT_STATUS_META,
+    tournamentCapacityColor,
+} from '@/lib/tournament';
 import { cn } from '@/lib/utils';
+import tournaments from '@/routes/tournaments';
 import type { Tournament } from '@/types';
 import { Link } from '@inertiajs/react';
 import { ArrowRight, Calendar, Trophy, Users } from 'lucide-react';
@@ -20,41 +19,27 @@ interface TournamentCardProps {
     className?: string;
 }
 
-const statusConfig = {
-    draft: { label: 'Borrador', variant: 'secondary' as const },
-    registration_open: {
-        label: 'Inscripción Abierta',
-        variant: 'default' as const,
-    },
-    in_progress: { label: 'En Progreso', variant: 'default' as const },
-    completed: { label: 'Completado', variant: 'outline' as const },
-    cancelled: { label: 'Cancelado', variant: 'destructive' as const },
-};
-
-const getCapacityColor = (current: number, max: number): string => {
-    const percentage = (current / max) * 100;
-    if (percentage >= 100) return 'text-destructive';
-    if (percentage >= 80) return 'text-orange-500';
-    return 'text-muted-foreground';
-};
-
 export const TournamentCard = ({
     tournament,
     className,
 }: TournamentCardProps) => {
-    const config = statusConfig[tournament.status];
-    const registeredCount = tournament.registered_teams_count || 0;
+    const status = TOURNAMENT_STATUS_META[tournament.status];
+    const registered = tournament.registered_teams_count ?? 0;
+    const max = tournament.max_teams;
+    const pct =
+        max > 0 ? Math.min(100, Math.round((registered / max) * 100)) : 0;
+    const isFull = registered >= max;
 
     return (
         <Card
             className={cn(
-                'group flex flex-col transition-all hover:border-primary/20 hover:shadow-lg',
+                'group flex flex-col overflow-hidden transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
                 className,
             )}
         >
             <CardHeader className="pb-3">
                 <div className="flex items-start gap-3">
-                    <Avatar className="size-10 rounded-lg">
+                    <Avatar className="size-12 rounded-lg">
                         {tournament.logo_url && (
                             <AvatarImage
                                 src={tournament.logo_url}
@@ -66,58 +51,88 @@ export const TournamentCard = ({
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                        <CardTitle className="line-clamp-1 text-lg">
+                        <CardTitle className="line-clamp-1 text-base">
                             {tournament.name}
                         </CardTitle>
-                        <CardDescription className="mt-1 flex flex-wrap items-center gap-2">
-                            <Badge variant={config.variant} className="text-xs">
-                                {config.label}
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            <Badge
+                                variant="secondary"
+                                className={status.badgeClassName}
+                            >
+                                {status.label}
                             </Badge>
                             <VariantBadge variant={tournament.variant} />
-                        </CardDescription>
+                        </div>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-4">
-                {tournament.description && (
+                {tournament.description ? (
                     <p className="line-clamp-2 text-sm text-muted-foreground">
                         {tournament.description}
                     </p>
+                ) : (
+                    <p className="text-sm text-muted-foreground/60 italic">
+                        Sin descripción
+                    </p>
                 )}
 
-                <div className="mt-auto space-y-4">
-                    <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
-                        <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Equipos</span>
-                        </div>
-                        <span
-                            className={`text-sm font-bold ${getCapacityColor(registeredCount, tournament.max_teams)}`}
-                        >
-                            {registeredCount}/{tournament.max_teams}
+                {/* Capacity */}
+                <div>
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Users className="h-3.5 w-3.5" />
+                            Equipos
+                        </span>
+                        <span className="font-semibold tabular-nums">
+                            {registered}
+                            <span className="text-muted-foreground">
+                                /{max}
+                            </span>
+                            {isFull && (
+                                <span className="ml-1 font-medium text-destructive">
+                                    · Completo
+                                </span>
+                            )}
                         </span>
                     </div>
+                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                            className={cn(
+                                'h-full rounded-full transition-all duration-500',
+                                tournamentCapacityColor(registered, max),
+                            )}
+                            style={{ width: `${Math.max(pct, 4)}%` }}
+                        />
+                    </div>
+                </div>
 
-                    {tournament.starts_at && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {tournament.starts_at ? (
+                        <>
                             <Calendar className="h-4 w-4" />
                             <span>
                                 {formatDate(tournament.starts_at, {
                                     day: 'numeric',
-                                    month: 'long',
+                                    month: 'short',
                                     year: 'numeric',
                                 })}
                             </span>
-                        </div>
+                        </>
+                    ) : (
+                        <>
+                            <Trophy className="h-4 w-4" />
+                            <span>Fecha por definir</span>
+                        </>
                     )}
-
-                    <Button asChild variant="outline" className="w-full">
-                        <Link href={`/tournaments/${tournament.id}`}>
-                            Ver Torneo
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                    </Button>
                 </div>
+
+                <Button asChild variant="outline" className="mt-auto w-full">
+                    <Link href={tournaments.show(tournament.id).url}>
+                        Ver torneo
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
             </CardContent>
         </Card>
     );

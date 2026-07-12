@@ -1,7 +1,6 @@
-import { Badge } from '@/components/ui/badge';
+import { TournamentCard } from '@/components/tournament/tournament-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import {
     Select,
     SelectContent,
@@ -9,23 +8,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { VariantBadge } from '@/components/variant-badge';
 import AppLayout from '@/layouts/app-layout';
-import { formatDate as formatDateTz } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import tournamentsRoute from '@/routes/tournaments';
 import type { BreadcrumbItem, Tournament, TournamentStatus } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowUpDown,
-    Calendar,
     ChevronLeft,
     ChevronRight,
-    CircleDot,
     Plus,
     Search,
     Trophy,
-    Users,
     X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -69,51 +63,6 @@ const statusOptions: Array<{
     { value: 'draft', label: 'Borradores' },
     { value: 'cancelled', label: 'Cancelados' },
 ];
-
-const statusConfig: Record<
-    TournamentStatus,
-    {
-        label: string;
-        className: string;
-        variant: 'default' | 'secondary' | 'outline' | 'destructive';
-    }
-> = {
-    draft: {
-        label: 'Borrador',
-        variant: 'secondary',
-        className: 'bg-muted text-muted-foreground',
-    },
-    registration_open: {
-        label: 'Inscripción abierta',
-        variant: 'secondary',
-        className: 'bg-primary/10 text-primary',
-    },
-    in_progress: {
-        label: 'En juego',
-        variant: 'secondary',
-        className: 'bg-primary/10 text-primary',
-    },
-    completed: {
-        label: 'Finalizado',
-        variant: 'outline',
-        className: 'text-muted-foreground',
-    },
-    cancelled: {
-        label: 'Cancelado',
-        variant: 'destructive',
-        className: '',
-    },
-};
-
-const formatDate = (value?: string) => {
-    if (!value) return 'Sin fecha';
-
-    return formatDateTz(value, {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    });
-};
 
 const cleanFilters = (
     filters: PageProps['filters'] & { page?: number | null },
@@ -194,29 +143,40 @@ export default function TournamentsIndex({
             <Head title="Torneos" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4 sm:p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="space-y-1">
-                        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                            Torneos
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            {tournaments.total === 1
-                                ? '1 torneo encontrado'
-                                : `${tournaments.total} torneos encontrados`}
-                        </p>
+                {/* Hero header */}
+                <div className="relative -mx-4 -mt-4 overflow-hidden px-4 pt-6 pb-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-8">
+                    <div
+                        aria-hidden
+                        className="bg-pitch-glow pointer-events-none absolute inset-0 -z-10"
+                    />
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p className="font-display text-sm font-bold tracking-[0.18em] text-primary uppercase">
+                                Competí
+                            </p>
+                            <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+                                Torneos
+                            </h1>
+                            <p className="mt-1 text-muted-foreground">
+                                {tournaments.total === 1
+                                    ? '1 torneo abierto a la comunidad.'
+                                    : `${tournaments.total} torneos abiertos a la comunidad.`}
+                            </p>
+                        </div>
+                        <Button asChild>
+                            <Link href={tournamentsRoute.create.url()}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Crear torneo
+                            </Link>
+                        </Button>
                     </div>
-
-                    <Button asChild className="w-full gap-2 sm:w-fit">
-                        <Link href={tournamentsRoute.create.url()}>
-                            <Plus className="size-4" />
-                            Crear torneo
-                        </Link>
-                    </Button>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                {/* Status filter chips */}
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
                     {statusOptions.map((option) => {
                         const isActive = filters.status === option.value;
+                        const count = statusCounts[option.value] ?? 0;
 
                         return (
                             <button
@@ -229,35 +189,30 @@ export default function TournamentsIndex({
                                     })
                                 }
                                 className={cn(
-                                    'flex min-h-20 flex-col justify-between rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/50',
-                                    isActive &&
-                                        'border-primary bg-primary/5 ring-1 ring-primary/15',
+                                    'flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
+                                    isActive
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground',
                                 )}
                             >
-                                <span className="flex items-center justify-between gap-2 text-sm font-medium">
-                                    {option.label}
-                                    {isActive && (
-                                        <CircleDot className="size-4 text-primary" />
-                                    )}
-                                </span>
+                                {option.label}
                                 <span
                                     className={cn(
-                                        'text-2xl leading-none font-semibold',
+                                        'rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums',
                                         isActive
-                                            ? 'text-primary'
-                                            : option.value === 'cancelled'
-                                              ? 'text-destructive'
-                                              : 'text-foreground',
+                                            ? 'bg-primary/15 text-primary'
+                                            : 'bg-muted text-muted-foreground',
                                     )}
                                 >
-                                    {statusCounts[option.value] ?? 0}
+                                    {count}
                                 </span>
                             </button>
                         );
                     })}
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-lg border bg-background p-3 lg:flex-row lg:items-center">
+                {/* Filter bar */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <div className="relative min-w-0 flex-1">
                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
@@ -276,7 +231,7 @@ export default function TournamentsIndex({
                             updateFilters({ variant, page: null })
                         }
                     >
-                        <SelectTrigger className="w-full lg:w-44">
+                        <SelectTrigger className="w-full sm:w-44">
                             <SelectValue placeholder="Variante" />
                         </SelectTrigger>
                         <SelectContent>
@@ -296,7 +251,7 @@ export default function TournamentsIndex({
                             updateFilters({ sort, page: null })
                         }
                     >
-                        <SelectTrigger className="w-full lg:w-48">
+                        <SelectTrigger className="w-full sm:w-48">
                             <ArrowUpDown className="size-4 text-muted-foreground" />
                             <SelectValue placeholder="Orden" />
                         </SelectTrigger>
@@ -315,7 +270,7 @@ export default function TournamentsIndex({
                         <Button
                             type="button"
                             variant="ghost"
-                            className="gap-2 lg:ml-auto"
+                            className="gap-2 sm:ml-auto"
                             onClick={() => {
                                 setSearchQuery('');
                                 updateFilters({
@@ -333,148 +288,49 @@ export default function TournamentsIndex({
                     )}
                 </div>
 
+                {/* Results */}
                 {tournaments.data.length === 0 ? (
-                    <div className="flex min-h-80 flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-8 text-center">
-                        <div className="rounded-full bg-muted p-4">
-                            <Trophy className="size-8 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-1">
-                            <h2 className="text-lg font-semibold">
-                                No hay torneos para mostrar
-                            </h2>
-                            <p className="max-w-md text-sm text-muted-foreground">
-                                Ajusta la búsqueda o limpia los filtros para ver
-                                más resultados.
-                            </p>
+                    <div className="relative flex min-h-80 flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border border-dashed border-border p-8 text-center">
+                        <div
+                            aria-hidden
+                            className="bg-pitch-glow pointer-events-none absolute inset-0"
+                        />
+                        <div className="relative flex flex-col items-center gap-4">
+                            <div className="rounded-full bg-primary/10 p-4 ring-1 ring-primary/20">
+                                <Trophy className="size-8 text-primary" />
+                            </div>
+                            <div className="space-y-1">
+                                <h2 className="text-lg font-semibold">
+                                    {activeFilterCount > 0
+                                        ? 'No hay torneos para estos filtros'
+                                        : 'Todavía no hay torneos'}
+                                </h2>
+                                <p className="max-w-md text-sm text-muted-foreground">
+                                    {activeFilterCount > 0
+                                        ? 'Ajustá la búsqueda o limpiá los filtros para ver más resultados.'
+                                        : 'Sé el primero en organizar un torneo para la comunidad.'}
+                                </p>
+                            </div>
+                            <Button asChild>
+                                <Link href={tournamentsRoute.create.url()}>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Crear torneo
+                                </Link>
+                            </Button>
                         </div>
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-lg border bg-background">
-                        <div className="hidden grid-cols-[minmax(0,1.7fr)_150px_150px_150px_120px] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-medium text-muted-foreground lg:grid">
-                            <span>Torneo</span>
-                            <span>Estado</span>
-                            <span>Equipos</span>
-                            <span>Inicio</span>
-                            <span className="text-right">Acción</span>
-                        </div>
-
-                        <div className="divide-y">
-                            {tournaments.data.map((tournament) => {
-                                const status = statusConfig[tournament.status];
-                                const registeredTeams =
-                                    tournament.registered_teams_count ?? 0;
-                                const capacity = Math.min(
-                                    100,
-                                    Math.round(
-                                        (registeredTeams /
-                                            tournament.max_teams) *
-                                            100,
-                                    ),
-                                );
-
-                                return (
-                                    <div
-                                        key={tournament.id}
-                                        className="grid gap-4 px-4 py-4 transition-colors hover:bg-muted/30 lg:grid-cols-[minmax(0,1.7fr)_150px_150px_150px_120px] lg:items-center"
-                                    >
-                                        <div className="flex min-w-0 items-start gap-3">
-                                            <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
-                                                {tournament.logo_url ? (
-                                                    <img
-                                                        src={
-                                                            tournament.logo_url
-                                                        }
-                                                        alt={tournament.name}
-                                                        className="size-full object-cover"
-                                                        loading="lazy"
-                                                    />
-                                                ) : (
-                                                    <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
-                                                        <Trophy className="size-5" />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="min-w-0 space-y-2">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <Link
-                                                        href={tournamentsRoute.show.url(
-                                                            tournament.id,
-                                                        )}
-                                                        className="min-w-0 text-base font-semibold hover:underline"
-                                                    >
-                                                        <span className="line-clamp-1">
-                                                            {tournament.name}
-                                                        </span>
-                                                    </Link>
-                                                    <VariantBadge
-                                                        variant={
-                                                            tournament.variant
-                                                        }
-                                                        className="border-border bg-muted text-muted-foreground hover:bg-muted [&>svg]:text-muted-foreground"
-                                                    />
-                                                </div>
-                                                {tournament.description && (
-                                                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                                                        {tournament.description}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <Badge
-                                                variant={status.variant}
-                                                className={status.className}
-                                            >
-                                                {status.label}
-                                            </Badge>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between gap-3 text-sm">
-                                                <span className="inline-flex items-center gap-2 text-muted-foreground">
-                                                    <Users className="size-4" />
-                                                    Equipos
-                                                </span>
-                                                <span className="font-medium">
-                                                    {registeredTeams}/
-                                                    {tournament.max_teams}
-                                                </span>
-                                            </div>
-                                            <Progress value={capacity} />
-                                        </div>
-
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Calendar className="size-4" />
-                                            <span>
-                                                {formatDate(
-                                                    tournament.starts_at,
-                                                )}
-                                            </span>
-                                        </div>
-
-                                        <Button
-                                            asChild
-                                            variant="outline"
-                                            size="sm"
-                                            className="w-full lg:w-auto"
-                                        >
-                                            <Link
-                                                href={tournamentsRoute.show.url(
-                                                    tournament.id,
-                                                )}
-                                            >
-                                                Ver torneo
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {tournaments.data.map((tournament) => (
+                            <TournamentCard
+                                key={tournament.id}
+                                tournament={tournament}
+                            />
+                        ))}
                     </div>
                 )}
 
+                {/* Pagination */}
                 {tournaments.last_page > 1 && (
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-sm text-muted-foreground">

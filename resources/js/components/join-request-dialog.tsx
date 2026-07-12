@@ -13,17 +13,19 @@ import { Textarea } from '@/components/ui/textarea';
 import joinRequests from '@/routes/join-requests';
 import { router } from '@inertiajs/react';
 import { UserPlus } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 
 interface JoinRequestDialogProps {
     teamId: number;
     teamName: string;
+    trigger?: ReactNode;
 }
 
 export function JoinRequestDialog({
     teamId,
     teamName,
+    trigger,
 }: JoinRequestDialogProps) {
     const [open, setOpen] = useState(false);
     const [message, setMessage] = useState('');
@@ -69,10 +71,12 @@ export function JoinRequestDialog({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Solicitar Unirse
-                </Button>
+                {trigger ?? (
+                    <Button>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Solicitar Unirse
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent>
                 <form onSubmit={handleSubmit}>

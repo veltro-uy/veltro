@@ -499,6 +499,37 @@ Services: Laravel app (port 80), MySQL 8.0 (port 3307), Vite (port 5173).
 
 When using Sail, set `DB_HOST=mysql` in `.env`.
 
+## File Storage & Image Uploads
+
+Uploaded images (team logos, tournament logos, user avatars) are stored on the
+disk resolved by `config('filesystems.default')` (`FILESYSTEM_DISK`). The model
+accessors — `Team::getLogoUrlAttribute`, `Tournament::getLogoUrlAttribute`,
+`User::getAvatarUrlAttribute` — build public URLs via
+`Storage::disk(...)->url($path)`, which works for both the `public` disk and
+`s3`/S3-compatible storage (Cloudflare R2).
+
+**`FILESYSTEM_DISK` must be `public` or `s3` — never `local`.** The `local` disk
+points at `storage/app/private` (a non-web-served directory), so images land
+where no URL can reach them. This is the #1 cause of "uploads don't show in
+production."
+
+### Production checklist (public disk — Option A)
+
+```bash
+# .env
+APP_URL=https://veltro.uy
+FILESYSTEM_DISK=public
+
+php artisan storage:link   # public/storage -> storage/app/public
+php artisan config:cache   # required after any .env change
+```
+
+- `storage/` must persist across deploys. On release-based deploys (Forge/
+  Envoyer) it should be a shared symlinked directory. On ephemeral/containerized
+  hosting, use S3/R2 instead (`FILESYSTEM_DISK=s3` + `AWS_*`) — the accessors
+  already support it, no code change needed.
+- The web server must follow symlinks under `public/`.
+
 ## Project-Specific Context
 
 **Target Audience:** Amateur football teams in Uruguay

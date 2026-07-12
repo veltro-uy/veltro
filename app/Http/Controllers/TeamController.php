@@ -64,12 +64,22 @@ final class TeamController extends Controller
             'name' => ['required', 'string', 'max:255', new CleanText],
             'variant' => ['required', 'in:football_11,football_7,football_5,futsal'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $user = Auth::user();
-        $team = $this->teamService->createTeam($user, $validated);
+        $team = $this->teamService->createTeam($user, [
+            'name' => $validated['name'],
+            'variant' => $validated['variant'],
+            'description' => $validated['description'] ?? null,
+        ]);
 
-        return back()->with('success', '¡Equipo creado exitosamente!');
+        if ($request->hasFile('logo')) {
+            $this->teamService->updateTeamLogo($team, $request->file('logo'));
+        }
+
+        return redirect()->route('teams.show', $team->id)
+            ->with('success', '¡Equipo creado exitosamente!');
     }
 
     /**

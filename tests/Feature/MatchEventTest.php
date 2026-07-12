@@ -8,6 +8,7 @@ use App\Models\Team;
 use App\Models\TeamMember;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -137,6 +138,26 @@ test('multiple goals accumulate on the score', function () {
     $fresh = $this->match->fresh();
     expect($fresh->home_score)->toBe(3);
     expect($fresh->away_score)->toBe(1);
+});
+
+test('recording a goal syncs the score even when it was stored as NULL', function () {
+    // Regression: matches created before scores defaulted to 0 have NULL
+    // scores. increment() then produced NULL + 1 = NULL, leaving the board
+    // stuck at "0 - 0" while goal events piled up.
+    DB::table('matches')->where('id', $this->match->id)->update([
+        'home_score' => null,
+        'away_score' => null,
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->post(route('match-events.store'), [
+            'match_id' => $this->match->id,
+            'team_id' => $this->homeTeam->id,
+            'event_type' => 'goal',
+        ])
+        ->assertRedirect();
+
+    expect($this->match->fresh()->home_score)->toBe(1);
 });
 
 test('recording a goal on a confirmed past match auto-starts it', function () {

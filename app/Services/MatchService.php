@@ -46,6 +46,8 @@ final class MatchService
                 'location_coords' => $data['location_coords'] ?? null,
                 'match_type' => $data['match_type'] ?? 'friendly',
                 'status' => 'available',
+                'home_score' => 0,
+                'away_score' => 0,
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $user->id,
             ]);
@@ -429,10 +431,15 @@ final class MatchService
                 'description' => $eventData['description'] ?? null,
             ]);
 
-            // Auto-sync score when recording a goal
+            // Auto-sync score when recording a goal. Assign coalesced value
+            // instead of increment() so a residual NULL score (from matches
+            // created before scores defaulted to 0) can't defeat the update
+            // via NULL + 1 = NULL.
             if ($eventData['event_type'] === 'goal') {
                 $isHomeTeam = $match->home_team_id === $teamId;
-                $match->increment($isHomeTeam ? 'home_score' : 'away_score');
+                $scoreField = $isHomeTeam ? 'home_score' : 'away_score';
+                $match->{$scoreField} = ($match->{$scoreField} ?? 0) + 1;
+                $match->save();
 
                 // Auto-start match if confirmed and scheduled time has passed
                 if ($match->isConfirmed() && ! $match->scheduled_at->isFuture()) {
