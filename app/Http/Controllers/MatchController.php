@@ -61,6 +61,25 @@ final class MatchController extends Controller
     }
 
     /**
+     * Show the form for publishing a new match availability.
+     */
+    public function create(): Response
+    {
+        $user = Auth::user();
+
+        // Teams where the user is a leader (can publish matches), incl. logo for the preview.
+        $teams = Team::whereHas('teamMembers', function ($query) use ($user) {
+            $query->where('user_id', $user->id)
+                ->whereIn('role', ['captain', 'co_captain'])
+                ->where('status', 'active');
+        })->get(['id', 'name', 'variant', 'logo_path']);
+
+        return Inertia::render('matches/create', [
+            'teams' => $teams,
+        ]);
+    }
+
+    /**
      * Store a newly created match.
      */
     public function store(Request $request)

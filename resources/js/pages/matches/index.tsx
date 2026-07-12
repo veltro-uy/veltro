@@ -1,4 +1,3 @@
-import { CreateMatchModal } from '@/components/create-match-modal';
 import { MatchCard } from '@/components/match-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +15,7 @@ import {
     ChevronLeft,
     ChevronRight,
     History,
+    Plus,
     Search,
     Trophy,
     Users,
@@ -34,6 +34,25 @@ interface Team {
     name: string;
     variant: string;
     logo_url?: string;
+}
+
+function PublishMatchButton({ teams }: { teams: Team[] }) {
+    if (teams.length === 0) {
+        return (
+            <Button disabled>
+                <Plus className="mr-2 h-4 w-4" />
+                Publicar Partido
+            </Button>
+        );
+    }
+    return (
+        <Button asChild>
+            <Link href={matches.create().url}>
+                <Plus className="mr-2 h-4 w-4" />
+                Publicar Partido
+            </Link>
+        </Button>
+    );
 }
 
 interface Match {
@@ -184,7 +203,7 @@ export default function Index({
                             equipo
                         </p>
                     </div>
-                    <CreateMatchModal teams={teams} />
+                    <PublishMatchButton teams={teams} />
                 </div>
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -285,7 +304,7 @@ export default function Index({
                                         </p>
                                     </div>
                                     {hasTeams ? (
-                                        <CreateMatchModal teams={teams} />
+                                        <PublishMatchButton teams={teams} />
                                     ) : (
                                         <Link
                                             href={
@@ -319,7 +338,7 @@ export default function Index({
                                                 rivales
                                             </p>
                                         </div>
-                                        <CreateMatchModal teams={teams} />
+                                        <PublishMatchButton teams={teams} />
                                     </CardContent>
                                 </Card>
                             ) : (

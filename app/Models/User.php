@@ -95,15 +95,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getAvatarUrlAttribute(): ?string
     {
         if ($this->avatar_path) {
-            $disk = config('filesystems.default');
-
-            // For S3 and S3-compatible storage, use the full URL
-            if ($disk !== 'public') {
-                return \Storage::disk($disk)->url($this->avatar_path);
-            }
-
-            // For local public disk, use asset helper
-            return asset('storage/'.$this->avatar_path);
+            // Works for the public disk (returns APP_URL/storage/...) as well as
+            // S3 / S3-compatible storage (Cloudflare R2). Do not use the private
+            // "local" disk for public images.
+            return \Storage::disk(config('filesystems.default'))->url($this->avatar_path);
         }
 
         return $this->google_avatar_url;

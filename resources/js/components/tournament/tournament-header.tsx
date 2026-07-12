@@ -1,9 +1,12 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { VariantBadge } from '@/components/variant-badge';
 import { formatDate } from '@/lib/datetime';
+import {
+    TOURNAMENT_STATUS_META,
+    tournamentFormatLabel,
+} from '@/lib/tournament';
 import tournaments from '@/routes/tournaments';
 import type { Tournament } from '@/types';
 import { Link } from '@inertiajs/react';
@@ -18,20 +21,8 @@ import {
     X,
 } from 'lucide-react';
 
-const statusConfig = {
-    draft: { label: 'Borrador', variant: 'secondary' as const },
-    registration_open: {
-        label: 'Inscripción Abierta',
-        variant: 'default' as const,
-    },
-    in_progress: { label: 'En Progreso', variant: 'default' as const },
-    completed: { label: 'Completado', variant: 'outline' as const },
-    cancelled: { label: 'Cancelado', variant: 'destructive' as const },
-};
-
 export function TournamentHeader({
     tournament,
-    approvedTeamsCount,
     countdownLabel,
     permissions,
     processing,
@@ -41,7 +32,6 @@ export function TournamentHeader({
     onDelete,
 }: {
     tournament: Tournament;
-    approvedTeamsCount: number;
     countdownLabel: string | null;
     permissions: {
         canEdit: boolean;
@@ -55,135 +45,134 @@ export function TournamentHeader({
     onCancel: () => void;
     onDelete: () => void;
 }) {
+    const status = TOURNAMENT_STATUS_META[tournament.status];
+
     return (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex flex-1 gap-4">
-                <Avatar className="size-14 rounded-lg">
-                    {tournament.logo_url && (
-                        <AvatarImage
-                            src={tournament.logo_url}
-                            alt={tournament.name}
-                        />
-                    )}
-                    <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-                        <Trophy className="size-7" />
-                    </AvatarFallback>
-                </Avatar>
-                <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            {tournament.name}
-                        </h1>
-                        <Badge
-                            variant={statusConfig[tournament.status].variant}
-                        >
-                            {statusConfig[tournament.status].label}
-                        </Badge>
-                    </div>
-                    {tournament.description && (
-                        <p className="text-muted-foreground">
-                            {tournament.description}
+        <div className="relative overflow-hidden rounded-2xl border border-border">
+            <div
+                aria-hidden
+                className="bg-pitch-glow pointer-events-none absolute inset-0"
+            />
+            <div className="relative flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex flex-1 gap-4">
+                    <Avatar className="size-16 shrink-0 rounded-xl ring-2 ring-primary/20">
+                        {tournament.logo_url && (
+                            <AvatarImage
+                                src={tournament.logo_url}
+                                alt={tournament.name}
+                            />
+                        )}
+                        <AvatarFallback className="rounded-xl bg-primary/10 text-primary">
+                            <Trophy className="size-8" />
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 space-y-2">
+                        <p className="font-display text-xs font-bold tracking-[0.18em] text-primary uppercase">
+                            {tournamentFormatLabel(tournament.format)}
                         </p>
-                    )}
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                        <VariantBadge variant={tournament.variant} />
-                        {tournament.starts_at && (
-                            <div className="flex items-center gap-1.5">
-                                <Calendar className="size-4" />
-                                <span>
-                                    {formatDate(tournament.starts_at, {
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })}
-                                </span>
-                            </div>
-                        )}
-                        {countdownLabel && (
-                            <div className="flex items-center gap-1.5">
-                                <Clock className="size-4" />
-                                <span>{countdownLabel}</span>
-                            </div>
-                        )}
-                    </div>
-                    <div className="max-w-md space-y-1.5 pt-1">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1.5">
-                                <Users className="size-3.5" />
-                                <span className="font-medium text-foreground">
-                                    {approvedTeamsCount}
-                                </span>
-                                {' / '}
-                                {tournament.max_teams} equipos
-                            </span>
-                            <span>mín. {tournament.min_teams}</span>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                                {tournament.name}
+                            </h1>
+                            <Badge
+                                variant="secondary"
+                                className={status.badgeClassName}
+                            >
+                                {status.label}
+                            </Badge>
                         </div>
-                        <Progress
-                            value={
-                                (approvedTeamsCount / tournament.max_teams) *
-                                100
-                            }
-                            className="h-1.5"
-                        />
+                        {tournament.description && (
+                            <p className="max-w-2xl text-sm text-muted-foreground">
+                                {tournament.description}
+                            </p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-sm text-muted-foreground">
+                            <VariantBadge variant={tournament.variant} />
+                            {tournament.starts_at && (
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar className="size-4" />
+                                    <span>
+                                        {formatDate(tournament.starts_at, {
+                                            day: 'numeric',
+                                            month: 'long',
+                                            year: 'numeric',
+                                        })}
+                                    </span>
+                                </div>
+                            )}
+                            {countdownLabel && (
+                                <div className="flex items-center gap-1.5 text-primary">
+                                    <Clock className="size-4" />
+                                    <span className="font-medium">
+                                        {countdownLabel}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="flex flex-wrap gap-2">
-                {permissions.canEdit && (
-                    <Link href={tournaments.edit(tournament.id).url}>
-                        <Button variant="outline" size="sm" className="gap-2">
-                            <Edit className="size-4" />
-                            Editar
+                <div className="flex flex-wrap gap-2">
+                    {permissions.canEdit && (
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                        >
+                            <Link href={tournaments.edit(tournament.id).url}>
+                                <Edit className="size-4" />
+                                Editar
+                            </Link>
                         </Button>
-                    </Link>
-                )}
-                {permissions.canEdit && tournament.status === 'draft' && (
-                    <Button
-                        onClick={onOpenRegistration}
-                        disabled={processing}
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <Users className="size-4" />
-                        Abrir Inscripción
-                    </Button>
-                )}
-                {permissions.canStart && (
-                    <Button
-                        onClick={onStart}
-                        disabled={processing}
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <Play className="size-4" />
-                        Iniciar Torneo
-                    </Button>
-                )}
-                {permissions.canCancel && (
-                    <Button
-                        variant="destructive"
-                        onClick={onCancel}
-                        disabled={processing}
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <X className="size-4" />
-                        Cancelar
-                    </Button>
-                )}
-                {permissions.canDelete && (
-                    <Button
-                        variant="destructive"
-                        onClick={onDelete}
-                        disabled={processing}
-                        size="sm"
-                        className="gap-2"
-                    >
-                        <Trash2 className="size-4" />
-                        Eliminar
-                    </Button>
-                )}
+                    )}
+                    {permissions.canEdit && tournament.status === 'draft' && (
+                        <Button
+                            onClick={onOpenRegistration}
+                            disabled={processing}
+                            size="sm"
+                            className="gap-2"
+                        >
+                            <Users className="size-4" />
+                            Abrir Inscripción
+                        </Button>
+                    )}
+                    {permissions.canStart && (
+                        <Button
+                            onClick={onStart}
+                            disabled={processing}
+                            size="sm"
+                            className="gap-2"
+                        >
+                            <Play className="size-4" />
+                            Iniciar Torneo
+                        </Button>
+                    )}
+                    {permissions.canCancel && (
+                        <Button
+                            variant="destructive"
+                            onClick={onCancel}
+                            disabled={processing}
+                            size="sm"
+                            className="gap-2"
+                        >
+                            <X className="size-4" />
+                            Cancelar
+                        </Button>
+                    )}
+                    {permissions.canDelete && (
+                        <Button
+                            variant="destructive"
+                            onClick={onDelete}
+                            disabled={processing}
+                            size="sm"
+                            className="gap-2"
+                        >
+                            <Trash2 className="size-4" />
+                            Eliminar
+                        </Button>
+                    )}
+                </div>
             </div>
         </div>
     );
