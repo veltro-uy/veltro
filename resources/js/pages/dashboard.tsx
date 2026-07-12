@@ -21,6 +21,7 @@ import type {
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
+    Award,
     Calendar,
     Clock,
     Plus,
@@ -28,7 +29,7 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { type ComponentType, useEffect } from 'react';
 import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -60,8 +61,11 @@ function SectionHeader({
 }) {
     return (
         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">{title}</h2>
+            <div className="flex items-center gap-2.5">
+                <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
+                <h2 className="font-display text-xl font-bold tracking-wide uppercase">
+                    {title}
+                </h2>
                 {badge !== undefined && badge > 0 && (
                     <Badge variant="secondary" className="text-xs">
                         {badge}
@@ -71,12 +75,38 @@ function SectionHeader({
             {href && (
                 <Link
                     href={href}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                    className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                     {linkText}
                     <ArrowRight className="h-3 w-3" />
                 </Link>
             )}
+        </div>
+    );
+}
+
+function StatTile({
+    label,
+    value,
+    icon: Icon,
+}: {
+    label: string;
+    value: number;
+    icon: ComponentType<{ className?: string }>;
+}) {
+    return (
+        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/60 px-4 py-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="size-4.5" />
+            </div>
+            <div className="min-w-0">
+                <div className="font-display text-2xl leading-none font-bold tabular-nums">
+                    {value}
+                </div>
+                <div className="mt-1 truncate text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                    {label}
+                </div>
+            </div>
         </div>
     );
 }
@@ -124,24 +154,58 @@ export default function Dashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Inicio" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
+            <div className="flex h-full flex-1 flex-col gap-6 p-4 sm:p-6">
+                {/* Hero greeting + stats */}
+                <div className="relative -mx-4 -mt-4 overflow-hidden px-4 pt-6 pb-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-8">
+                    <div
+                        aria-hidden
+                        className="bg-pitch-glow pointer-events-none absolute inset-0 -z-10"
+                    />
+                    <p className="font-display text-sm font-bold tracking-[0.18em] text-primary uppercase">
+                        Tu cancha
+                    </p>
+                    <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
                         ¡Hola, {firstName}!
                     </h1>
-                    <p className="text-muted-foreground">
-                        Esto es lo que está pasando
+                    <p className="mt-1 text-muted-foreground">
+                        Esto es lo que está pasando en tus equipos
                     </p>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <StatTile
+                            label="Equipos"
+                            value={myTeams.length}
+                            icon={Users}
+                        />
+                        <StatTile
+                            label="Próx. partidos"
+                            value={upcomingMatches.length}
+                            icon={Calendar}
+                        />
+                        <StatTile
+                            label="Torneos"
+                            value={activeTournaments.length}
+                            icon={Award}
+                        />
+                        <StatTile
+                            label="Solicitudes"
+                            value={pendingJoinRequests.length}
+                            icon={Clock}
+                        />
+                    </div>
                 </div>
 
                 {!hasTeams ? (
                     /* Lone Player / New User View */
                     <div className="space-y-6">
-                        <Card className="border-dashed">
-                            <CardContent className="flex flex-col items-center gap-4 py-10">
-                                <div className="rounded-full bg-muted p-4">
-                                    <Users className="h-8 w-8 text-muted-foreground" />
+                        <Card className="relative overflow-hidden border-dashed">
+                            <div
+                                aria-hidden
+                                className="bg-pitch-glow pointer-events-none absolute inset-0"
+                            />
+                            <CardContent className="relative flex flex-col items-center gap-4 py-12">
+                                <div className="rounded-full bg-primary/10 p-4 ring-1 ring-primary/20">
+                                    <Users className="h-8 w-8 text-primary" />
                                 </div>
                                 <div className="text-center">
                                     <h3 className="text-lg font-semibold">
