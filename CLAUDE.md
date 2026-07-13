@@ -510,25 +510,37 @@ accessors — `Team::getLogoUrlAttribute`, `Tournament::getLogoUrlAttribute`,
 
 **`FILESYSTEM_DISK` must be `public` or `s3` — never `local`.** The `local` disk
 points at `storage/app/private` (a non-web-served directory), so images land
-where no URL can reach them. This is the #1 cause of "uploads don't show in
-production."
+where no URL can reach them.
 
-### Production checklist (public disk — Option A)
+### Production: Cloudflare R2 (the deployed setup)
+
+Production runs on **Laravel Cloud, which has an ephemeral filesystem** — local
+disk is wiped on every deploy and not shared between containers. The `public`
+disk is therefore unusable in production; uploads must go to object storage.
+We use **Cloudflare R2** (S3-compatible, free egress, served through a bound
+custom domain that is CDN-cached at Cloudflare's edge).
+
+The `s3` disk in `config/filesystems.php` sets `'visibility' => 'public'` so
+every uploader (`AvatarController`, `TeamService`, `TournamentLogoController`,
+`TournamentController`) writes publicly-readable objects with no per-controller
+change. R2 ignores the object ACL and serves via its custom-domain binding.
+
+Laravel Cloud env vars:
 
 ```bash
-# .env
-APP_URL=https://veltro.uy
-FILESYSTEM_DISK=public
-
-php artisan storage:link   # public/storage -> storage/app/public
-php artisan config:cache   # required after any .env change
+FILESYSTEM_DISK=s3
+AWS_ACCESS_KEY_ID=<R2 token access key id>
+AWS_SECRET_ACCESS_KEY=<R2 token secret>
+AWS_DEFAULT_REGION=auto
+AWS_BUCKET=veltro-uploads
+AWS_ENDPOINT=https://<accountid>.r2.cloudflarestorage.com
+AWS_URL=https://cdn.veltro.uy          # bucket's public custom domain
+AWS_USE_PATH_STYLE_ENDPOINT=false
 ```
 
-- `storage/` must persist across deploys. On release-based deploys (Forge/
-  Envoyer) it should be a shared symlinked directory. On ephemeral/containerized
-  hosting, use S3/R2 instead (`FILESYSTEM_DISK=s3` + `AWS_*`) — the accessors
-  already support it, no code change needed.
-- The web server must follow symlinks under `public/`.
+No `storage:link` is needed for `s3`. The model accessors
+(`Team::getLogoUrlAttribute`, etc.) return `AWS_URL` + path, e.g.
+`https://cdn.veltro.uy/avatars/6/<file>.png`.
 
 ## Project-Specific Context
 

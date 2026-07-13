@@ -56,6 +56,10 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            // Uploads (avatars, team/tournament logos) are served publicly. R2
+            // ignores the per-object ACL and serves via its bound custom domain;
+            // this keeps behavior correct on real S3 and other S3-compatibles too.
+            'visibility' => 'public',
             'throw' => false,
             'report' => false,
         ],
