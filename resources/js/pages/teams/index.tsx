@@ -1,37 +1,28 @@
-import { JoinRequestDialog } from '@/components/join-request-dialog';
-import { TeamAvatar } from '@/components/team-avatar';
-import { Badge } from '@/components/ui/badge';
+import { TeamCard } from '@/components/team-card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { VariantBadge } from '@/components/variant-badge';
+import { FilterChip, ViewTab } from '@/components/view-tab';
 import { useNavigationPending } from '@/hooks/use-navigation-pending';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { variantMaxMembers } from '@/lib/variants';
+import { VARIANTS } from '@/lib/variants';
 import teams from '@/routes/teams';
-import type { BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem, Team } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
-    ArrowRight,
     ChevronLeft,
     ChevronRight,
+    Compass,
     Plus,
     Search,
-    Shield,
-    Star,
-    UserPlus,
     Users,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+const variantFilters: Array<{ value: string; label: string }> = [
+    { value: 'all', label: 'Todas' },
+    ...VARIANTS.map((v) => ({ value: v.value, label: v.label })),
+];
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -39,29 +30,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: teams.index().url,
     },
 ];
-
-interface TeamMember {
-    id: number;
-    user_id: number;
-    team_id: number;
-    role: string;
-    status: string;
-    user: {
-        id: number;
-        name: string;
-        email: string;
-    };
-}
-
-interface Team {
-    id: number;
-    name: string;
-    variant: string;
-    logo_url?: string;
-    description?: string;
-    team_members: TeamMember[];
-    max_members?: number;
-}
 
 interface PaginatedTeams {
     data: Team[];
@@ -80,65 +48,6 @@ interface Props {
         search: string;
         variant: string;
     };
-}
-
-function RoleBadge({ role }: { role: string }) {
-    if (role === 'captain') {
-        return (
-            <Badge variant="default" className="gap-1">
-                <Star className="h-3 w-3" />
-                Capitán
-            </Badge>
-        );
-    }
-    if (role === 'co_captain') {
-        return (
-            <Badge variant="secondary" className="gap-1">
-                <Shield className="h-3 w-3" />
-                Vice-Capitán
-            </Badge>
-        );
-    }
-    return <Badge variant="outline">Jugador</Badge>;
-}
-
-function CapacityBar({ current, max }: { current: number; max: number }) {
-    const pct = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0;
-    const barColor =
-        pct >= 100
-            ? 'bg-destructive'
-            : pct >= 80
-              ? 'bg-orange-500'
-              : 'bg-primary';
-
-    return (
-        <div>
-            <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <Users className="h-3.5 w-3.5" />
-                    Plantilla
-                </span>
-                <span className="font-semibold tabular-nums">
-                    {current}
-                    <span className="text-muted-foreground">/{max}</span>
-                    {current >= max && (
-                        <span className="ml-1 font-medium text-destructive">
-                            · Completo
-                        </span>
-                    )}
-                </span>
-            </div>
-            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                    className={cn(
-                        'h-full rounded-full transition-all duration-500',
-                        barColor,
-                    )}
-                    style={{ width: `${Math.max(pct, 4)}%` }}
-                />
-            </div>
-        </div>
-    );
 }
 
 export default function Index({ myTeams, discoverTeams, filters }: Props) {
@@ -212,103 +121,6 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
     const hasActiveFilters =
         (filters.search ?? '') !== '' || (filters.variant ?? 'all') !== 'all';
 
-    const renderTeamCard = (team: Team, mode: 'mine' | 'discover') => {
-        const maxMembers = team.max_members ?? variantMaxMembers(team.variant);
-        const currentMembers = team.team_members.length;
-        const isFull = currentMembers >= maxMembers;
-        const userMembership =
-            mode === 'mine'
-                ? team.team_members.find((m) => m.user_id === auth.user.id)
-                : null;
-
-        return (
-            <Card
-                key={team.id}
-                className="group flex flex-col overflow-hidden transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
-            >
-                <CardHeader className="pb-3">
-                    <div className="flex items-start gap-3">
-                        <TeamAvatar
-                            name={team.name}
-                            logoUrl={team.logo_url}
-                            size="lg"
-                        />
-                        <div className="min-w-0 flex-1">
-                            <CardTitle className="line-clamp-1 text-base">
-                                {team.name}
-                            </CardTitle>
-                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                <VariantBadge variant={team.variant} />
-                                {userMembership && (
-                                    <RoleBadge role={userMembership.role} />
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex flex-1 flex-col gap-4">
-                    {team.description ? (
-                        <p className="line-clamp-2 text-sm text-muted-foreground">
-                            {team.description}
-                        </p>
-                    ) : (
-                        mode === 'discover' && (
-                            <p className="text-sm text-muted-foreground/60 italic">
-                                Sin descripción
-                            </p>
-                        )
-                    )}
-
-                    <CapacityBar current={currentMembers} max={maxMembers} />
-
-                    <div className="mt-auto flex gap-2 pt-1">
-                        {mode === 'mine' ? (
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="w-full"
-                            >
-                                <Link href={teams.show(team.id).url}>
-                                    Ver equipo
-                                    <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                        ) : isFull ? (
-                            <>
-                                <Button disabled className="flex-1">
-                                    Completo
-                                </Button>
-                                <Button asChild variant="outline">
-                                    <Link href={teams.show(team.id).url}>
-                                        Ver
-                                    </Link>
-                                </Button>
-                            </>
-                        ) : (
-                            <>
-                                <JoinRequestDialog
-                                    teamId={team.id}
-                                    teamName={team.name}
-                                    trigger={
-                                        <Button className="flex-1">
-                                            <UserPlus className="mr-2 h-4 w-4" />
-                                            Solicitar
-                                        </Button>
-                                    }
-                                />
-                                <Button asChild variant="outline">
-                                    <Link href={teams.show(team.id).url}>
-                                        Ver
-                                    </Link>
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Equipos" />
@@ -340,39 +152,59 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                     </div>
                 </div>
 
-                {/* View switch */}
-                <ToggleGroup
-                    type="single"
-                    value={activeView}
-                    onValueChange={(value) => {
-                        if (value)
-                            setActiveView(value as 'my-teams' | 'discover');
-                    }}
-                    className="justify-start"
-                >
-                    <ToggleGroupItem
-                        value="my-teams"
-                        aria-label="Mis Equipos"
-                        className="gap-2"
-                    >
-                        <Users className="h-4 w-4" />
-                        Mis Equipos
-                        <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                            {myTeams.length}
-                        </span>
-                    </ToggleGroupItem>
-                    <ToggleGroupItem
-                        value="discover"
-                        aria-label="Descubrir Equipos"
-                        className="gap-2"
-                    >
-                        <Search className="h-4 w-4" />
-                        Descubrir
-                        <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                            {discoverTeams.total}
-                        </span>
-                    </ToggleGroupItem>
-                </ToggleGroup>
+                {/* View tabs + discover toolbar */}
+                <div className="flex flex-col gap-4">
+                    {/* Tab row — fixed height across both views for a stable underline */}
+                    <div className="flex items-center gap-5 border-b border-border sm:gap-6">
+                        <ViewTab
+                            icon={Users}
+                            label="Mis Equipos"
+                            count={myTeams.length}
+                            active={activeView === 'my-teams'}
+                            onClick={() => setActiveView('my-teams')}
+                        />
+                        <ViewTab
+                            icon={Compass}
+                            label="Descubrir"
+                            count={discoverTeams.total}
+                            active={activeView === 'discover'}
+                            onClick={() => setActiveView('discover')}
+                        />
+                    </div>
+
+                    {activeView === 'discover' && (
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="-mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 py-1 sm:flex-wrap sm:overflow-visible">
+                                {variantFilters.map((chip) => (
+                                    <FilterChip
+                                        key={chip.value}
+                                        label={chip.label}
+                                        active={selectedVariant === chip.value}
+                                        disabled={isPending}
+                                        onClick={() =>
+                                            updateFilters({
+                                                variant: chip.value,
+                                                page: null,
+                                            })
+                                        }
+                                    />
+                                ))}
+                            </div>
+
+                            <div className="relative w-full sm:w-72">
+                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="Buscar equipos por nombre..."
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    className="pl-9"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* My Teams View */}
                 {activeView === 'my-teams' && (
@@ -417,9 +249,14 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                             </div>
                         ) : (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {myTeams.map((team) =>
-                                    renderTeamCard(team, 'mine'),
-                                )}
+                                {myTeams.map((team) => (
+                                    <TeamCard
+                                        key={team.id}
+                                        team={team}
+                                        mode="mine"
+                                        currentUserId={auth.user.id}
+                                    />
+                                ))}
                             </div>
                         )}
                     </div>
@@ -428,52 +265,6 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                 {/* Discover Teams View */}
                 {activeView === 'discover' && (
                     <div className="space-y-6">
-                        {/* Filters */}
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <div className="relative flex-1">
-                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    placeholder="Buscar equipos por nombre..."
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                    className="pl-9"
-                                />
-                            </div>
-
-                            <Select
-                                value={selectedVariant}
-                                onValueChange={(value) =>
-                                    updateFilters({
-                                        variant: value,
-                                        page: null,
-                                    })
-                                }
-                            >
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Seleccionar variante" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Todas las variantes
-                                    </SelectItem>
-                                    <SelectItem value="football_11">
-                                        Fútbol 11
-                                    </SelectItem>
-                                    <SelectItem value="football_7">
-                                        Fútbol 7
-                                    </SelectItem>
-                                    <SelectItem value="football_5">
-                                        Fútbol 5
-                                    </SelectItem>
-                                    <SelectItem value="futsal">
-                                        Futsal
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
                         {/* Results */}
                         {discoverTeams.total === 0 ? (
                             <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border py-14 text-center">
@@ -517,9 +308,14 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                                             'pointer-events-none opacity-50',
                                     )}
                                 >
-                                    {discoverTeams.data.map((team) =>
-                                        renderTeamCard(team, 'discover'),
-                                    )}
+                                    {discoverTeams.data.map((team) => (
+                                        <TeamCard
+                                            key={team.id}
+                                            team={team}
+                                            mode="discover"
+                                            currentUserId={auth.user.id}
+                                        />
+                                    ))}
                                 </div>
 
                                 {discoverTeams.last_page > 1 && (

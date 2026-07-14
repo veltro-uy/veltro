@@ -2,18 +2,19 @@ import { MatchCard } from '@/components/match-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { FilterChip, ViewTab } from '@/components/view-tab';
 import { useNavigationPending } from '@/hooks/use-navigation-pending';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import matches from '@/routes/matches';
 import teamsRoute from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Calendar,
     ChevronLeft,
     ChevronRight,
+    Compass,
     History,
     Plus,
     Search,
@@ -97,8 +98,14 @@ export default function Index({
     hasTeams,
     filters,
 }: Props) {
+    const page = usePage();
+    const initialView = new URLSearchParams(page.url.split('?')[1] ?? '').get(
+        'view',
+    );
     const [activeView, setActiveView] = useState<'my-matches' | 'find-matches'>(
-        'my-matches',
+        initialView === 'find' || initialView === 'find-matches'
+            ? 'find-matches'
+            : 'my-matches',
     );
     const [matchesTab, setMatchesTab] = useState<'upcoming' | 'history'>(
         'upcoming',
@@ -191,90 +198,77 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Partidos" />
-            <div className="flex h-full flex-1 flex-col gap-6 p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
-                            Partidos
-                        </h1>
-                        <p className="text-muted-foreground">
-                            Encuentra rivales y gestiona los partidos de tu
-                            equipo
-                        </p>
+            <div className="flex h-full flex-1 flex-col gap-6 p-4 sm:p-6">
+                {/* Hero header */}
+                <div className="relative -mx-4 -mt-4 overflow-hidden px-4 pt-6 pb-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-8">
+                    <div
+                        aria-hidden
+                        className="bg-pitch-glow pointer-events-none absolute inset-0 -z-10"
+                    />
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p className="font-display text-sm font-bold tracking-[0.18em] text-primary uppercase">
+                                Jugá
+                            </p>
+                            <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+                                Partidos
+                            </h1>
+                            <p className="mt-1 text-muted-foreground">
+                                Encontrá rivales y gestioná los partidos de tu
+                                equipo.
+                            </p>
+                        </div>
+                        <PublishMatchButton teams={teams} />
                     </div>
-                    <PublishMatchButton teams={teams} />
                 </div>
 
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <ToggleGroup
-                        type="single"
-                        value={activeView}
-                        onValueChange={(value) => {
-                            if (value)
-                                setActiveView(
-                                    value as 'my-matches' | 'find-matches',
-                                );
-                        }}
-                        className="justify-start"
-                    >
-                        <ToggleGroupItem
-                            value="my-matches"
-                            aria-label="Mis Partidos"
-                            className="gap-2"
-                        >
-                            <Trophy className="h-4 w-4" />
-                            Mis Partidos
-                            <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {myMatches.length}
-                            </span>
-                        </ToggleGroupItem>
-                        <ToggleGroupItem
-                            value="find-matches"
-                            aria-label="Buscar Partidos"
-                            className="gap-2"
-                        >
-                            <Search className="h-4 w-4" />
-                            Buscar Partidos
-                            <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                {availableMatches.total}
-                            </span>
-                        </ToggleGroupItem>
-                    </ToggleGroup>
+                {/* View tabs + toolbar */}
+                <div className="flex flex-col gap-4">
+                    {/* Tab row — fixed height across both views for a stable underline */}
+                    <div className="flex items-center gap-5 border-b border-border sm:gap-6">
+                        <ViewTab
+                            icon={Trophy}
+                            label="Mis Partidos"
+                            count={myMatches.length}
+                            active={activeView === 'my-matches'}
+                            onClick={() => setActiveView('my-matches')}
+                        />
+                        <ViewTab
+                            icon={Compass}
+                            label="Buscar Partidos"
+                            count={availableMatches.total}
+                            active={activeView === 'find-matches'}
+                            onClick={() => setActiveView('find-matches')}
+                        />
+                    </div>
 
                     {activeView === 'my-matches' && myMatches.length > 0 && (
-                        <ToggleGroup
-                            type="single"
-                            value={matchesTab}
-                            onValueChange={(value) => {
-                                if (value)
-                                    setMatchesTab(
-                                        value as 'upcoming' | 'history',
-                                    );
-                            }}
-                        >
-                            <ToggleGroupItem
-                                value="upcoming"
-                                aria-label="Próximos"
-                                className="gap-2"
-                            >
-                                <Calendar className="h-4 w-4" />
-                                Próximos
-                                <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                    {upcomingMatches.length}
-                                </span>
-                            </ToggleGroupItem>
-                            <ToggleGroupItem
-                                value="history"
-                                aria-label="Historial"
-                                className="gap-2"
-                            >
-                                <History className="h-4 w-4" />
-                                Historial
-                                <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-                                    {pastMatches.length}
-                                </span>
-                            </ToggleGroupItem>
-                        </ToggleGroup>
+                        <div className="-mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 py-1 sm:flex-wrap sm:overflow-visible">
+                            <FilterChip
+                                label="Próximos"
+                                count={upcomingMatches.length}
+                                active={matchesTab === 'upcoming'}
+                                onClick={() => setMatchesTab('upcoming')}
+                            />
+                            <FilterChip
+                                label="Historial"
+                                count={pastMatches.length}
+                                active={matchesTab === 'history'}
+                                onClick={() => setMatchesTab('history')}
+                            />
+                        </div>
+                    )}
+
+                    {activeView === 'find-matches' && (
+                        <div className="relative w-full sm:w-72">
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar por nombre de equipo o ubicación..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
                     )}
                 </div>
 
@@ -377,16 +371,6 @@ export default function Index({
 
                 {activeView === 'find-matches' && (
                     <div className="space-y-6">
-                        <div className="relative">
-                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                placeholder="Buscar por nombre de equipo o ubicación..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9"
-                            />
-                        </div>
-
                         {availableMatches.total === 0 ? (
                             filters.search ? (
                                 <Card className="flex flex-col items-center justify-center py-12">
