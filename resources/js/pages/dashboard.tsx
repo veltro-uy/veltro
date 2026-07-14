@@ -1,3 +1,4 @@
+import { NextMatchSpotlight } from '@/components/dashboard/next-match-spotlight';
 import { MatchCard } from '@/components/match-card';
 import { TeamAvatar } from '@/components/team-avatar';
 import { TournamentCard } from '@/components/tournament/tournament-card';
@@ -22,15 +23,35 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     Award,
-    Calendar,
+    Check,
+    CheckCircle2,
+    ChevronRight,
+    Circle,
     Clock,
+    type LucideIcon,
     Plus,
     Search,
     Users,
     X,
 } from 'lucide-react';
-import { type ComponentType, useEffect } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
+
+type MyTeam = Team & { team_members_count: number };
+type MatchWithHomeTeam = FootballMatch & { home_team: NonNullable<Team> };
+
+interface PageProps {
+    myTeams: MyTeam[];
+    upcomingMatches: FootballMatch[];
+    openMatches: FootballMatch[];
+    pendingJoinRequests: JoinRequest[];
+    incomingJoinRequests: JoinRequest[];
+    discoverTeams: MyTeam[];
+    activeTournaments: Tournament[];
+    hasTeams: boolean;
+    hasPublishedMatch: boolean;
+    [key: string]: unknown;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -38,15 +59,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/dashboard',
     },
 ];
-
-interface PageProps {
-    myTeams: (Team & { team_members_count: number })[];
-    upcomingMatches: FootballMatch[];
-    pendingJoinRequests: JoinRequest[];
-    activeTournaments: Tournament[];
-    hasTeams: boolean;
-    [key: string]: unknown;
-}
 
 function SectionHeader({
     title,
@@ -85,29 +97,99 @@ function SectionHeader({
     );
 }
 
-function StatTile({
+function QuickAction({
     label,
-    value,
     icon: Icon,
+    href,
 }: {
     label: string;
-    value: number;
-    icon: ComponentType<{ className?: string }>;
+    icon: LucideIcon;
+    href: string;
 }) {
     return (
-        <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/60 px-4 py-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Link
+            href={href}
+            className="group flex items-center gap-3 rounded-xl border border-border/70 bg-card/60 px-4 py-3 transition-colors hover:border-primary/30 hover:bg-card"
+        >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="size-4.5" />
-            </div>
-            <div className="min-w-0">
-                <div className="font-display text-2xl leading-none font-bold tabular-nums">
-                    {value}
-                </div>
-                <div className="mt-1 truncate text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                    {label}
-                </div>
-            </div>
-        </div>
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                {label}
+            </span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        </Link>
+    );
+}
+
+function TeamRow({ team }: { team: MyTeam }) {
+    return (
+        <Link href={teams.show(team.id).url} className="group block">
+            <Card className="transition-all hover:border-primary/20 hover:shadow-md">
+                <CardContent className="flex items-center gap-3 py-3">
+                    <TeamAvatar
+                        name={team.name}
+                        logoUrl={team.logo_url}
+                        size="md"
+                    />
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">
+                            {team.name}
+                        </p>
+                        <div className="mt-0.5 flex items-center gap-2">
+                            <VariantBadge variant={team.variant} />
+                            <span className="text-xs text-muted-foreground">
+                                <Users className="mr-0.5 inline h-3 w-3" />
+                                {team.team_members_count}
+                                {team.max_members && `/${team.max_members}`}
+                            </span>
+                        </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </CardContent>
+            </Card>
+        </Link>
+    );
+}
+
+function NextSteps({
+    steps,
+}: {
+    steps: { label: string; done: boolean; href: string }[];
+}) {
+    return (
+        <section className="space-y-3">
+            <SectionHeader title="Siguientes pasos" />
+            <Card>
+                <CardContent className="divide-y divide-border/60 py-0">
+                    {steps.map((step) =>
+                        step.done ? (
+                            <div
+                                key={step.label}
+                                className="flex items-center gap-3 py-3"
+                            >
+                                <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+                                <span className="flex-1 text-sm text-muted-foreground line-through">
+                                    {step.label}
+                                </span>
+                            </div>
+                        ) : (
+                            <Link
+                                key={step.label}
+                                href={step.href}
+                                className="group flex items-center gap-3 py-3"
+                            >
+                                <Circle className="h-5 w-5 shrink-0 text-muted-foreground/50" />
+                                <span className="flex-1 text-sm font-medium">
+                                    {step.label}
+                                </span>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                            </Link>
+                        ),
+                    )}
+                </CardContent>
+            </Card>
+        </section>
     );
 }
 
@@ -127,9 +209,13 @@ function formatTimeAgo(dateString: string): string {
 export default function Dashboard({
     myTeams,
     upcomingMatches,
+    openMatches,
     pendingJoinRequests,
+    incomingJoinRequests,
+    discoverTeams,
     activeTournaments,
     hasTeams,
+    hasPublishedMatch,
 }: PageProps) {
     const { auth, flash } = usePage<{
         auth: { user: User };
@@ -150,12 +236,107 @@ export default function Dashboard({
         });
     };
 
+    const handleAcceptRequest = (requestId: number) => {
+        router.post(
+            joinRequests.accept(requestId).url,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Solicitud aceptada'),
+                onError: () => toast.error('Error al aceptar la solicitud'),
+            },
+        );
+    };
+
+    const handleRejectRequest = (requestId: number) => {
+        router.post(
+            joinRequests.reject(requestId).url,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Solicitud rechazada'),
+                onError: () => toast.error('Error al rechazar la solicitud'),
+            },
+        );
+    };
+
+    const nextMatch = upcomingMatches.find((match) => match.home_team);
+
+    const quickActions: { label: string; icon: LucideIcon; href: string }[] =
+        hasTeams
+            ? [
+                  {
+                      label: 'Publicar partido',
+                      icon: Plus,
+                      href: matches.create().url,
+                  },
+                  {
+                      label: 'Buscar rival',
+                      icon: Search,
+                      href: matches.index({ query: { view: 'find' } }).url,
+                  },
+                  {
+                      label: 'Descubrir equipos',
+                      icon: Users,
+                      href: teams.index({ query: { view: 'discover' } }).url,
+                  },
+                  {
+                      label: 'Explorar torneos',
+                      icon: Award,
+                      href: tournaments.index().url,
+                  },
+              ]
+            : [
+                  {
+                      label: 'Crear equipo',
+                      icon: Plus,
+                      href: teams.create().url,
+                  },
+                  {
+                      label: 'Descubrir equipos',
+                      icon: Users,
+                      href: teams.index({ query: { view: 'discover' } }).url,
+                  },
+                  {
+                      label: 'Explorar torneos',
+                      icon: Award,
+                      href: tournaments.index().url,
+                  },
+                  {
+                      label: 'Buscar rival',
+                      icon: Search,
+                      href: matches.index({ query: { view: 'find' } }).url,
+                  },
+              ];
+
+    const steps = [
+        {
+            label: 'Crear o unirte a un equipo',
+            done: hasTeams,
+            href: teams.index({ query: { view: 'discover' } }).url,
+        },
+        {
+            label: 'Publicar tu primer partido',
+            done: hasPublishedMatch,
+            href: matches.create().url,
+        },
+        {
+            label: 'Sumarte a un torneo',
+            done: activeTournaments.length > 0,
+            href: tournaments.index().url,
+        },
+    ];
+    const showNextSteps = steps.some((step) => !step.done);
+
+    const leftHasContent =
+        openMatches.length > 0 || activeTournaments.length > 0;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Inicio" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4 sm:p-6">
-                {/* Hero greeting + stats */}
+                {/* Hero greeting */}
                 <div className="relative -mx-4 -mt-4 overflow-hidden px-4 pt-6 pb-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-8">
                     <div
                         aria-hidden
@@ -170,163 +351,93 @@ export default function Dashboard({
                     <p className="mt-1 text-muted-foreground">
                         Esto es lo que está pasando en tus equipos
                     </p>
-
-                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        <StatTile
-                            label="Equipos"
-                            value={myTeams.length}
-                            icon={Users}
-                        />
-                        <StatTile
-                            label="Próx. partidos"
-                            value={upcomingMatches.length}
-                            icon={Calendar}
-                        />
-                        <StatTile
-                            label="Torneos"
-                            value={activeTournaments.length}
-                            icon={Award}
-                        />
-                        <StatTile
-                            label="Solicitudes"
-                            value={pendingJoinRequests.length}
-                            icon={Clock}
-                        />
-                    </div>
                 </div>
 
-                {!hasTeams ? (
-                    /* Lone Player / New User View */
-                    <div className="space-y-6">
-                        <Card className="relative overflow-hidden border-dashed">
-                            <div
-                                aria-hidden
-                                className="bg-pitch-glow pointer-events-none absolute inset-0"
-                            />
-                            <CardContent className="relative flex flex-col items-center gap-4 py-12">
-                                <div className="rounded-full bg-primary/10 p-4 ring-1 ring-primary/20">
-                                    <Users className="h-8 w-8 text-primary" />
-                                </div>
-                                <div className="text-center">
-                                    <h3 className="text-lg font-semibold">
-                                        Empieza por crear o unirte a un equipo
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Para jugar partidos y participar en
-                                        torneos necesitas un equipo
-                                    </p>
-                                </div>
-                                <div className="flex gap-3">
-                                    <Link
-                                        href={
-                                            teams.index({
-                                                query: { view: 'discover' },
-                                            }).url
-                                        }
-                                    >
-                                        <Button
-                                            variant="outline"
-                                            className="gap-2"
-                                        >
-                                            <Search className="h-4 w-4" />
-                                            Descubrir Equipos
-                                        </Button>
-                                    </Link>
-                                    <Link href={teams.create().url}>
-                                        <Button className="gap-2">
-                                            <Plus className="h-4 w-4" />
-                                            Crear Equipo
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
+                {/* Next-match spotlight */}
+                <NextMatchSpotlight match={nextMatch} hasTeams={hasTeams} />
 
-                        {pendingJoinRequests.length > 0 && (
-                            <PendingRequestsSection
-                                requests={pendingJoinRequests}
-                                onCancel={handleCancelRequest}
-                            />
-                        )}
-                    </div>
-                ) : (
-                    /* Active Player View — 2 column layout */
-                    <div className="grid gap-6 lg:grid-cols-3">
-                        {/* Left column — matches (wider) */}
-                        <div className="space-y-6 lg:col-span-2">
-                            {/* Upcoming Matches */}
+                {/* Quick actions */}
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    {quickActions.map((action) => (
+                        <QuickAction key={action.label} {...action} />
+                    ))}
+                </div>
+
+                {/* Content grid */}
+                <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Left column */}
+                    <div className="space-y-6 lg:col-span-2">
+                        {openMatches.length > 0 && (
                             <section className="space-y-3">
                                 <SectionHeader
-                                    title="Próximos Partidos"
-                                    href={matches.index().url}
+                                    title="Partidos abiertos"
+                                    href={
+                                        matches.index({
+                                            query: { view: 'find' },
+                                        }).url
+                                    }
+                                    linkText="Ver más"
                                 />
-                                {upcomingMatches.length === 0 ? (
-                                    <Card className="border-dashed">
-                                        <CardContent className="flex items-center gap-4 py-6">
-                                            <div className="rounded-lg bg-muted p-3">
-                                                <Calendar className="h-5 w-5 text-muted-foreground" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="font-medium">
-                                                    No hay partidos próximos
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Crea un partido o busca
-                                                    rivales disponibles
-                                                </p>
-                                            </div>
-                                            <Link href={matches.index().url}>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                >
-                                                    Ir a Partidos
-                                                </Button>
-                                            </Link>
-                                        </CardContent>
-                                    </Card>
-                                ) : (
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        {upcomingMatches
-                                            .filter((match) => match.home_team)
-                                            .map((match) => (
-                                                <MatchCard
-                                                    key={match.id}
-                                                    match={
-                                                        match as FootballMatch & {
-                                                            home_team: NonNullable<
-                                                                FootballMatch['home_team']
-                                                            >;
-                                                        }
-                                                    }
-                                                />
-                                            ))}
-                                    </div>
-                                )}
-                            </section>
-
-                            {/* Active Tournaments */}
-                            {activeTournaments.length > 0 && (
-                                <section className="space-y-3">
-                                    <SectionHeader
-                                        title="Torneos Activos"
-                                        href={tournaments.index().url}
-                                    />
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        {activeTournaments.map((tournament) => (
-                                            <TournamentCard
-                                                key={tournament.id}
-                                                tournament={tournament}
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    {openMatches
+                                        .filter((match) => match.home_team)
+                                        .map((match) => (
+                                            <MatchCard
+                                                key={match.id}
+                                                match={
+                                                    match as MatchWithHomeTeam
+                                                }
                                             />
                                         ))}
-                                    </div>
-                                </section>
-                            )}
-                        </div>
+                                </div>
+                            </section>
+                        )}
 
-                        {/* Right column — teams + requests */}
-                        <div className="space-y-6">
-                            {/* My Teams */}
+                        {activeTournaments.length > 0 && (
+                            <section className="space-y-3">
+                                <SectionHeader
+                                    title="Torneos Activos"
+                                    href={tournaments.index().url}
+                                />
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    {activeTournaments.map((tournament) => (
+                                        <TournamentCard
+                                            key={tournament.id}
+                                            tournament={tournament}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Discovery fallback so the wide column is never blank */}
+                        {!leftHasContent && discoverTeams.length > 0 && (
+                            <section className="space-y-3">
+                                <SectionHeader
+                                    title="Descubrí equipos"
+                                    href={
+                                        teams.index({
+                                            query: { view: 'discover' },
+                                        }).url
+                                    }
+                                    linkText="Ver todos"
+                                />
+                                <p className="-mt-1 text-sm text-muted-foreground">
+                                    Sumate a un equipo o encontrá rivales para
+                                    tus próximos partidos.
+                                </p>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    {discoverTeams.map((team) => (
+                                        <TeamRow key={team.id} team={team} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+
+                    {/* Right rail */}
+                    <div className="space-y-6">
+                        {myTeams.length > 0 && (
                             <section className="space-y-3">
                                 <SectionHeader
                                     title="Mis Equipos"
@@ -335,167 +446,147 @@ export default function Dashboard({
                                 />
                                 <div className="space-y-3">
                                     {myTeams.map((team) => (
-                                        <Link
-                                            key={team.id}
-                                            href={teams.show(team.id).url}
-                                        >
-                                            <Card className="transition-all hover:border-primary/20 hover:shadow-md">
-                                                <CardContent className="flex items-center gap-3 py-3">
-                                                    <TeamAvatar
-                                                        name={team.name}
-                                                        logoUrl={team.logo_url}
-                                                        size="md"
-                                                    />
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="truncate text-sm font-semibold">
-                                                            {team.name}
-                                                        </p>
-                                                        <div className="mt-0.5 flex items-center gap-2">
-                                                            <VariantBadge
-                                                                variant={
-                                                                    team.variant
-                                                                }
-                                                            />
-                                                            <span className="text-xs text-muted-foreground">
-                                                                <Users className="mr-0.5 inline h-3 w-3" />
-                                                                {
-                                                                    team.team_members_count
-                                                                }
-                                                                {team.max_members &&
-                                                                    `/${team.max_members}`}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                                                </CardContent>
-                                            </Card>
-                                        </Link>
+                                        <TeamRow key={team.id} team={team} />
                                     ))}
                                 </div>
                             </section>
+                        )}
 
-                            {/* Pending Join Requests */}
-                            {pendingJoinRequests.length > 0 && (
-                                <section className="space-y-3">
-                                    <SectionHeader
-                                        title="Solicitudes"
-                                        badge={pendingJoinRequests.length}
-                                    />
-                                    <div className="space-y-3">
-                                        {pendingJoinRequests.map((request) => (
-                                            <Card key={request.id}>
-                                                <CardContent className="flex items-center gap-3 py-3">
-                                                    <TeamAvatar
-                                                        name={
-                                                            request.team
-                                                                ?.name ??
-                                                            'Equipo'
-                                                        }
-                                                        logoUrl={
-                                                            request.team
-                                                                ?.logo_url
-                                                        }
-                                                        size="md"
-                                                    />
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="truncate text-sm font-semibold">
-                                                            {request.team?.name}
-                                                        </p>
-                                                        <div className="mt-0.5 flex items-center gap-2">
-                                                            {request.team
-                                                                ?.variant && (
-                                                                <VariantBadge
-                                                                    variant={
-                                                                        request
-                                                                            .team
-                                                                            .variant
-                                                                    }
-                                                                />
-                                                            )}
-                                                            <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                                                <Clock className="h-3 w-3" />
-                                                                {formatTimeAgo(
-                                                                    request.created_at,
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                    </div>
+                        {/* Incoming requests (leader) */}
+                        {incomingJoinRequests.length > 0 && (
+                            <section className="space-y-3">
+                                <SectionHeader
+                                    title="Solicitudes recibidas"
+                                    badge={incomingJoinRequests.length}
+                                />
+                                <div className="space-y-3">
+                                    {incomingJoinRequests.map((request) => (
+                                        <Card key={request.id}>
+                                            <CardContent className="flex items-center gap-3 py-3">
+                                                <TeamAvatar
+                                                    name={
+                                                        request.user?.name ??
+                                                        'Jugador'
+                                                    }
+                                                    logoUrl={
+                                                        request.user?.avatar_url
+                                                    }
+                                                    size="md"
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-sm font-semibold">
+                                                        {request.user?.name}
+                                                    </p>
+                                                    <p className="truncate text-xs text-muted-foreground">
+                                                        quiere unirse a{' '}
+                                                        {request.team?.name}
+                                                    </p>
+                                                </div>
+                                                <div className="flex shrink-0 gap-1">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                                        className="h-7 w-7 text-primary hover:bg-primary/10 hover:text-primary"
                                                         onClick={() =>
-                                                            handleCancelRequest(
+                                                            handleAcceptRequest(
                                                                 request.id,
                                                             )
                                                         }
-                                                        title="Cancelar solicitud"
-                                                        aria-label="Cancelar solicitud"
+                                                        title="Aceptar solicitud"
+                                                        aria-label="Aceptar solicitud"
+                                                    >
+                                                        <Check className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                        onClick={() =>
+                                                            handleRejectRequest(
+                                                                request.id,
+                                                            )
+                                                        }
+                                                        title="Rechazar solicitud"
+                                                        aria-label="Rechazar solicitud"
                                                     >
                                                         <X className="h-4 w-4" />
                                                     </Button>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-                        </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Outgoing requests */}
+                        {pendingJoinRequests.length > 0 && (
+                            <section className="space-y-3">
+                                <SectionHeader
+                                    title="Solicitudes enviadas"
+                                    badge={pendingJoinRequests.length}
+                                />
+                                <div className="space-y-3">
+                                    {pendingJoinRequests.map((request) => (
+                                        <Card key={request.id}>
+                                            <CardContent className="flex items-center gap-3 py-3">
+                                                <TeamAvatar
+                                                    name={
+                                                        request.team?.name ??
+                                                        'Equipo'
+                                                    }
+                                                    logoUrl={
+                                                        request.team?.logo_url
+                                                    }
+                                                    size="md"
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-sm font-semibold">
+                                                        {request.team?.name}
+                                                    </p>
+                                                    <div className="mt-0.5 flex items-center gap-2">
+                                                        {request.team
+                                                            ?.variant && (
+                                                            <VariantBadge
+                                                                variant={
+                                                                    request.team
+                                                                        .variant
+                                                                }
+                                                            />
+                                                        )}
+                                                        <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                                            <Clock className="h-3 w-3" />
+                                                            {formatTimeAgo(
+                                                                request.created_at,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                                    onClick={() =>
+                                                        handleCancelRequest(
+                                                            request.id,
+                                                        )
+                                                    }
+                                                    title="Cancelar solicitud"
+                                                    aria-label="Cancelar solicitud"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {showNextSteps && <NextSteps steps={steps} />}
                     </div>
-                )}
+                </div>
             </div>
         </AppLayout>
-    );
-}
-
-function PendingRequestsSection({
-    requests,
-    onCancel,
-}: {
-    requests: JoinRequest[];
-    onCancel: (id: number) => void;
-}) {
-    return (
-        <section className="space-y-3">
-            <SectionHeader title="Solicitudes" badge={requests.length} />
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {requests.map((request) => (
-                    <Card key={request.id}>
-                        <CardContent className="flex items-center gap-3 py-3">
-                            <TeamAvatar
-                                name={request.team?.name ?? 'Equipo'}
-                                logoUrl={request.team?.logo_url}
-                                size="md"
-                            />
-                            <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-semibold">
-                                    {request.team?.name}
-                                </p>
-                                <div className="mt-0.5 flex items-center gap-2">
-                                    {request.team?.variant && (
-                                        <VariantBadge
-                                            variant={request.team.variant}
-                                        />
-                                    )}
-                                    <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                        <Clock className="h-3 w-3" />
-                                        {formatTimeAgo(request.created_at)}
-                                    </span>
-                                </div>
-                            </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => onCancel(request.id)}
-                                title="Cancelar solicitud"
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        </section>
     );
 }
