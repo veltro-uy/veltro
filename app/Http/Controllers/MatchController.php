@@ -89,7 +89,6 @@ final class MatchController extends Controller
             'scheduled_at' => ['required', 'date', 'after_or_equal:now'],
             'location' => ['required', 'string', 'max:255', new CleanText],
             'location_coords' => ['nullable', 'string', 'max:255'],
-            'match_type' => ['required', 'in:friendly,competitive'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -350,7 +349,6 @@ final class MatchController extends Controller
             'scheduled_at' => ['required', 'date', 'after_or_equal:now'],
             'location' => ['required', 'string', 'max:255', new CleanText],
             'location_coords' => ['nullable', 'string', 'max:255'],
-            'match_type' => ['required', 'in:friendly,competitive'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 

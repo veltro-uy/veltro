@@ -89,11 +89,6 @@ export function MatchHero({
                             {getMatchStatusText(match.status)}
                         </Badge>
                         <VariantBadge variant={match.variant} />
-                        <Badge variant="outline">
-                            {match.match_type === 'friendly'
-                                ? 'Amistoso'
-                                : 'Competitivo'}
-                        </Badge>
                     </div>
 
                     {/* Matchup */}

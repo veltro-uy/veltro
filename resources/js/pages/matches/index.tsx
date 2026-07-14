@@ -62,7 +62,6 @@ interface Match {
     variant: string;
     scheduled_at: string | null;
     location: string | null;
-    match_type: string;
     status: string;
     home_score?: number;
     away_score?: number;

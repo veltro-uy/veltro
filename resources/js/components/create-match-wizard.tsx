@@ -14,11 +14,8 @@ import {
     CalendarDays,
     Check,
     Clock,
-    Handshake,
     Loader2,
     MapPin,
-    Swords,
-    Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -32,21 +29,6 @@ interface Team {
 
 const STEPS = ['Equipo', 'Cuándo y dónde', 'Detalles'] as const;
 const DEFAULT_TIME = '20:00';
-
-const MATCH_TYPES = [
-    {
-        value: 'friendly',
-        label: 'Amistoso',
-        blurb: 'Sin puntos en juego, puro fútbol.',
-        icon: Handshake,
-    },
-    {
-        value: 'competitive',
-        label: 'Competitivo',
-        blurb: 'Cuenta para la tabla o el orgullo.',
-        icon: Swords,
-    },
-] as const;
 
 /** "YYYY-MM-DD" of today in Montevideo. */
 function todayLocalDate(): string {
@@ -76,7 +58,6 @@ export function CreateMatchWizard({ teams }: { teams: Team[] }) {
         team_id: teams.length === 1 ? teams[0].id.toString() : '',
         scheduled_at: '',
         location: '',
-        match_type: 'friendly',
         notes: '',
     });
 
@@ -122,12 +103,11 @@ export function CreateMatchWizard({ teams }: { teams: Team[] }) {
             onError: (errs) => {
                 if (errs.team_id) setStep(0);
                 else if (errs.scheduled_at || errs.location) setStep(1);
-                else if (errs.match_type || errs.notes) setStep(2);
+                else if (errs.notes) setStep(2);
                 toast.error(
                     errs.team_id ||
                         errs.scheduled_at ||
                         errs.location ||
-                        errs.match_type ||
                         errs.notes ||
                         'No pudimos publicar el partido',
                 );
@@ -143,7 +123,6 @@ export function CreateMatchWizard({ teams }: { teams: Team[] }) {
                     team={selectedTeam}
                     scheduledAt={data.scheduled_at}
                     location={data.location}
-                    matchType={data.match_type}
                 />
             </div>
 
@@ -180,8 +159,6 @@ export function CreateMatchWizard({ teams }: { teams: Team[] }) {
                         )}
                         {step === 2 && (
                             <StepDetalles
-                                matchType={data.match_type}
-                                onMatchType={(v) => setData('match_type', v)}
                                 notes={data.notes}
                                 onNotes={(v) => setData('notes', v)}
                                 notesError={errors.notes}
@@ -462,8 +439,6 @@ function StepCuandoDonde({
 }
 
 function StepDetalles({
-    matchType,
-    onMatchType,
     notes,
     onNotes,
     notesError,
@@ -471,8 +446,6 @@ function StepDetalles({
     scheduledAt,
     location,
 }: {
-    matchType: string;
-    onMatchType: (v: string) => void;
     notes: string;
     onNotes: (v: string) => void;
     notesError?: string;
@@ -485,50 +458,8 @@ function StepDetalles({
             <div>
                 <h2 className="text-lg font-semibold">Detalles del partido</h2>
                 <p className="text-sm text-muted-foreground">
-                    ¿Qué se juega? Sumá una nota si querés.
+                    Sumá una nota si querés.
                 </p>
-            </div>
-
-            {/* Match type */}
-            <div
-                role="radiogroup"
-                aria-label="Tipo de partido"
-                className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-            >
-                {MATCH_TYPES.map((type) => {
-                    const selected = type.value === matchType;
-                    const Icon = type.icon;
-                    return (
-                        <button
-                            key={type.value}
-                            type="button"
-                            role="radio"
-                            aria-checked={selected}
-                            onClick={() => onMatchType(type.value)}
-                            className={cn(
-                                'group rounded-xl border p-4 text-left ring-ring transition-all outline-none focus-visible:ring-2',
-                                selected
-                                    ? 'border-primary bg-primary/5 ring-1 ring-primary/40'
-                                    : 'border-border bg-card hover:border-primary/30 hover:bg-accent/40',
-                            )}
-                        >
-                            <div
-                                className={cn(
-                                    'flex size-10 items-center justify-center rounded-lg transition-colors',
-                                    selected
-                                        ? 'bg-primary/15 text-primary'
-                                        : 'bg-muted text-muted-foreground group-hover:text-foreground',
-                                )}
-                            >
-                                <Icon className="size-5" />
-                            </div>
-                            <p className="mt-3 font-semibold">{type.label}</p>
-                            <p className="text-xs text-muted-foreground">
-                                {type.blurb}
-                            </p>
-                        </button>
-                    );
-                })}
             </div>
 
             {/* Notes */}
@@ -593,12 +524,10 @@ function LivePreview({
     team,
     scheduledAt,
     location,
-    matchType,
 }: {
     team?: Team;
     scheduledAt: string;
     location: string;
-    matchType: string;
 }) {
     return (
         <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
@@ -659,18 +588,12 @@ function LivePreview({
                             {scheduledAt ? formatTime(scheduledAt) : '—'}
                         </span>
                     </div>
-                    <div className="flex items-center justify-between gap-3 text-muted-foreground">
+                    <div className="flex items-center gap-3 text-muted-foreground">
                         <span className="flex min-w-0 items-center gap-2">
                             <MapPin className="h-4 w-4 shrink-0" />
                             <span className="line-clamp-1">
                                 {location.trim() || 'Por definir'}
                             </span>
-                        </span>
-                        <span className="flex shrink-0 items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            {matchType === 'friendly'
-                                ? 'Amistoso'
-                                : 'Competitivo'}
                         </span>
                     </div>
                 </div>

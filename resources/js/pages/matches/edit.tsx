@@ -8,13 +8,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { nowDateTimeLocal, toDateTimeLocal } from '@/lib/datetime';
@@ -33,7 +26,6 @@ interface Match {
     scheduled_at: string | null;
     location: string | null;
     location_coords?: string;
-    match_type: string;
     notes?: string;
     home_team: Team;
 }
@@ -62,7 +54,6 @@ export default function Edit({ match }: Props) {
         scheduled_at: toDateTimeLocal(match.scheduled_at),
         location: match.location ?? '',
         location_coords: match.location_coords || '',
-        match_type: match.match_type,
         notes: match.notes || '',
     });
 
@@ -137,35 +128,6 @@ export default function Edit({ match }: Props) {
                                 {errors.location && (
                                     <p className="text-sm text-destructive">
                                         {errors.location}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="match_type">
-                                    Tipo de Partido
-                                </Label>
-                                <Select
-                                    value={data.match_type}
-                                    onValueChange={(value) =>
-                                        setData('match_type', value)
-                                    }
-                                >
-                                    <SelectTrigger id="match_type">
-                                        <SelectValue placeholder="Selecciona el tipo de partido" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="friendly">
-                                            Amistoso
-                                        </SelectItem>
-                                        <SelectItem value="competitive">
-                                            Competitivo
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {errors.match_type && (
-                                    <p className="text-sm text-destructive">
-                                        {errors.match_type}
                                     </p>
                                 )}
                             </div>

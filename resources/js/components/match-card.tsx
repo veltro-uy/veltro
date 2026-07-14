@@ -25,7 +25,6 @@ interface Match {
     variant: string;
     scheduled_at: string | null;
     location: string | null;
-    match_type: string;
     status: string;
     home_score?: number;
     away_score?: number;
@@ -180,19 +179,11 @@ export function MatchCard({ match }: MatchCardProps) {
                         <span>{formatTime(match.scheduled_at)}</span>
                     </div>
                 </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="flex items-center text-sm text-muted-foreground">
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                         <MapPin className="h-4 w-4 flex-shrink-0" />
                         <span className="line-clamp-1">
                             {match.location ?? 'Por definir'}
-                        </span>
-                    </div>
-                    <div className="flex flex-shrink-0 items-center gap-2">
-                        <Trophy className="h-4 w-4" />
-                        <span>
-                            {match.match_type === 'friendly'
-                                ? 'Amistoso'
-                                : 'Competitivo'}
                         </span>
                     </div>
                 </div>

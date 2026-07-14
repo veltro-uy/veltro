@@ -53,7 +53,6 @@ function createMatch(array $overrides = []): FootballMatch
         'variant' => 'football_11',
         'scheduled_at' => now()->addDays(3),
         'location' => 'Test Field',
-        'match_type' => 'friendly',
         'status' => 'available',
         'created_by' => test()->homeCaptain->id,
     ], $overrides));
@@ -69,7 +68,6 @@ test('team leader can create a match', function () {
             'team_id' => $this->homeTeam->id,
             'scheduled_at' => now()->addDays(5)->toDateTimeString(),
             'location' => 'Stadium A',
-            'match_type' => 'friendly',
         ])
         ->assertRedirect()
         ->assertSessionHasNoErrors();
@@ -89,7 +87,6 @@ test('non-leader cannot create a match', function () {
             'team_id' => $this->homeTeam->id,
             'scheduled_at' => now()->addDays(5)->toDateTimeString(),
             'location' => 'Stadium A',
-            'match_type' => 'friendly',
         ])
         ->assertSessionHas('error');
 
@@ -105,7 +102,6 @@ test('match creation requires future scheduled_at', function () {
             'team_id' => $this->homeTeam->id,
             'scheduled_at' => now()->subDay()->toDateTimeString(),
             'location' => 'Stadium A',
-            'match_type' => 'friendly',
         ])
         ->assertSessionHasErrors('scheduled_at');
 });
@@ -113,18 +109,7 @@ test('match creation requires future scheduled_at', function () {
 test('match creation validates required fields', function () {
     $this->actingAs($this->homeCaptain)
         ->post(route('matches.store'), [])
-        ->assertSessionHasErrors(['team_id', 'scheduled_at', 'location', 'match_type']);
-});
-
-test('match creation rejects invalid match_type', function () {
-    $this->actingAs($this->homeCaptain)
-        ->post(route('matches.store'), [
-            'team_id' => $this->homeTeam->id,
-            'scheduled_at' => now()->addDays(5)->toDateTimeString(),
-            'location' => 'Stadium A',
-            'match_type' => 'exhibition',
-        ])
-        ->assertSessionHasErrors('match_type');
+        ->assertSessionHasErrors(['team_id', 'scheduled_at', 'location']);
 });
 
 test('authenticated user can view matches index', function () {
@@ -202,14 +187,12 @@ test('home team leader can update match', function () {
         ->put(route('matches.update', $match->id), [
             'scheduled_at' => now()->addDays(7)->toDateTimeString(),
             'location' => 'New Field',
-            'match_type' => 'competitive',
         ])
         ->assertRedirect();
 
     $this->assertDatabaseHas('matches', [
         'id' => $match->id,
         'location' => 'New Field',
-        'match_type' => 'competitive',
     ]);
 });
 
@@ -220,7 +203,6 @@ test('away team leader cannot update match', function () {
         ->put(route('matches.update', $match->id), [
             'scheduled_at' => now()->addDays(7)->toDateTimeString(),
             'location' => 'Hijacked Field',
-            'match_type' => 'friendly',
         ])
         ->assertForbidden();
 });
@@ -232,7 +214,6 @@ test('non-leader cannot update match', function () {
         ->put(route('matches.update', $match->id), [
             'scheduled_at' => now()->addDays(7)->toDateTimeString(),
             'location' => 'Hijacked Field',
-            'match_type' => 'friendly',
         ])
         ->assertForbidden();
 });
