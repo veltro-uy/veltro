@@ -37,7 +37,6 @@ final class FootballMatch extends Model
         'scheduled_at',
         'location',
         'location_coords',
-        'match_type',
         'status',
         'home_score',
         'away_score',

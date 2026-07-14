@@ -44,7 +44,6 @@ final class MatchService
                 'scheduled_at' => $data['scheduled_at'],
                 'location' => $data['location'],
                 'location_coords' => $data['location_coords'] ?? null,
-                'match_type' => $data['match_type'] ?? 'friendly',
                 'status' => 'available',
                 'home_score' => 0,
                 'away_score' => 0,

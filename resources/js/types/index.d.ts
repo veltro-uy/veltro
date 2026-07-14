@@ -371,7 +371,6 @@ export interface FootballMatch {
     scheduled_at: string | null;
     location: string | null;
     location_coords?: string;
-    match_type: string;
     status: string;
     home_score?: number;
     away_score?: number;

@@ -35,7 +35,6 @@ test('user can commend another user they have played with', function () {
         'variant' => 'football_11',
         'scheduled_at' => now()->addDay(),
         'location' => 'Stadium',
-        'match_type' => 'friendly',
         'status' => 'confirmed',
         'created_by' => $user1->id,
     ]);
@@ -91,7 +90,6 @@ test('user cannot commend same user twice in same category', function () {
         'variant' => 'football_11',
         'scheduled_at' => now()->addDay(),
         'location' => 'Stadium',
-        'match_type' => 'friendly',
         'status' => 'confirmed',
         'created_by' => $user1->id,
     ]);
@@ -141,7 +139,6 @@ test('user can commend different categories', function () {
         'variant' => 'football_11',
         'scheduled_at' => now()->addDay(),
         'location' => 'Stadium',
-        'match_type' => 'friendly',
         'status' => 'confirmed',
         'created_by' => $user1->id,
     ]);

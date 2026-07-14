@@ -24,7 +24,6 @@ class FootballMatchFactory extends Factory
             'variant' => fake()->randomElement(['football_11', 'football_7', 'football_5', 'futsal']),
             'scheduled_at' => now()->addDays(7),
             'location' => fake()->address(),
-            'match_type' => 'friendly',
             'status' => 'available',
             'created_by' => User::factory(),
         ];

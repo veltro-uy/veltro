@@ -59,7 +59,6 @@ beforeEach(function () {
         'variant' => 'football_11',
         'scheduled_at' => now()->subHour(),
         'location' => 'Test Field',
-        'match_type' => 'friendly',
         'status' => 'confirmed',
         'confirmed_at' => now()->subDays(1),
         'home_score' => 0,
