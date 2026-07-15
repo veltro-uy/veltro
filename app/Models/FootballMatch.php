@@ -233,6 +233,21 @@ final class FootballMatch extends Model
     }
 
     /**
+     * Check whether a user may manage this match's results (score, goals,
+     * cards, completion, lineups). For tournament matches this is the
+     * tournament organizer only; for friendly matches it is either team's
+     * leader, matching the historic behaviour.
+     */
+    public function canManage(int $userId): bool
+    {
+        if ($this->isTournamentMatch()) {
+            return $this->tournament?->isOrganizer($userId) ?? false;
+        }
+
+        return $this->isTeamLeader($userId);
+    }
+
+    /**
      * Check if a user is a leader of the home team.
      * Uses loaded team members if available to avoid additional queries.
      */

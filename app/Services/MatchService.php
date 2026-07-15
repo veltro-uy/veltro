@@ -115,8 +115,13 @@ final class MatchService
      */
     public function cancelMatch(FootballMatch $match, int $userId): bool
     {
-        // Only home team leader can cancel before confirmation
-        if (! $match->isHomeTeamLeader($userId)) {
+        // Tournament matches are cancelled by the organizer; friendly matches
+        // by the home team leader.
+        if ($match->isTournamentMatch()) {
+            if (! $match->tournament?->isOrganizer($userId)) {
+                throw new \Exception('Only the tournament organizer can cancel this match');
+            }
+        } elseif (! $match->isHomeTeamLeader($userId)) {
             throw new \Exception('Only the home team leader can cancel this match');
         }
 
@@ -570,6 +575,7 @@ final class MatchService
             'awayTeam',
             'creator',
             'matchRequests.requestingTeam',
+            'tournament',
         ])->find($matchId);
     }
 
@@ -654,8 +660,13 @@ final class MatchService
         $event = MatchEvent::findOrFail($eventId);
         $match = $event->match;
 
-        // Verify user is a leader of the team
-        if ($event->team_id === $match->home_team_id) {
+        // Tournament matches: only the organizer may delete events. Friendly
+        // matches: the leader of the team that owns the event (unchanged).
+        if ($match->isTournamentMatch()) {
+            if (! $match->tournament?->isOrganizer($userId)) {
+                throw new \Exception('Only the tournament organizer can delete this event');
+            }
+        } elseif ($event->team_id === $match->home_team_id) {
             if (! $match->isHomeTeamLeader($userId)) {
                 throw new \Exception('Only team leaders can delete events');
             }

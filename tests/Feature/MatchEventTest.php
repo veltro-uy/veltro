@@ -275,7 +275,7 @@ test('non-leader cannot record events', function () {
             'team_id' => $this->homeTeam->id,
             'event_type' => 'goal',
         ])
-        ->assertSessionHas('error');
+        ->assertForbidden();
 
     $this->assertDatabaseMissing('match_events', [
         'match_id' => $this->match->id,
@@ -290,7 +290,7 @@ test('outsider cannot record events', function () {
             'team_id' => $this->homeTeam->id,
             'event_type' => 'goal',
         ])
-        ->assertSessionHas('error');
+        ->assertForbidden();
 
     $this->assertDatabaseMissing('match_events', [
         'match_id' => $this->match->id,

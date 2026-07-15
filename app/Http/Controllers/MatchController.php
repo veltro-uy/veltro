@@ -142,6 +142,16 @@ final class MatchController extends Controller
         $isAwayLeader = $match->away_team_id ? $match->isAwayTeamLeader($user->id) : false;
         $isLeader = $isHomeLeader || $isAwayLeader;
 
+        // For tournament matches the organizer is the sole manager of results,
+        // goals and lineups — reuse the existing leader flags so the frontend
+        // gating shows management controls to the organizer only.
+        if ($match->isTournamentMatch()) {
+            $isOrganizer = (bool) $match->tournament?->isOrganizer($user->id);
+            $isHomeLeader = $isOrganizer;
+            $isAwayLeader = $isOrganizer;
+            $isLeader = $isOrganizer;
+        }
+
         // Get user's teams that can request this match
         $eligibleTeams = [];
         if ($match->isAvailable()) {
@@ -312,6 +322,20 @@ final class MatchController extends Controller
     }
 
     /**
+     * Determine whether the user may reschedule/cancel a match. Tournament
+     * matches are managed by the organizer; friendly matches by the home
+     * team leader.
+     */
+    private function canSchedule(FootballMatch $match, int $userId): bool
+    {
+        if ($match->isTournamentMatch()) {
+            return (bool) $match->tournament?->isOrganizer($userId);
+        }
+
+        return $match->isHomeTeamLeader($userId);
+    }
+
+    /**
      * Show the form for editing the match.
      */
     public function edit(int $id): Response|RedirectResponse
@@ -319,7 +343,7 @@ final class MatchController extends Controller
         $match = FootballMatch::with(['homeTeam'])->findOrFail($id);
         $user = Auth::user();
 
-        if (! $match->isHomeTeamLeader($user->id)) {
+        if (! $this->canSchedule($match, $user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -341,7 +365,7 @@ final class MatchController extends Controller
         $match = FootballMatch::findOrFail($id);
         $user = Auth::user();
 
-        if (! $match->isHomeTeamLeader($user->id)) {
+        if (! $this->canSchedule($match, $user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -448,7 +472,7 @@ final class MatchController extends Controller
         $match = FootballMatch::findOrFail($id);
         $user = Auth::user();
 
-        if (! $match->isTeamLeader($user->id)) {
+        if (! $match->canManage($user->id)) {
             abort(403, 'No autorizado');
         }
 
@@ -484,7 +508,7 @@ final class MatchController extends Controller
         $match = FootballMatch::findOrFail($id);
         $user = Auth::user();
 
-        if (! $match->isTeamLeader($user->id)) {
+        if (! $match->canManage($user->id)) {
             abort(403, 'No autorizado');
         }
 

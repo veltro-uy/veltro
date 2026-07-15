@@ -20,26 +20,53 @@ final class MatchLineupController extends Controller
     /**
      * Show the lineup form for a team in a match.
      */
-    public function edit(int $matchId): Response
+    public function edit(Request $request, int $matchId): Response
     {
         $match = FootballMatch::with([
             'homeTeam.teamMembers.user',
             'awayTeam.teamMembers.user',
+            'tournament',
             'lineups',
         ])->findOrFail($matchId);
 
         $user = Auth::user();
 
-        // Determine which team the user can manage lineup for
-        $isHomeLeader = $match->isHomeTeamLeader($user->id);
-        $isAwayLeader = $match->away_team_id ? $match->isAwayTeamLeader($user->id) : false;
+        // Determine which teams the user can manage a lineup for. Tournament
+        // matches: the organizer manages both teams. Friendly matches: a leader
+        // manages their own team only.
+        $manageableTeams = collect();
 
-        if (! $isHomeLeader && ! $isAwayLeader) {
-            abort(403, 'No autorizado');
+        if ($match->isTournamentMatch()) {
+            if (! $match->tournament?->isOrganizer($user->id)) {
+                abort(403, 'No autorizado');
+            }
+            $manageableTeams->push($match->homeTeam);
+            if ($match->awayTeam) {
+                $manageableTeams->push($match->awayTeam);
+            }
+        } else {
+            if ($match->isHomeTeamLeader($user->id)) {
+                $manageableTeams->push($match->homeTeam);
+            }
+            if ($match->away_team_id && $match->isAwayTeamLeader($user->id)) {
+                $manageableTeams->push($match->awayTeam);
+            }
+
+            if ($manageableTeams->isEmpty()) {
+                abort(403, 'No autorizado');
+            }
         }
 
-        // Get the team the user can manage
-        $team = $isHomeLeader ? $match->homeTeam : $match->awayTeam;
+        // Resolve the team currently being edited from ?team=, defaulting to the
+        // first manageable team. Reject a team the user cannot manage.
+        $requestedTeamId = $request->integer('team');
+        $team = $requestedTeamId
+            ? $manageableTeams->firstWhere('id', $requestedTeamId)
+            : $manageableTeams->first();
+
+        if (! $team) {
+            abort(403, 'No autorizado');
+        }
 
         // Get current lineup for this team
         $currentLineup = $match->lineups()
@@ -50,6 +77,11 @@ final class MatchLineupController extends Controller
         return Inertia::render('matches/lineup', [
             'match' => $match,
             'team' => $team,
+            'teams' => $manageableTeams->map(fn ($t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+            ])->values(),
+            'currentTeamId' => $team->id,
             'currentLineup' => $currentLineup,
             'minimumPlayers' => $match->getMinimumPlayers(),
         ]);
@@ -72,10 +104,22 @@ final class MatchLineupController extends Controller
             'players.*.is_substitute' => ['required', 'boolean'],
         ]);
 
-        // Verify user is leader of the team
-        $team = \App\Models\Team::findOrFail((int) $validated['team_id']);
-        if (! $team->isLeader($user->id)) {
-            abort(403, 'No autorizado');
+        $teamId = (int) $validated['team_id'];
+
+        // Tournament matches: only the organizer may set lineups, and the team
+        // must be part of the match. Friendly matches: the team's own leader.
+        if ($match->isTournamentMatch()) {
+            if (! $match->tournament?->isOrganizer($user->id)) {
+                abort(403, 'No autorizado');
+            }
+            if (! in_array($teamId, array_filter([$match->home_team_id, $match->away_team_id]), true)) {
+                abort(403, 'No autorizado');
+            }
+        } else {
+            $team = \App\Models\Team::findOrFail($teamId);
+            if (! $team->isLeader($user->id)) {
+                abort(403, 'No autorizado');
+            }
         }
 
         try {
