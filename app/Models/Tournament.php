@@ -46,6 +46,7 @@ final class Tournament extends Model
      */
     protected $appends = [
         'logo_url',
+        'is_registration_open',
     ];
 
     /**
@@ -176,6 +177,16 @@ final class Tournament extends Model
     public function isOrganizer(int $userId): bool
     {
         return $this->organizer_id === $userId;
+    }
+
+    /**
+     * Authoritative "registration is open" flag for the frontend. Combines the
+     * status with the deadline so the UI never has to re-derive it from the raw
+     * status (which stays `registration_open` even after the deadline passes).
+     */
+    public function getIsRegistrationOpenAttribute(): bool
+    {
+        return $this->isRegistrationOpen();
     }
 
     /**

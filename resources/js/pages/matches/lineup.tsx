@@ -61,6 +61,8 @@ interface LineupPlayer {
 interface Props {
     match: Match;
     team: Team;
+    teams: { id: number; name: string }[];
+    currentTeamId: number;
     currentLineup: LineupPlayer[];
     minimumPlayers: number;
 }
@@ -68,6 +70,8 @@ interface Props {
 export default function Lineup({
     match,
     team,
+    teams,
+    currentTeamId,
     currentLineup,
     minimumPlayers,
 }: Props) {
@@ -164,6 +168,30 @@ export default function Lineup({
                         alineación titular
                     </p>
                 </div>
+
+                {teams.length > 1 && (
+                    <div className="flex flex-wrap gap-2">
+                        {teams.map((t) => (
+                            <Button
+                                key={t.id}
+                                variant={
+                                    t.id === currentTeamId
+                                        ? 'default'
+                                        : 'outline'
+                                }
+                                onClick={() =>
+                                    router.visit(
+                                        matches.lineup.edit(match.id, {
+                                            query: { team: t.id },
+                                        }).url,
+                                    )
+                                }
+                            >
+                                {t.name}
+                            </Button>
+                        ))}
+                    </div>
+                )}
 
                 <Card className="max-w-3xl">
                     <CardHeader>

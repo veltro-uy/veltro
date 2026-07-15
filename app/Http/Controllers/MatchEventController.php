@@ -29,16 +29,25 @@ final class MatchEventController extends Controller
             'description' => ['nullable', 'string', 'max:500'],
         ]);
 
-        try {
-            $match = FootballMatch::findOrFail($validated['match_id']);
-            $user = Auth::user();
+        $match = FootballMatch::findOrFail($validated['match_id']);
+        $user = Auth::user();
 
-            // Verify user is a leader of the team
+        // Tournament matches: only the organizer may record events. Friendly
+        // matches: the leader of the team the event is attributed to (unchanged
+        // behaviour). Authorized outside the try/catch so a 403 is returned
+        // instead of being swallowed into a redirect.
+        if ($match->isTournamentMatch()) {
+            if (! $match->tournament?->isOrganizer($user->id)) {
+                abort(403, 'No autorizado');
+            }
+        } else {
             $team = \App\Models\Team::findOrFail((int) $validated['team_id']);
             if (! $team->isLeader($user->id)) {
                 abort(403, 'No autorizado');
             }
+        }
 
+        try {
             $this->matchService->recordEvent($match, (int) $validated['team_id'], $validated);
 
             return back()->with('success', '¡Evento registrado exitosamente!');

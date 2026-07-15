@@ -358,6 +358,17 @@ export function MatchHero({
                                 />
                             )}
                     </div>
+
+                    {!isLeader &&
+                        match.tournament_id != null &&
+                        (match.status === 'confirmed' ||
+                            match.status === 'in_progress' ||
+                            match.status === 'completed') && (
+                            <p className="mt-4 text-center text-sm text-muted-foreground">
+                                Solo el organizador del torneo puede gestionar
+                                el resultado de este partido.
+                            </p>
+                        )}
                 </div>
             </div>
 
