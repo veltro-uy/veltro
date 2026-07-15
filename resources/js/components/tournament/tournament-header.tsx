@@ -3,10 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { VariantBadge } from '@/components/variant-badge';
 import { formatDate } from '@/lib/datetime';
-import {
-    TOURNAMENT_STATUS_META,
-    tournamentFormatLabel,
-} from '@/lib/tournament';
+import { tournamentFormatLabel, tournamentStatusMeta } from '@/lib/tournament';
 import tournaments from '@/routes/tournaments';
 import type { Tournament } from '@/types';
 import { Link } from '@inertiajs/react';
@@ -45,7 +42,7 @@ export function TournamentHeader({
     onCancel: () => void;
     onDelete: () => void;
 }) {
-    const status = TOURNAMENT_STATUS_META[tournament.status];
+    const status = tournamentStatusMeta(tournament);
 
     return (
         <div className="relative overflow-hidden rounded-2xl border border-border">

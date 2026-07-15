@@ -71,6 +71,36 @@ export function formatDate(
     });
 }
 
+/**
+ * Whole calendar days from today until `value`, counted in the app timezone.
+ * Unlike a raw millisecond diff, a target later *today* returns 0 (not 1), so
+ * "cierra hoy" reads correctly instead of rounding up to "mañana". Negative
+ * when the target day is in the past.
+ */
+export function calendarDaysUntil(value: string | null | undefined): number {
+    if (!value) return 0;
+
+    const target = new Date(value);
+    if (Number.isNaN(target.getTime())) return 0;
+
+    // Midnight-UTC anchor for a date's calendar day *as seen in the app tz*, so
+    // the subtraction is a pure day count free of DST/offset drift.
+    const dayAnchor = (date: Date): number => {
+        const [year, month, day] = new Intl.DateTimeFormat('en-CA', {
+            timeZone: APP_TIME_ZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        })
+            .format(date)
+            .split('-')
+            .map(Number);
+        return Date.UTC(year, month - 1, day);
+    };
+
+    return Math.round((dayAnchor(target) - dayAnchor(new Date())) / 86_400_000);
+}
+
 /** Format an instant as a time (HH:mm) in the app timezone. */
 export function formatTime(
     value: string | null | undefined,

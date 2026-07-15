@@ -26,11 +26,11 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { UserAvatar } from '@/components/user-avatar';
 import AppLayout from '@/layouts/app-layout';
-import { formatDate, formatDateTime } from '@/lib/datetime';
+import { calendarDaysUntil, formatDate, formatDateTime } from '@/lib/datetime';
 import {
-    TOURNAMENT_STATUS_META,
     tournamentCapacityColor,
     tournamentFormatLabel,
+    tournamentStatusMeta,
 } from '@/lib/tournament';
 import { cn } from '@/lib/utils';
 import teams from '@/routes/teams';
@@ -121,13 +121,6 @@ function SidebarLabel({
             <span className="text-sm font-medium">{children}</span>
         </div>
     );
-}
-
-function daysUntil(date: string): number {
-    const now = new Date();
-    const target = new Date(date);
-    const diffMs = target.getTime() - now.getTime();
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
 
 function formatCountdown(prefix: string, days: number): string {
@@ -282,7 +275,7 @@ export default function TournamentShow({
     };
 
     const canUserRegister =
-        tournament.status === 'registration_open' &&
+        tournament.is_registration_open === true &&
         userTeams.length > 0 &&
         !tournament.tournament_teams.some(
             (tt) =>
@@ -310,23 +303,20 @@ export default function TournamentShow({
         tournament.rounds.length > 0;
 
     let countdownLabel: string | null = null;
-    if (
-        tournament.status === 'registration_open' &&
-        tournament.registration_deadline
-    ) {
+    if (tournament.is_registration_open && tournament.registration_deadline) {
         countdownLabel = formatCountdown(
             'Inscripción cierra',
-            daysUntil(tournament.registration_deadline),
+            calendarDaysUntil(tournament.registration_deadline),
         );
     } else if (tournament.status === 'draft' && tournament.starts_at) {
         countdownLabel = formatCountdown(
             'Comienza',
-            daysUntil(tournament.starts_at),
+            calendarDaysUntil(tournament.starts_at),
         );
     } else if (tournament.status === 'in_progress' && tournament.ends_at) {
         countdownLabel = formatCountdown(
             'Finaliza',
-            daysUntil(tournament.ends_at),
+            calendarDaysUntil(tournament.ends_at),
         );
     }
 
@@ -404,7 +394,7 @@ export default function TournamentShow({
                             Estado
                         </p>
                         <p className="mt-1 text-lg font-semibold tracking-tight">
-                            {TOURNAMENT_STATUS_META[tournament.status].label}
+                            {tournamentStatusMeta(tournament).label}
                         </p>
                     </div>
 
@@ -1106,7 +1096,7 @@ export default function TournamentShow({
                                 </div>
                             )}
 
-                        {tournament.status === 'registration_open' &&
+                        {tournament.is_registration_open &&
                             !canUserRegister &&
                             !userRegistration &&
                             userTeams.length === 0 && (
@@ -1127,6 +1117,24 @@ export default function TournamentShow({
                                                 Ver Mis Equipos
                                             </Button>
                                         </Link>
+                                    </div>
+                                </div>
+                            )}
+
+                        {tournament.status === 'registration_open' &&
+                            !tournament.is_registration_open &&
+                            !userRegistration && (
+                                <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
+                                    <Info className="mt-0.5 size-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            Inscripción cerrada
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            El plazo de inscripción finalizó. El
+                                            organizador iniciará el torneo
+                                            próximamente.
+                                        </p>
                                     </div>
                                 </div>
                             )}

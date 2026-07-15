@@ -3,7 +3,7 @@
  * coloring in one place so the index cards, the detail hero, and any future
  * surface read as one system (mirrors the approach in `lib/variants.ts`).
  */
-import type { TournamentStatus } from '@/types';
+import type { Tournament, TournamentStatus } from '@/types';
 
 export interface TournamentStatusMeta {
     label: string;
@@ -43,6 +43,32 @@ export const TOURNAMENT_STATUS_META: Record<
         dotClassName: 'bg-destructive',
     },
 };
+
+/** Badge metadata to show when registration has closed by its deadline. */
+const REGISTRATION_CLOSED_META: TournamentStatusMeta = {
+    label: 'Inscripción cerrada',
+    badgeClassName: 'bg-muted text-muted-foreground',
+    dotClassName: 'bg-muted-foreground',
+};
+
+/**
+ * Status metadata for display. When a tournament's status is still
+ * `registration_open` but its deadline has passed (`is_registration_open` is
+ * false), show "Inscripción cerrada" instead of the misleading open label — the
+ * status column only flips when the organizer starts the tournament.
+ */
+export function tournamentStatusMeta(
+    tournament: Pick<Tournament, 'status' | 'is_registration_open'>,
+): TournamentStatusMeta {
+    if (
+        tournament.status === 'registration_open' &&
+        tournament.is_registration_open === false
+    ) {
+        return REGISTRATION_CLOSED_META;
+    }
+
+    return TOURNAMENT_STATUS_META[tournament.status];
+}
 
 /** Human label for a tournament format. */
 export const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {

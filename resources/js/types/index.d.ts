@@ -319,6 +319,8 @@ export interface Tournament {
     min_teams: number;
     registered_teams_count?: number;
     registration_deadline?: string;
+    /** Authoritative: status is registration_open AND deadline not yet passed. */
+    is_registration_open?: boolean;
     starts_at?: string;
     ends_at?: string;
     created_at: string;

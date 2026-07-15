@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VariantBadge } from '@/components/variant-badge';
 import { formatDate } from '@/lib/datetime';
 import {
-    TOURNAMENT_STATUS_META,
     tournamentCapacityColor,
+    tournamentStatusMeta,
 } from '@/lib/tournament';
 import { cn } from '@/lib/utils';
 import tournaments from '@/routes/tournaments';
@@ -23,7 +23,7 @@ export const TournamentCard = ({
     tournament,
     className,
 }: TournamentCardProps) => {
-    const status = TOURNAMENT_STATUS_META[tournament.status];
+    const status = tournamentStatusMeta(tournament);
     const registered = tournament.registered_teams_count ?? 0;
     const max = tournament.max_teams;
     const pct =

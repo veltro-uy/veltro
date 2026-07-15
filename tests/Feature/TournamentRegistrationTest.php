@@ -387,3 +387,45 @@ test('re-registration after rejection succeeds', function () {
         'status' => 'pending', // invite_only -> pending
     ]);
 });
+
+// ── is_registration_open display flag ────────────────────────────────────────
+
+test('is_registration_open is true while open and before the deadline', function () {
+    $tournament = Tournament::factory()->create([
+        'status' => 'registration_open',
+        'registration_deadline' => now()->addDay(),
+    ]);
+
+    expect($tournament->is_registration_open)->toBeTrue()
+        ->and($tournament->toArray()['is_registration_open'])->toBeTrue();
+});
+
+test('is_registration_open is false once the deadline has passed even though status stays registration_open', function () {
+    $tournament = Tournament::factory()->create([
+        'status' => 'registration_open',
+        'registration_deadline' => now()->subMinute(),
+    ]);
+
+    // The raw status column is unchanged, but the display flag reflects reality.
+    expect($tournament->status)->toBe('registration_open')
+        ->and($tournament->is_registration_open)->toBeFalse();
+});
+
+test('the show page exposes the is_registration_open flag as a tournament prop', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $tournament = Tournament::factory()->create([
+        'organizer_id' => $user->id,
+        'visibility' => 'public',
+        'status' => 'registration_open',
+        'registration_deadline' => now()->subMinute(),
+    ]);
+
+    $this->actingAs($user);
+
+    $this->get("/tournaments/{$tournament->id}")
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('tournaments/show')
+            ->where('tournament.is_registration_open', false)
+        );
+});
