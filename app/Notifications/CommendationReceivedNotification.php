@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class CommendationReceivedNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use BuildsWebPush, Queueable;
 
     /**
      * Create a new notification instance.
@@ -29,7 +31,7 @@ class CommendationReceivedNotification extends Notification implements ShouldQue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', 'broadcast'];
+        return ['mail', 'database', 'broadcast', WebPushChannel::class];
     }
 
     /**

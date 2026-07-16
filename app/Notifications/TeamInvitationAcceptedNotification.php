@@ -6,13 +6,15 @@ namespace App\Notifications;
 
 use App\Models\TeamInvitation;
 use App\Models\User;
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class TeamInvitationAcceptedNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use BuildsWebPush, Queueable;
 
     public function __construct(
         public TeamInvitation $invitation,
@@ -21,7 +23,7 @@ class TeamInvitationAcceptedNotification extends Notification implements ShouldQ
 
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', WebPushChannel::class];
     }
 
     public function toDatabase(object $notifiable): array
