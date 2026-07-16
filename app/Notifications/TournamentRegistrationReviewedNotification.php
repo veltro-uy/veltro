@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\TournamentTeam;
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class TournamentRegistrationReviewedNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use BuildsWebPush, Queueable;
 
     public function __construct(
         public TournamentTeam $registration,
@@ -20,7 +22,7 @@ class TournamentRegistrationReviewedNotification extends Notification implements
 
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', WebPushChannel::class];
     }
 
     public function toDatabase(object $notifiable): array

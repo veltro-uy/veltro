@@ -6,14 +6,16 @@ namespace App\Notifications;
 
 use App\Models\FootballMatch;
 use App\Models\Team;
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class AvailabilityReminderNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use BuildsWebPush, Queueable;
 
     /**
      * Create a new notification instance.
@@ -30,7 +32,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', 'broadcast'];
+        return ['mail', 'database', 'broadcast', WebPushChannel::class];
     }
 
     /**

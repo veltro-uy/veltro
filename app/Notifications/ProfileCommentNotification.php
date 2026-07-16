@@ -6,15 +6,17 @@ namespace App\Notifications;
 
 use App\Models\ProfileComment;
 use App\Models\User;
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class ProfileCommentNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use BuildsWebPush, Queueable;
 
     /**
      * Create a new notification instance.
@@ -31,7 +33,7 @@ class ProfileCommentNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database', 'broadcast'];
+        return ['mail', 'database', 'broadcast', WebPushChannel::class];
     }
 
     /**

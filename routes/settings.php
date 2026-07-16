@@ -39,6 +39,10 @@ Route::middleware(['auth', 'onboarding'])->group(function () {
         return Inertia::render('settings/appearance');
     })->middleware('throttle:settings-read')->name('appearance.edit');
 
+    Route::get('settings/notifications', function () {
+        return Inertia::render('settings/notifications');
+    })->middleware('throttle:settings-read')->name('notifications.edit');
+
     Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
         ->middleware('throttle:settings-read')
         ->name('two-factor.show');

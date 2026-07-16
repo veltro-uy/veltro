@@ -49,3 +49,14 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Register the service worker that powers Web Push (and future offline work).
+// Guarded by feature detection so it silently no-ops in unsupported browsers.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            // Registration failures (e.g. insecure context) are non-fatal; the
+            // app still works, just without push.
+        });
+    });
+}

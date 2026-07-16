@@ -6,13 +6,15 @@ namespace App\Notifications;
 
 use App\Models\FootballMatch;
 use App\Models\Team;
+use App\Notifications\Concerns\BuildsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
 
 class MatchCancelledNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use BuildsWebPush, Queueable;
 
     /**
      * Create a new notification instance.
@@ -29,7 +31,7 @@ class MatchCancelledNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', WebPushChannel::class];
     }
 
     /**
