@@ -5,7 +5,7 @@
  * they return a state indicating push is unavailable rather than throwing.
  */
 
-import { store, destroy } from '@/routes/push/subscriptions';
+import { destroy, store } from '@/routes/push/subscriptions';
 
 export type PushState = {
     supported: boolean;

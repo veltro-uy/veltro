@@ -61,7 +61,9 @@ export default function Notifications() {
                 }
             }
         } catch {
-            toast.error('No se pudo actualizar la suscripción. Intentá de nuevo.');
+            toast.error(
+                'No se pudo actualizar la suscripción. Intentá de nuevo.',
+            );
         } finally {
             setLoading(false);
         }
@@ -129,8 +131,9 @@ export default function Notifications() {
                                     <AlertTitle>Permiso bloqueado</AlertTitle>
                                     <AlertDescription>
                                         Bloqueaste las notificaciones para este
-                                        sitio. Habilitalas desde la configuración
-                                        de tu navegador para poder activarlas.
+                                        sitio. Habilitalas desde la
+                                        configuración de tu navegador para poder
+                                        activarlas.
                                     </AlertDescription>
                                 </Alert>
                             )}
