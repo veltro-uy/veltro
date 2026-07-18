@@ -924,12 +924,15 @@ export default function Show({
                                                                     invitation.status,
                                                                 )}
                                                             </Badge>
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {formatRelativeExpiry(
-                                                                    invitation.expires_at,
-                                                                    nowMs,
-                                                                )}
-                                                            </span>
+                                                            {invitation.status ===
+                                                                'pending' && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {formatRelativeExpiry(
+                                                                        invitation.expires_at,
+                                                                        nowMs,
+                                                                    )}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         {invitation.inviter && (
                                                             <p className="text-xs text-muted-foreground">
