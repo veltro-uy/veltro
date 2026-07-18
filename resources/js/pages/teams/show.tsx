@@ -37,6 +37,7 @@ import {
     Mail,
     Shield,
     Star,
+    Trash2,
     UserPlus,
     Users,
     X,
@@ -202,6 +203,7 @@ export default function Show({
             (m.role === 'captain' || m.role === 'co_captain'),
     );
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [invitationToRevoke, setInvitationToRevoke] = useState<number | null>(
         null,
     );
@@ -330,6 +332,19 @@ export default function Show({
                 },
             },
         );
+    };
+
+    const handleDeleteTeam = () => {
+        router.delete(teams.destroy(team.id).url, {
+            onSuccess: () => {
+                setShowDeleteDialog(false);
+                toast.success('¡Equipo eliminado exitosamente!');
+            },
+            onError: () => {
+                setShowDeleteDialog(false);
+                toast.error('Error al eliminar el equipo');
+            },
+        });
     };
 
     // Sort members: Captain first, then Co-Captains, then Players
@@ -956,6 +971,39 @@ export default function Show({
                                     </div>
                                 </section>
                             )}
+
+                            {/* Danger zone — captain only */}
+                            {isCaptain && (
+                                <section>
+                                    <h2 className="font-display mb-3 flex items-center gap-2 text-sm font-bold tracking-[0.14em] text-destructive uppercase">
+                                        <Trash2 className="h-4 w-4" />
+                                        Zona de peligro
+                                    </h2>
+                                    <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0">
+                                            <p className="font-medium">
+                                                Eliminar equipo
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Esta acción es permanente y no
+                                                se puede deshacer. Se eliminarán
+                                                todos los miembros, solicitudes
+                                                y partidos del equipo.
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="destructive"
+                                            className="flex-shrink-0"
+                                            onClick={() =>
+                                                setShowDeleteDialog(true)
+                                            }
+                                        >
+                                            <Trash2 className="mr-1 h-4 w-4" />
+                                            Eliminar equipo
+                                        </Button>
+                                    </div>
+                                </section>
+                            )}
                         </TabsContent>
                     )}
                 </Tabs>
@@ -986,6 +1034,36 @@ export default function Show({
                                 className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
                             >
                                 Abandonar Equipo
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Delete Team Confirmation Dialog */}
+                <AlertDialog
+                    open={showDeleteDialog}
+                    onOpenChange={setShowDeleteDialog}
+                >
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Eliminar Equipo</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                ¿Estás seguro de que quieres eliminar{' '}
+                                <span className="font-semibold">
+                                    {team.name}
+                                </span>
+                                ? Esta acción es permanente y no se puede
+                                deshacer. Se eliminarán todos los miembros,
+                                solicitudes y partidos del equipo.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleDeleteTeam}
+                                className="text-destructive-foreground bg-destructive hover:bg-destructive/90"
+                            >
+                                Eliminar Equipo
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
