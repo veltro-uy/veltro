@@ -20,7 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import teams from '@/routes/teams';
 import { router } from '@inertiajs/react';
-import { Edit, Upload, X } from 'lucide-react';
+import { Edit, Trash2, Upload, X } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -37,9 +37,18 @@ interface TeamData {
 interface Props {
     team: TeamData;
     trigger?: ReactNode;
+    /** Whether the current user may delete the team (captain only). */
+    canDelete?: boolean;
+    /** Called when the user chooses to delete; parent shows the confirmation. */
+    onRequestDelete?: () => void;
 }
 
-export function EditTeamModal({ team, trigger }: Props) {
+export function EditTeamModal({
+    team,
+    trigger,
+    canDelete = false,
+    onRequestDelete,
+}: Props) {
     const [open, setOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -358,6 +367,43 @@ export function EditTeamModal({ team, trigger }: Props) {
                             {processing ? 'Guardando...' : 'Guardar Cambios'}
                         </Button>
                     </div>
+
+                    {/* Danger zone — captain only */}
+                    {canDelete && onRequestDelete && (
+                        <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5 rounded-md bg-destructive/10 p-2">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-1">
+                                    <p className="text-sm font-semibold">
+                                        Eliminar equipo
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Se eliminará el equipo con todos sus
+                                        miembros, solicitudes y partidos. Esta
+                                        acción es permanente y no se puede
+                                        deshacer.
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                className="mt-3 w-full"
+                                onClick={() => {
+                                    // Close this dialog first, then let the
+                                    // parent open the confirmation dialog to
+                                    // avoid stacked-modal focus issues.
+                                    setOpen(false);
+                                    setTimeout(() => onRequestDelete(), 0);
+                                }}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar equipo
+                            </Button>
+                        </div>
+                    )}
                 </form>
             </DialogContent>
         </Dialog>

@@ -405,7 +405,13 @@ export default function Show({
                                 />
                             )}
                             {isMember && canManage && (
-                                <EditTeamModal team={team} />
+                                <EditTeamModal
+                                    team={team}
+                                    canDelete={isCaptain}
+                                    onRequestDelete={() =>
+                                        setShowDeleteDialog(true)
+                                    }
+                                />
                             )}
                             {isMember && !isCaptain && (
                                 <Button
