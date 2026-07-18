@@ -18,7 +18,8 @@ class PurgeUser extends Command
      * @var string
      */
     protected $signature = 'user:purge {id : The ID of the user to permanently delete}
-                            {--dry-run : Show what would be deleted without deleting anything}';
+                            {--dry-run : Show what would be deleted without deleting anything}
+                            {--force : Skip the confirmation prompt (required in non-interactive consoles)}';
 
     /**
      * The console command description.
@@ -69,7 +70,8 @@ class PurgeUser extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->confirm('This is permanent and cannot be undone. Have you taken a DB backup and want to continue?')) {
+        if (! $this->option('force')
+            && ! $this->confirm('This is permanent and cannot be undone. Have you taken a DB backup and want to continue?')) {
             $this->info('Aborted.');
 
             return self::SUCCESS;
