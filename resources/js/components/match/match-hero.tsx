@@ -357,8 +357,8 @@ export function MatchHero({
                             match.status === 'in_progress' ||
                             match.status === 'completed') && (
                             <p className="text-center text-sm text-muted-foreground">
-                                Solo el organizador del torneo puede gestionar el
-                                resultado de este partido.
+                                Solo el organizador del torneo puede gestionar
+                                el resultado de este partido.
                             </p>
                         )}
                 </div>
