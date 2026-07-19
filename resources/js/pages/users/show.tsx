@@ -71,7 +71,7 @@ export default function Show({
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: user.name, href: `/jugadores/${user.id}` },
+        { title: user.name, href: `/jugadores/${user.public_id}` },
     ];
 
     return (

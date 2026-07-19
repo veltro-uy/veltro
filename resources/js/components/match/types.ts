@@ -5,6 +5,7 @@
 
 export interface MatchPageUser {
     id: number;
+    public_id: string;
     name: string;
 }
 
@@ -49,6 +50,7 @@ export interface OpposingTeamLeader {
     role: string;
     user: {
         id: number;
+        public_id: string;
         name: string;
         phone_number?: string;
     };
