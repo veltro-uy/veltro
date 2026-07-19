@@ -355,10 +355,10 @@ export function EditTeamModal({
                         )}
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex justify-end gap-3 border-t border-border pt-5">
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setOpen(false)}
                         >
                             Cancelar
@@ -367,44 +367,42 @@ export function EditTeamModal({
                             {processing ? 'Guardando...' : 'Guardar Cambios'}
                         </Button>
                     </div>
-
-                    {/* Danger zone — captain only */}
-                    {canDelete && onRequestDelete && (
-                        <div className="mt-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                            <div className="flex items-start gap-3">
-                                <div className="mt-0.5 rounded-md bg-destructive/10 p-2">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </div>
-                                <div className="min-w-0 flex-1 space-y-1">
-                                    <p className="text-sm font-semibold">
-                                        Eliminar equipo
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Se eliminará el equipo con todos sus
-                                        miembros, solicitudes y partidos. Esta
-                                        acción es permanente y no se puede
-                                        deshacer.
-                                    </p>
-                                </div>
-                            </div>
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                className="mt-3 w-full"
-                                onClick={() => {
-                                    // Close this dialog first, then let the
-                                    // parent open the confirmation dialog to
-                                    // avoid stacked-modal focus issues.
-                                    setOpen(false);
-                                    setTimeout(() => onRequestDelete(), 0);
-                                }}
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar equipo
-                            </Button>
-                        </div>
-                    )}
                 </form>
+
+                {/* Danger zone — captain only. Sits outside the form as a
+                    quiet, self-contained row so it reads as a separate,
+                    deliberate action rather than a second submit button. */}
+                {canDelete && onRequestDelete && (
+                    <div className="flex flex-col gap-3 rounded-lg border border-destructive/20 bg-destructive/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                        <div className="flex items-start gap-3">
+                            <Trash2 className="mt-0.5 h-4 w-4 shrink-0 text-destructive/70" />
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-medium">
+                                    Eliminar equipo
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Se borrarán sus miembros, solicitudes y
+                                    partidos. Es permanente e irreversible.
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full shrink-0 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground sm:w-auto"
+                            onClick={() => {
+                                // Close this dialog first, then let the parent
+                                // open the confirmation dialog to avoid
+                                // stacked-modal focus issues.
+                                setOpen(false);
+                                setTimeout(() => onRequestDelete(), 0);
+                            }}
+                        >
+                            Eliminar
+                        </Button>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );
