@@ -1,8 +1,6 @@
 import { CreateMatchRequestDialog } from '@/components/create-match-request-dialog';
-import { GoalScorersList } from '@/components/goal-scorers-list';
 import type {
     LineupPlayer,
-    MatchEvent,
     MatchPageMatch,
     MatchPageTeam,
 } from '@/components/match/types';
@@ -45,7 +43,6 @@ interface MatchHeroProps {
     eligibleTeams: MatchPageTeam[];
     homeLineup: LineupPlayer[];
     awayLineup: LineupPlayer[];
-    events: MatchEvent[];
     onCancelClick: () => void;
     onCompleteClick: () => void;
 }
@@ -58,7 +55,6 @@ export function MatchHero({
     eligibleTeams,
     homeLineup,
     awayLineup,
-    events,
     onCancelClick,
     onCompleteClick,
 }: MatchHeroProps) {
@@ -78,9 +74,6 @@ export function MatchHero({
         match.status === 'in_progress' ||
         match.status === 'completed';
 
-    const showScorers =
-        match.status === 'in_progress' || match.status === 'completed';
-
     const canRecord = (leader: boolean) =>
         leader && match.status !== 'completed' && matchHasStarted;
 
@@ -99,7 +92,7 @@ export function MatchHero({
                     </div>
 
                     {/* Scoreboard — home (local) left, away (visitante) right */}
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4">
+                    <div className="mx-auto grid w-full max-w-2xl grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4">
                         {/* Home team */}
                         <Link
                             href={`/teams/${match.home_team.id}`}
@@ -242,41 +235,6 @@ export function MatchHero({
                             </div>
                         )}
                     </div>
-
-                    {/* Scorers — symmetric row under each team */}
-                    {showScorers && (
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 md:gap-4">
-                            <GoalScorersList
-                                events={events}
-                                teamId={match.home_team.id}
-                                isLeader={isHomeLeader}
-                                alignment="right"
-                                matchStatus={match.status}
-                                onRecordGoal={() =>
-                                    setRecordGoalDialog({
-                                        open: true,
-                                        team: 'home',
-                                    })
-                                }
-                            />
-                            <span />
-                            {match.away_team && (
-                                <GoalScorersList
-                                    events={events}
-                                    teamId={match.away_team.id}
-                                    isLeader={isAwayLeader}
-                                    alignment="left"
-                                    matchStatus={match.status}
-                                    onRecordGoal={() =>
-                                        setRecordGoalDialog({
-                                            open: true,
-                                            team: 'away',
-                                        })
-                                    }
-                                />
-                            )}
-                        </div>
-                    )}
 
                     {/* Match info row */}
                     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t pt-4 text-sm">
