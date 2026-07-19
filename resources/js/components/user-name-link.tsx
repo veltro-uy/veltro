@@ -9,6 +9,12 @@ interface UserNameLinkProps {
 }
 
 export function UserNameLink({ user, className }: UserNameLinkProps) {
+    // Fall back to plain text if the profile identifier is missing, so a single
+    // under-serialized user can never crash the whole page.
+    if (!user?.public_id) {
+        return <span className={className}>{user?.name}</span>;
+    }
+
     return (
         <Link
             href={users.show(user).url}

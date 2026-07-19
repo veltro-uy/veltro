@@ -284,6 +284,7 @@ final class MatchController extends Controller
                 'updated_at' => $availability->updated_at,
                 'user' => $availability->user ? [
                     'id' => $availability->user->id,
+                    'public_id' => $availability->user->public_id,
                     'name' => $availability->user->name,
                     'avatar_url' => $availability->user->avatar_url,
                 ] : null,
