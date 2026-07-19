@@ -36,6 +36,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import matchRequests from '@/routes/match-requests';
 import matches from '@/routes/matches';
 import type {
@@ -175,13 +176,175 @@ export default function Show({
         );
     };
 
+    const isConfirmedOrLater =
+        match.status === 'confirmed' ||
+        match.status === 'in_progress' ||
+        match.status === 'completed';
+    const takesAvailability =
+        match.status === 'available' || match.status === 'confirmed';
+
+    // Whether the sidebar rail will hold anything. When it won't (e.g. a
+    // completed match viewed by a non-leader) we drop the reserved column and
+    // center the narrative instead of leaving a third of the page empty.
+    const hasAside =
+        (takesAvailability && userTeamId != null) ||
+        (isLeader && isConfirmedOrLater);
+
+    const mainContent = (
+        <>
+            {isHomeLeader &&
+                match.status === 'available' &&
+                match.match_requests &&
+                match.match_requests.length > 0 && (
+                    <MatchRequestsCard
+                        requests={match.match_requests}
+                        onAccept={handleAcceptRequest}
+                        onReject={handleRejectRequest}
+                    />
+                )}
+
+            {isConfirmedOrLater && (
+                <MatchTimeline
+                    events={events}
+                    homeTeam={match.home_team}
+                    awayTeam={match.away_team}
+                    isHomeLeader={isHomeLeader}
+                    isAwayLeader={isAwayLeader}
+                    matchStatus={match.status}
+                />
+            )}
+
+            {takesAvailability && (
+                <Deferred
+                    data={[
+                        'homeAvailabilityStats',
+                        'homeAvailability',
+                        'awayAvailabilityStats',
+                        'awayAvailability',
+                    ]}
+                    fallback={<AvailabilitySkeleton />}
+                >
+                    {homeAvailabilityStats && homeAvailability ? (
+                        <AvailabilityPanel
+                            homeTeam={{
+                                team: match.home_team,
+                                stats: homeAvailabilityStats,
+                                availability: homeAvailability,
+                                isLeader: isHomeLeader,
+                            }}
+                            awayTeam={
+                                match.away_team &&
+                                awayAvailabilityStats &&
+                                awayAvailability
+                                    ? {
+                                          team: match.away_team,
+                                          stats: awayAvailabilityStats,
+                                          availability: awayAvailability,
+                                          isLeader: isAwayLeader,
+                                      }
+                                    : undefined
+                            }
+                        />
+                    ) : null}
+                </Deferred>
+            )}
+
+            {isConfirmedOrLater &&
+                (homeLineup.length > 0 || awayLineup.length > 0) && (
+                    <MatchLineups
+                        homeTeamName={match.home_team.name}
+                        awayTeamName={match.away_team?.name}
+                        homeTeamLogoUrl={match.home_team.logo_url}
+                        awayTeamLogoUrl={match.away_team?.logo_url}
+                        homeLineup={homeLineup}
+                        awayLineup={awayLineup}
+                    />
+                )}
+        </>
+    );
+
+    const asideContent = (
+        <>
+            {takesAvailability && userTeamId && (
+                <AvailabilitySelector
+                    matchId={match.id}
+                    currentStatus={userAvailability ?? undefined}
+                />
+            )}
+
+            {isLeader && isConfirmedOrLater && (
+                <Deferred
+                    data="opposingTeamLeaders"
+                    fallback={<CardSkeleton />}
+                >
+                    {opposingTeamLeaders && opposingTeamLeaders.length > 0 ? (
+                        <OpposingLeadersCard leaders={opposingTeamLeaders} />
+                    ) : null}
+                </Deferred>
+            )}
+
+            {isLeader &&
+                (match.status === 'confirmed' ||
+                    match.status === 'in_progress') && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Gestión de Alineación</CardTitle>
+                            <CardDescription>
+                                Selecciona los jugadores para el partido
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <Button asChild className="w-full">
+                                <Link href={matches.lineup.edit(match.id).url}>
+                                    <Users className="mr-2 h-4 w-4" />
+                                    Gestionar Alineación
+                                </Link>
+                            </Button>
+                            {(homeLineup.length > 0 ||
+                                awayLineup.length > 0) && (
+                                <div className="space-y-1 rounded-lg border bg-muted/50 p-3">
+                                    {homeLineup.length > 0 && (
+                                        <p className="text-sm">
+                                            <span className="font-medium">
+                                                {match.home_team.name}:
+                                            </span>{' '}
+                                            <span className="text-muted-foreground">
+                                                {homeLineup.length} jugadores
+                                            </span>
+                                        </p>
+                                    )}
+                                    {awayLineup.length > 0 &&
+                                        match.away_team && (
+                                            <p className="text-sm">
+                                                <span className="font-medium">
+                                                    {match.away_team.name}:
+                                                </span>{' '}
+                                                <span className="text-muted-foreground">
+                                                    {awayLineup.length}{' '}
+                                                    jugadores
+                                                </span>
+                                            </p>
+                                        )}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+        </>
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head
                 title={`${match.home_team.name}${match.away_team ? ` vs ${match.away_team.name}` : ''}`}
             />
 
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
+            <div
+                className={cn(
+                    'mx-auto flex w-full flex-1 flex-col gap-6 p-4 md:p-6',
+                    hasAside ? 'max-w-6xl' : 'max-w-3xl',
+                )}
+            >
                 <MatchHero
                     match={match}
                     isHomeLeader={isHomeLeader}
@@ -190,185 +353,20 @@ export default function Show({
                     eligibleTeams={eligibleTeams}
                     homeLineup={homeLineup}
                     awayLineup={awayLineup}
-                    events={events}
                     onCancelClick={() => setShowCancelDialog(true)}
                     onCompleteClick={() => setShowCompleteDialog(true)}
                 />
 
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Main column — the match narrative */}
-                    <div className="space-y-6 lg:col-span-2">
-                        {isHomeLeader &&
-                            match.status === 'available' &&
-                            match.match_requests &&
-                            match.match_requests.length > 0 && (
-                                <MatchRequestsCard
-                                    requests={match.match_requests}
-                                    onAccept={handleAcceptRequest}
-                                    onReject={handleRejectRequest}
-                                />
-                            )}
-
-                        {(match.status === 'confirmed' ||
-                            match.status === 'in_progress' ||
-                            match.status === 'completed') && (
-                            <MatchTimeline
-                                events={events}
-                                homeTeamId={match.home_team.id}
-                            />
-                        )}
-
-                        {(match.status === 'confirmed' ||
-                            match.status === 'available') && (
-                            <Deferred
-                                data={[
-                                    'homeAvailabilityStats',
-                                    'homeAvailability',
-                                    'awayAvailabilityStats',
-                                    'awayAvailability',
-                                ]}
-                                fallback={<AvailabilitySkeleton />}
-                            >
-                                {homeAvailabilityStats && homeAvailability ? (
-                                    <AvailabilityPanel
-                                        homeTeam={{
-                                            team: match.home_team,
-                                            stats: homeAvailabilityStats,
-                                            availability: homeAvailability,
-                                            isLeader: isHomeLeader,
-                                        }}
-                                        awayTeam={
-                                            match.away_team &&
-                                            awayAvailabilityStats &&
-                                            awayAvailability
-                                                ? {
-                                                      team: match.away_team,
-                                                      stats: awayAvailabilityStats,
-                                                      availability:
-                                                          awayAvailability,
-                                                      isLeader: isAwayLeader,
-                                                  }
-                                                : undefined
-                                        }
-                                    />
-                                ) : null}
-                            </Deferred>
-                        )}
-
-                        {(match.status === 'confirmed' ||
-                            match.status === 'in_progress' ||
-                            match.status === 'completed') &&
-                            (homeLineup.length > 0 ||
-                                awayLineup.length > 0) && (
-                                <MatchLineups
-                                    homeTeamName={match.home_team.name}
-                                    awayTeamName={match.away_team?.name}
-                                    homeLineup={homeLineup}
-                                    awayLineup={awayLineup}
-                                />
-                            )}
+                {hasAside ? (
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <div className="space-y-6 lg:col-span-2">
+                            {mainContent}
+                        </div>
+                        <div className="space-y-6">{asideContent}</div>
                     </div>
-
-                    {/* Sidebar — personal tools & contact */}
-                    <div className="space-y-6">
-                        {(match.status === 'confirmed' ||
-                            match.status === 'available') &&
-                            userTeamId && (
-                                <AvailabilitySelector
-                                    matchId={match.id}
-                                    currentStatus={
-                                        userAvailability ?? undefined
-                                    }
-                                />
-                            )}
-
-                        {isLeader &&
-                            (match.status === 'confirmed' ||
-                                match.status === 'in_progress' ||
-                                match.status === 'completed') && (
-                                <Deferred
-                                    data="opposingTeamLeaders"
-                                    fallback={<CardSkeleton />}
-                                >
-                                    {opposingTeamLeaders &&
-                                    opposingTeamLeaders.length > 0 ? (
-                                        <OpposingLeadersCard
-                                            leaders={opposingTeamLeaders}
-                                        />
-                                    ) : null}
-                                </Deferred>
-                            )}
-
-                        {isLeader &&
-                            (match.status === 'confirmed' ||
-                                match.status === 'in_progress') && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>
-                                            Gestión de Alineación
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Selecciona los jugadores para el
-                                            partido
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3">
-                                        <Button asChild className="w-full">
-                                            <Link
-                                                href={
-                                                    matches.lineup.edit(
-                                                        match.id,
-                                                    ).url
-                                                }
-                                            >
-                                                <Users className="mr-2 h-4 w-4" />
-                                                Gestionar Alineación
-                                            </Link>
-                                        </Button>
-                                        {(homeLineup.length > 0 ||
-                                            awayLineup.length > 0) && (
-                                            <div className="space-y-1 rounded-lg border bg-muted/50 p-3">
-                                                {homeLineup.length > 0 && (
-                                                    <p className="text-sm">
-                                                        <span className="font-medium">
-                                                            {
-                                                                match.home_team
-                                                                    .name
-                                                            }
-                                                            :
-                                                        </span>{' '}
-                                                        <span className="text-muted-foreground">
-                                                            {homeLineup.length}{' '}
-                                                            jugadores
-                                                        </span>
-                                                    </p>
-                                                )}
-                                                {awayLineup.length > 0 &&
-                                                    match.away_team && (
-                                                        <p className="text-sm">
-                                                            <span className="font-medium">
-                                                                {
-                                                                    match
-                                                                        .away_team
-                                                                        .name
-                                                                }
-                                                                :
-                                                            </span>{' '}
-                                                            <span className="text-muted-foreground">
-                                                                {
-                                                                    awayLineup.length
-                                                                }{' '}
-                                                                jugadores
-                                                            </span>
-                                                        </p>
-                                                    )}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            )}
-                    </div>
-                </div>
+                ) : (
+                    <div className="space-y-6">{mainContent}</div>
+                )}
             </div>
 
             <AlertDialog
