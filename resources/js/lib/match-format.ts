@@ -1,4 +1,12 @@
 import { formatDate, formatTime } from '@/lib/datetime';
+import {
+    ArrowRightLeft,
+    Circle,
+    Footprints,
+    type LucideIcon,
+    RectangleVertical,
+    Target,
+} from 'lucide-react';
 
 export const getMatchStatusColor = (status: string): string => {
     switch (status) {
@@ -50,4 +58,59 @@ export const formatMatchTime = (dateString: string | null): string => {
         hour: 'numeric',
         minute: '2-digit',
     });
+};
+
+export interface EventVisual {
+    icon: LucideIcon;
+    label: string;
+    colorClass: string;
+}
+
+/**
+ * Maps a match `event_type` to the icon, Spanish label, and colour used to
+ * render it in the timeline. Covers every value of the `match_events`
+ * `event_type` enum; unknown types fall back to a neutral dot so the timeline
+ * never renders blank as new event types are added.
+ */
+export const getEventVisual = (eventType: string): EventVisual => {
+    switch (eventType) {
+        case 'goal':
+            return { icon: Target, label: 'Gol', colorClass: 'text-green-600' };
+        case 'assist':
+            return {
+                icon: Footprints,
+                label: 'Asistencia',
+                colorClass: 'text-blue-500',
+            };
+        case 'yellow_card':
+            return {
+                icon: RectangleVertical,
+                label: 'Tarjeta amarilla',
+                colorClass: 'text-yellow-500',
+            };
+        case 'red_card':
+            return {
+                icon: RectangleVertical,
+                label: 'Tarjeta roja',
+                colorClass: 'text-red-600',
+            };
+        case 'substitution_in':
+            return {
+                icon: ArrowRightLeft,
+                label: 'Entra',
+                colorClass: 'text-green-600',
+            };
+        case 'substitution_out':
+            return {
+                icon: ArrowRightLeft,
+                label: 'Sale',
+                colorClass: 'text-orange-500',
+            };
+        default:
+            return {
+                icon: Circle,
+                label: 'Evento',
+                colorClass: 'text-muted-foreground',
+            };
+    }
 };

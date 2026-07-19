@@ -6,7 +6,9 @@ import {
 } from '@/components/loading-skeletons';
 import { CompleteMatchDialog } from '@/components/match/complete-match-dialog';
 import { MatchHero } from '@/components/match/match-hero';
+import { MatchLineups } from '@/components/match/match-lineups';
 import { MatchRequestsCard } from '@/components/match/match-requests-card';
+import { MatchTimeline } from '@/components/match/match-timeline';
 import { OpposingLeadersCard } from '@/components/match/opposing-leaders-card';
 import type {
     LineupPlayer,
@@ -194,7 +196,7 @@ export default function Show({
                 />
 
                 <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Main column */}
+                    {/* Main column — the match narrative */}
                     <div className="space-y-6 lg:col-span-2">
                         {isHomeLeader &&
                             match.status === 'available' &&
@@ -207,36 +209,14 @@ export default function Show({
                                 />
                             )}
 
-                        {isLeader &&
-                            (match.status === 'confirmed' ||
-                                match.status === 'in_progress' ||
-                                match.status === 'completed') && (
-                                <Deferred
-                                    data="opposingTeamLeaders"
-                                    fallback={<CardSkeleton />}
-                                >
-                                    {opposingTeamLeaders &&
-                                    opposingTeamLeaders.length > 0 ? (
-                                        <OpposingLeadersCard
-                                            leaders={opposingTeamLeaders}
-                                        />
-                                    ) : null}
-                                </Deferred>
-                            )}
-                    </div>
-
-                    {/* Sidebar */}
-                    <div className="space-y-6">
                         {(match.status === 'confirmed' ||
-                            match.status === 'available') &&
-                            userTeamId && (
-                                <AvailabilitySelector
-                                    matchId={match.id}
-                                    currentStatus={
-                                        userAvailability ?? undefined
-                                    }
-                                />
-                            )}
+                            match.status === 'in_progress' ||
+                            match.status === 'completed') && (
+                            <MatchTimeline
+                                events={events}
+                                homeTeamId={match.home_team.id}
+                            />
+                        )}
 
                         {(match.status === 'confirmed' ||
                             match.status === 'available') && (
@@ -274,6 +254,50 @@ export default function Show({
                                 ) : null}
                             </Deferred>
                         )}
+
+                        {(match.status === 'confirmed' ||
+                            match.status === 'in_progress' ||
+                            match.status === 'completed') &&
+                            (homeLineup.length > 0 ||
+                                awayLineup.length > 0) && (
+                                <MatchLineups
+                                    homeTeamName={match.home_team.name}
+                                    awayTeamName={match.away_team?.name}
+                                    homeLineup={homeLineup}
+                                    awayLineup={awayLineup}
+                                />
+                            )}
+                    </div>
+
+                    {/* Sidebar — personal tools & contact */}
+                    <div className="space-y-6">
+                        {(match.status === 'confirmed' ||
+                            match.status === 'available') &&
+                            userTeamId && (
+                                <AvailabilitySelector
+                                    matchId={match.id}
+                                    currentStatus={
+                                        userAvailability ?? undefined
+                                    }
+                                />
+                            )}
+
+                        {isLeader &&
+                            (match.status === 'confirmed' ||
+                                match.status === 'in_progress' ||
+                                match.status === 'completed') && (
+                                <Deferred
+                                    data="opposingTeamLeaders"
+                                    fallback={<CardSkeleton />}
+                                >
+                                    {opposingTeamLeaders &&
+                                    opposingTeamLeaders.length > 0 ? (
+                                        <OpposingLeadersCard
+                                            leaders={opposingTeamLeaders}
+                                        />
+                                    ) : null}
+                                </Deferred>
+                            )}
 
                         {isLeader &&
                             (match.status === 'confirmed' ||
