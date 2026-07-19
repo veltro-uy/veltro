@@ -549,10 +549,10 @@ final class MatchService
      */
     public function getUserMatches(int $userId): Collection
     {
-        // Get teams where user is a leader
+        // Get teams the user is an active member of, regardless of role — every
+        // member (players included) should see their team's matches in history.
         $teamIds = Team::whereHas('teamMembers', function ($query) use ($userId) {
             $query->where('user_id', $userId)
-                ->whereIn('role', ['captain', 'co_captain'])
                 ->where('status', 'active');
         })->pluck('id');
 
