@@ -117,7 +117,11 @@ export function TournamentHeader({
                             size="sm"
                             className="gap-2"
                         >
-                            <Link href={tournaments.edit(tournament.id).url}>
+                            <Link
+                                href={
+                                    tournaments.edit(tournament.public_id).url
+                                }
+                            >
                                 <Edit className="size-4" />
                                 Editar
                             </Link>

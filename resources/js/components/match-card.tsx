@@ -20,6 +20,7 @@ interface Team {
 
 interface Match {
     id: number;
+    public_id: string;
     home_team_id: number;
     away_team_id?: number;
     variant: string;
@@ -189,7 +190,9 @@ export function MatchCard({ match }: MatchCardProps) {
                 </div>
 
                 <Button asChild variant="outline" className="mt-3 w-full">
-                    <Link href={matches.show(match.id).url}>Ver Detalles</Link>
+                    <Link href={matches.show(match.public_id).url}>
+                        Ver Detalles
+                    </Link>
                 </Button>
             </CardContent>
         </Card>

@@ -243,7 +243,7 @@ test('group standings appear in show endpoint props', function () {
     $this->actingAs($organizer);
 
     // groupStandings is a deferred prop, absent on the initial page load...
-    $response = $this->get("/tournaments/{$tournament->id}");
+    $response = $this->get("/tournaments/{$tournament->public_id}");
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('tournaments/show')
@@ -252,7 +252,7 @@ test('group standings appear in show endpoint props', function () {
 
     // ...and delivered by the follow-up deferred (partial) request.
     $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
-    $deferred = $this->get("/tournaments/{$tournament->id}", [
+    $deferred = $this->get("/tournaments/{$tournament->public_id}", [
         'X-Inertia' => 'true',
         'X-Inertia-Version' => $version,
         'X-Inertia-Partial-Component' => 'tournaments/show',

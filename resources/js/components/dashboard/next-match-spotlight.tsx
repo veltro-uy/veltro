@@ -194,7 +194,7 @@ export function NextMatchSpotlight({
 
             <div className="mt-6 flex justify-center">
                 <Button asChild>
-                    <Link href={matches.show(match.id).url}>
+                    <Link href={matches.show(match.public_id).url}>
                         Ver partido y confirmar disponibilidad
                     </Link>
                 </Button>

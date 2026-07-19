@@ -32,7 +32,7 @@ class CaptaincyTransferredNotification extends Notification implements ShouldQue
             'type' => 'captaincy_transferred',
             'title' => "Ahora sos capitán de {$teamName}",
             'message' => "Te transfirieron la capitanía de {$teamName}",
-            'action_url' => route('teams.show', $this->team->id),
+            'action_url' => route('teams.show', $this->team),
             'icon' => 'Crown',
             'related_model' => [
                 'team_id' => $this->team->id,

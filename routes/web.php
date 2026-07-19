@@ -41,7 +41,7 @@ Route::get('/jugadores/{user}', [UserController::class, 'show'])
     ->name('users.show');
 
 // API endpoint for modal/AJAX requests (kept for backward compatibility)
-Route::get('/api/users/{user}', [UserController::class, 'showApi'])
+Route::get('/api/users/{user:id}', [UserController::class, 'showApi'])
     ->middleware('throttle:profile-view')
     ->name('users.show.api');
 
@@ -53,24 +53,24 @@ Route::middleware(['auth', 'verified', 'throttle:settings-write'])->group(functi
 });
 
 // Commendations (public read, auth required for write)
-Route::get('/api/users/{user}/commendations', [UserCommendationController::class, 'index'])
+Route::get('/api/users/{user:id}/commendations', [UserCommendationController::class, 'index'])
     ->middleware('throttle:profile-view')
     ->name('users.commendations.index');
 
 Route::middleware(['auth', 'verified', 'throttle:settings-write'])->group(function () {
-    Route::post('/api/users/{user}/commendations', [UserCommendationController::class, 'store'])
+    Route::post('/api/users/{user:id}/commendations', [UserCommendationController::class, 'store'])
         ->name('users.commendations.store');
-    Route::delete('/api/users/{user}/commendations/{category}', [UserCommendationController::class, 'destroy'])
+    Route::delete('/api/users/{user:id}/commendations/{category}', [UserCommendationController::class, 'destroy'])
         ->name('users.commendations.destroy');
 });
 
 // Profile comments (public read, auth required for write)
-Route::get('/api/users/{user}/comments', [ProfileCommentController::class, 'index'])
+Route::get('/api/users/{user:id}/comments', [ProfileCommentController::class, 'index'])
     ->middleware('throttle:profile-view')
     ->name('users.comments.index');
 
 Route::middleware(['auth', 'verified', 'throttle:settings-write'])->group(function () {
-    Route::post('/api/users/{user}/comments', [ProfileCommentController::class, 'store'])
+    Route::post('/api/users/{user:id}/comments', [ProfileCommentController::class, 'store'])
         ->name('users.comments.store');
     Route::delete('/api/comments/{comment}', [ProfileCommentController::class, 'destroy'])
         ->name('comments.destroy');

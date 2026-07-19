@@ -128,7 +128,7 @@ export const TournamentCard = ({
                 </div>
 
                 <Button asChild variant="outline" className="mt-auto w-full">
-                    <Link href={tournaments.show(tournament.id).url}>
+                    <Link href={tournaments.show(tournament.public_id).url}>
                         Ver torneo
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>

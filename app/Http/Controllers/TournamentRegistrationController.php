@@ -41,7 +41,7 @@ final class TournamentRegistrationController extends Controller
                 ? 'Equipo registrado exitosamente'
                 : 'Solicitud de registro enviada. Esperando aprobación del organizador.';
 
-            return redirect()->route('tournaments.show', $tournament->id)
+            return redirect()->route('tournaments.show', $tournament)
                 ->with('success', $message);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             \Log::error('Tournament registration failed', [

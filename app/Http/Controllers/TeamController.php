@@ -78,16 +78,16 @@ final class TeamController extends Controller
             $this->teamService->updateTeamLogo($team, $request->file('logo'));
         }
 
-        return redirect()->route('teams.show', $team->id)
+        return redirect()->route('teams.show', $team)
             ->with('success', '¡Equipo creado exitosamente!');
     }
 
     /**
      * Display the specified team.
      */
-    public function show(int $id): Response
+    public function show(Team $team): Response
     {
-        $team = $this->teamService->getTeamWithDetails($id);
+        $team = $this->teamService->getTeamWithDetails($team->id);
 
         if (! $team) {
             abort(404);
@@ -153,7 +153,7 @@ final class TeamController extends Controller
             $this->teamService->removeTeamLogo($team);
         }
 
-        return redirect()->route('teams.show', $team->id)
+        return redirect()->route('teams.show', $team)
             ->with('success', '¡Equipo actualizado exitosamente!');
     }
 

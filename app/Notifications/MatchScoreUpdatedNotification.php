@@ -47,7 +47,7 @@ class MatchScoreUpdatedNotification extends Notification implements ShouldQueue
             'type' => 'match_score_updated',
             'title' => 'Resultado actualizado',
             'message' => "{$this->updatingTeam->name} actualizó el resultado a {$score}",
-            'action_url' => route('matches.show', $this->match->id),
+            'action_url' => route('matches.show', $this->match),
             'icon' => 'Target',
             'related_model' => [
                 'match_id' => $this->match->id,

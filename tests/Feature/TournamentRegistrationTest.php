@@ -422,7 +422,7 @@ test('the show page exposes the is_registration_open flag as a tournament prop',
 
     $this->actingAs($user);
 
-    $this->get("/tournaments/{$tournament->id}")
+    $this->get("/tournaments/{$tournament->public_id}")
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('tournaments/show')

@@ -57,6 +57,7 @@ function PublishMatchButton({ teams }: { teams: Team[] }) {
 }
 
 interface Match {
+    public_id: string;
     id: number;
     home_team_id: number;
     away_team_id?: number;

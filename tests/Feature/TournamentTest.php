@@ -208,7 +208,7 @@ test('show page renders tournament with correct props', function () {
 
     $this->actingAs($user);
 
-    $response = $this->get("/tournaments/{$tournament->id}");
+    $response = $this->get("/tournaments/{$tournament->public_id}");
 
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page
@@ -228,7 +228,7 @@ test('edit page accessible by organizer', function () {
 
     $this->actingAs($user);
 
-    $response = $this->get("/tournaments/{$tournament->id}/edit");
+    $response = $this->get("/tournaments/{$tournament->public_id}/edit");
 
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page

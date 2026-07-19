@@ -120,7 +120,7 @@ test('organizer can complete a tournament match', function () {
 test('organizer can set the lineup for both teams', function () {
     // GET the lineup page and confirm both teams are offered.
     $this->actingAs($this->organizer)
-        ->get(route('matches.lineup.edit', $this->match->id))
+        ->get(route('matches.lineup.edit', $this->match))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->has('teams', 2));
 
@@ -179,7 +179,7 @@ test('a competing team captain cannot complete a tournament match', function () 
 
 test('a competing team captain cannot open the lineup editor for a tournament match', function () {
     $this->actingAs($this->homeCaptain)
-        ->get(route('matches.lineup.edit', $this->match->id))
+        ->get(route('matches.lineup.edit', $this->match))
         ->assertForbidden();
 
     $player = $this->homeTeam->teamMembers()->where('role', 'player')->first();

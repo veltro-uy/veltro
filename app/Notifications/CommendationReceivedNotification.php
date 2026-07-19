@@ -53,7 +53,7 @@ class CommendationReceivedNotification extends Notification implements ShouldQue
             ->greeting("¡Hola {$notifiable->name}!")
             ->line("{$this->fromUser->name} te ha reconocido por tu {$categoryName}.")
             ->line('Este reconocimiento se agregó a tu perfil para que otros jugadores puedan verlo.')
-            ->action('Ver Mi Perfil', route('users.show', $notifiable->id))
+            ->action('Ver Mi Perfil', route('users.show', $notifiable))
             ->line('¡Gracias por ser un gran jugador!');
     }
 
@@ -77,7 +77,7 @@ class CommendationReceivedNotification extends Notification implements ShouldQue
             'type' => 'commendation_received',
             'title' => "{$this->fromUser->name} te ha reconocido",
             'message' => "Has recibido un reconocimiento por {$categoryName}",
-            'action_url' => route('users.show', $notifiable->id),
+            'action_url' => route('users.show', $notifiable),
             'icon' => 'Award',
             'related_model' => [
                 'from_user_id' => $this->fromUser->id,

@@ -84,7 +84,7 @@ final class DashboardController extends Controller
             ->withCount('teamMembers')
             ->latest()
             ->limit(3)
-            ->get(['id', 'name', 'variant', 'logo_url', 'max_members']);
+            ->get(['id', 'public_id', 'name', 'variant', 'logo_url', 'max_members']);
 
         // Has the user's team ever published a match? (drives the "next steps" checklist)
         $hasPublishedMatch = $hasTeams

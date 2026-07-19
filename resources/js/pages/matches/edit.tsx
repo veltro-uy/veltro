@@ -22,6 +22,7 @@ interface Team {
 }
 
 interface Match {
+    public_id: string;
     id: number;
     scheduled_at: string | null;
     location: string | null;
@@ -42,11 +43,11 @@ export default function Edit({ match }: Props) {
         },
         {
             title: match.home_team.name,
-            href: matches.show(match.id).url,
+            href: matches.show(match.public_id).url,
         },
         {
             title: 'Editar',
-            href: matches.edit(match.id).url,
+            href: matches.edit(match.public_id).url,
         },
     ];
 
@@ -160,7 +161,9 @@ export default function Edit({ match }: Props) {
                                     type="button"
                                     variant="outline"
                                     onClick={() =>
-                                        router.visit(matches.show(match.id).url)
+                                        router.visit(
+                                            matches.show(match.public_id).url,
+                                        )
                                     }
                                 >
                                     Cancelar
