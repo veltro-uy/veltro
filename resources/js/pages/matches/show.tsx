@@ -349,6 +349,7 @@ export default function Show({
                     eligibleTeams={eligibleTeams}
                     homeLineup={homeLineup}
                     awayLineup={awayLineup}
+                    events={events}
                     onCancelClick={() => setShowCancelDialog(true)}
                     onCompleteClick={() => setShowCompleteDialog(true)}
                 />

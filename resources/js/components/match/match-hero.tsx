@@ -1,20 +1,18 @@
 import { CreateMatchRequestDialog } from '@/components/create-match-request-dialog';
 import type {
     LineupPlayer,
+    MatchEvent,
     MatchPageMatch,
     MatchPageTeam,
 } from '@/components/match/types';
 import { RecordGoalDialog } from '@/components/record-goal-dialog';
 import { TeamAvatar } from '@/components/team-avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { VariantBadge } from '@/components/variant-badge';
 import { useMatchCountdown } from '@/hooks/use-match-countdown';
 import {
     formatMatchDate,
     formatMatchTime,
-    getMatchStatusColor,
     getMatchStatusText,
 } from '@/lib/match-format';
 import { cn } from '@/lib/utils';
@@ -29,6 +27,7 @@ import {
     Plus,
     Shield,
     Swords,
+    Target,
     Trophy,
     Users,
     X,
@@ -43,8 +42,36 @@ interface MatchHeroProps {
     eligibleTeams: MatchPageTeam[];
     homeLineup: LineupPlayer[];
     awayLineup: LineupPlayer[];
+    events: MatchEvent[];
     onCancelClick: () => void;
     onCompleteClick: () => void;
+}
+
+interface ScorerSummary {
+    name: string;
+    minutes: number[];
+}
+
+/** Groups a team's goals by scorer, preserving first-goal order, e.g. `Mbappé 48', 66'`. */
+function groupScorers(events: MatchEvent[], teamId: number): ScorerSummary[] {
+    const goals = events
+        .filter(
+            (e) =>
+                Number(e.team_id) === Number(teamId) && e.event_type === 'goal',
+        )
+        .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
+
+    const order: string[] = [];
+    const byName = new Map<string, number[]>();
+    for (const goal of goals) {
+        const name = goal.user?.name ?? 'Sin asignar';
+        if (!byName.has(name)) {
+            byName.set(name, []);
+            order.push(name);
+        }
+        if (goal.minute != null) byName.get(name)!.push(goal.minute);
+    }
+    return order.map((name) => ({ name, minutes: byName.get(name)! }));
 }
 
 export function MatchHero({
@@ -55,6 +82,7 @@ export function MatchHero({
     eligibleTeams,
     homeLineup,
     awayLineup,
+    events,
     onCancelClick,
     onCompleteClick,
 }: MatchHeroProps) {
@@ -74,191 +102,256 @@ export function MatchHero({
         match.status === 'in_progress' ||
         match.status === 'completed';
 
+    const showScorers =
+        match.status === 'in_progress' || match.status === 'completed';
+
     const canRecord = (leader: boolean) =>
         leader && match.status !== 'completed' && matchHasStarted;
 
+    const homeScorers = showScorers
+        ? groupScorers(events, match.home_team.id)
+        : [];
+    const awayScorers =
+        showScorers && match.away_team
+            ? groupScorers(events, match.away_team.id)
+            : [];
+    const hasScorers = homeScorers.length > 0 || awayScorers.length > 0;
+
+    const statusLabel =
+        match.status === 'completed'
+            ? 'Finalizado'
+            : match.status === 'in_progress'
+              ? 'En vivo'
+              : !matchHasStarted && countdown
+                ? countdown
+                : getMatchStatusText(match.status);
+
     return (
         <>
-            <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-background via-background to-muted/20 p-5 md:p-8">
-                <div className="absolute top-0 right-0 -mt-16 -mr-16 h-56 w-56 rounded-full bg-primary/5 blur-3xl" />
-                <div className="absolute bottom-0 left-0 -mb-16 -ml-16 h-56 w-56 rounded-full bg-primary/5 blur-3xl" />
+            <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-5 md:p-8">
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute -top-24 -left-16 h-64 w-64 rounded-full bg-primary/15 blur-3xl"
+                />
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute -right-16 -bottom-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl"
+                />
 
-                <div className="relative space-y-6">
-                    {/* Status badges */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Badge className={getMatchStatusColor(match.status)}>
-                            {getMatchStatusText(match.status)}
-                        </Badge>
-                        <VariantBadge variant={match.variant} />
-                    </div>
-
-                    {/* Scoreboard — broadcast style: teams flank the score across the full width */}
-                    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-center gap-5 md:grid-cols-[1fr_auto_1fr] md:gap-8">
-                        {/* Home team (local) — left edge */}
-                        <Link
-                            href={`/teams/${match.home_team.id}`}
-                            className="group flex items-center justify-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/50 md:justify-start md:gap-4"
-                        >
-                            <TeamAvatar
-                                name={match.home_team.name}
-                                logoUrl={match.home_team.logo_url}
-                                size="xl"
-                                className="h-16 w-16 shrink-0 md:h-20 md:w-20"
-                            />
-                            <div className="min-w-0 text-center md:text-left">
-                                <h2 className="truncate text-xl font-bold md:text-2xl">
-                                    {match.home_team.name}
-                                </h2>
-                                <div className="flex items-center justify-center gap-1 text-muted-foreground md:justify-start">
-                                    <Shield className="h-3.5 w-3.5" />
-                                    <p className="text-xs md:text-sm">Local</p>
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Score / countdown / placeholder — center */}
-                        <div className="flex flex-col items-center gap-2">
-                            {showScore ? (
-                                <>
-                                    {!matchHasStarted &&
-                                        countdown &&
-                                        match.status !== 'completed' && (
-                                            <div className="flex items-center gap-1.5 rounded-full border bg-card/80 px-2.5 py-0.5 text-xs backdrop-blur-sm">
-                                                <Clock className="h-3 w-3 text-muted-foreground" />
-                                                <span className="font-medium">
-                                                    {countdown}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                    <div className="flex items-center gap-2 rounded-2xl border bg-card/80 px-4 py-2.5 shadow-sm backdrop-blur-sm md:gap-3 md:px-6">
-                                        {canRecord(isHomeLeader) && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-6 w-6 rounded-full"
-                                                aria-label="Registrar gol local"
-                                                onClick={() =>
-                                                    setRecordGoalDialog({
-                                                        open: true,
-                                                        team: 'home',
-                                                    })
-                                                }
-                                            >
-                                                <Plus className="h-3.5 w-3.5" />
-                                            </Button>
-                                        )}
-                                        <span
-                                            className={cn(
-                                                'w-10 text-center text-4xl font-bold tabular-nums md:w-12 md:text-5xl',
-                                                match.status === 'completed' &&
-                                                    homeScore > awayScore &&
-                                                    'text-primary',
-                                            )}
-                                        >
-                                            {homeScore}
-                                        </span>
-                                        <span className="text-xl font-bold text-muted-foreground md:text-2xl">
-                                            -
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                'w-10 text-center text-4xl font-bold tabular-nums md:w-12 md:text-5xl',
-                                                match.status === 'completed' &&
-                                                    awayScore > homeScore &&
-                                                    'text-primary',
-                                            )}
-                                        >
-                                            {awayScore}
-                                        </span>
-                                        {canRecord(isAwayLeader) && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-6 w-6 rounded-full"
-                                                aria-label="Registrar gol visitante"
-                                                onClick={() =>
-                                                    setRecordGoalDialog({
-                                                        open: true,
-                                                        team: 'away',
-                                                    })
-                                                }
-                                            >
-                                                <Plus className="h-3.5 w-3.5" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                </>
+                <div className="relative space-y-5">
+                    {/* Competition + variant */}
+                    <div className="flex flex-col items-center gap-2 text-center">
+                        <div className="flex items-center gap-2">
+                            {match.tournament ? (
+                                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                                    <Trophy className="h-4 w-4 text-primary" />
+                                    {match.tournament.name}
+                                </span>
                             ) : (
-                                <div className="rounded-full border bg-card p-4 shadow-sm">
-                                    <Swords className="h-7 w-7 text-muted-foreground" />
-                                </div>
+                                <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                                    <Swords className="h-4 w-4" />
+                                    Amistoso
+                                </span>
                             )}
+                            <VariantBadge variant={match.variant} />
                         </div>
 
-                        {/* Away team (visitante) — right edge */}
-                        {match.away_team ? (
+                        {/* Meta row */}
+                        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5" />
+                                {formatMatchDate(match.scheduled_at)}
+                            </span>
+                            <span aria-hidden>·</span>
+                            <span className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5" />
+                                {formatMatchTime(match.scheduled_at)}
+                            </span>
+                            <span aria-hidden>·</span>
+                            <span className="flex items-center gap-1.5">
+                                <MapPin className="h-3.5 w-3.5" />
+                                {match.location ?? 'Por definir'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Scoreboard + scorers */}
+                    <div className="mx-auto w-full max-w-4xl space-y-4 border-t pt-5">
+                        <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-[1fr_auto_1fr] md:gap-6">
+                            {/* Home team (local) — name outer, crest inner */}
                             <Link
-                                href={`/teams/${match.away_team.id}`}
+                                href={`/teams/${match.home_team.id}`}
                                 className="group flex items-center justify-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/50 md:justify-end md:gap-4"
                             >
                                 <div className="min-w-0 text-center md:text-right">
                                     <h2 className="truncate text-xl font-bold md:text-2xl">
-                                        {match.away_team.name}
+                                        {match.home_team.name}
                                     </h2>
                                     <div className="flex items-center justify-center gap-1 text-muted-foreground md:justify-end">
-                                        <Plane className="h-3.5 w-3.5" />
+                                        <Shield className="h-3.5 w-3.5" />
                                         <p className="text-xs md:text-sm">
-                                            Visitante
+                                            Local
                                         </p>
                                     </div>
                                 </div>
                                 <TeamAvatar
-                                    name={match.away_team.name}
-                                    logoUrl={match.away_team.logo_url}
+                                    name={match.home_team.name}
+                                    logoUrl={match.home_team.logo_url}
                                     size="xl"
-                                    className="h-16 w-16 shrink-0 md:h-20 md:w-20"
+                                    className="h-14 w-14 shrink-0 md:h-16 md:w-16"
                                 />
                             </Link>
-                        ) : (
-                            <div className="flex items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/30 p-3 md:justify-end md:gap-4">
-                                <div className="min-w-0 text-center md:text-right">
-                                    <h3 className="truncate text-base font-semibold">
-                                        Buscando rival
-                                    </h3>
-                                    <p className="truncate text-xs text-muted-foreground">
-                                        Esperando solicitudes
-                                    </p>
+
+                            {/* Score / countdown / placeholder */}
+                            <div className="flex flex-col items-center gap-1.5">
+                                {showScore ? (
+                                    <>
+                                        <div className="flex items-center gap-2 md:gap-3">
+                                            {canRecord(isHomeLeader) && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 rounded-full"
+                                                    aria-label="Registrar gol local"
+                                                    onClick={() =>
+                                                        setRecordGoalDialog({
+                                                            open: true,
+                                                            team: 'home',
+                                                        })
+                                                    }
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                            <span
+                                                className={cn(
+                                                    'w-10 text-center text-4xl font-bold tabular-nums md:w-12 md:text-5xl',
+                                                    match.status ===
+                                                        'completed' &&
+                                                        homeScore > awayScore &&
+                                                        'text-primary',
+                                                )}
+                                            >
+                                                {homeScore}
+                                            </span>
+                                            <span className="text-xl font-bold text-muted-foreground md:text-2xl">
+                                                -
+                                            </span>
+                                            <span
+                                                className={cn(
+                                                    'w-10 text-center text-4xl font-bold tabular-nums md:w-12 md:text-5xl',
+                                                    match.status ===
+                                                        'completed' &&
+                                                        awayScore > homeScore &&
+                                                        'text-primary',
+                                                )}
+                                            >
+                                                {awayScore}
+                                            </span>
+                                            {canRecord(isAwayLeader) && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 rounded-full"
+                                                    aria-label="Registrar gol visitante"
+                                                    onClick={() =>
+                                                        setRecordGoalDialog({
+                                                            open: true,
+                                                            team: 'away',
+                                                        })
+                                                    }
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                            {match.status === 'in_progress' && (
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                                                </span>
+                                            )}
+                                            {statusLabel}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="rounded-full border bg-card p-4 shadow-sm">
+                                            <Swords className="h-7 w-7 text-muted-foreground" />
+                                        </div>
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                            {statusLabel}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Away team (visitante) — crest inner, name outer */}
+                            {match.away_team ? (
+                                <Link
+                                    href={`/teams/${match.away_team.id}`}
+                                    className="group flex items-center justify-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/50 md:justify-start md:gap-4"
+                                >
+                                    <TeamAvatar
+                                        name={match.away_team.name}
+                                        logoUrl={match.away_team.logo_url}
+                                        size="xl"
+                                        className="h-14 w-14 shrink-0 md:h-16 md:w-16"
+                                    />
+                                    <div className="min-w-0 text-center md:text-left">
+                                        <h2 className="truncate text-xl font-bold md:text-2xl">
+                                            {match.away_team.name}
+                                        </h2>
+                                        <div className="flex items-center justify-center gap-1 text-muted-foreground md:justify-start">
+                                            <Plane className="h-3.5 w-3.5" />
+                                            <p className="text-xs md:text-sm">
+                                                Visitante
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ) : (
+                                <div className="flex items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/30 p-3 md:justify-start md:gap-4">
+                                    <div className="rounded-full bg-muted p-3">
+                                        <Users className="h-7 w-7 text-muted-foreground" />
+                                    </div>
+                                    <div className="min-w-0 text-center md:text-left">
+                                        <h3 className="truncate text-base font-semibold">
+                                            Buscando rival
+                                        </h3>
+                                        <p className="truncate text-xs text-muted-foreground">
+                                            Esperando solicitudes
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="rounded-full bg-muted p-3">
-                                    <Users className="h-7 w-7 text-muted-foreground" />
+                            )}
+                        </div>
+
+                        {/* Scorers grouped by player, under each team */}
+                        {hasScorers && (
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
+                                <div className="space-y-0.5">
+                                    {homeScorers.map((scorer) => (
+                                        <ScorerLine
+                                            key={`h-${scorer.name}`}
+                                            scorer={scorer}
+                                            align="right"
+                                        />
+                                    ))}
+                                </div>
+                                <Target className="mt-0.5 h-3.5 w-3.5 text-muted-foreground/60" />
+                                <div className="space-y-0.5">
+                                    {awayScorers.map((scorer) => (
+                                        <ScorerLine
+                                            key={`a-${scorer.name}`}
+                                            scorer={scorer}
+                                            align="left"
+                                        />
+                                    ))}
                                 </div>
                             </div>
                         )}
-                    </div>
-
-                    {/* Match info row */}
-                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t pt-4 text-sm">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                                {formatMatchDate(match.scheduled_at)}
-                            </span>
-                        </div>
-                        <Separator orientation="vertical" className="h-4" />
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                                {formatMatchTime(match.scheduled_at)}
-                            </span>
-                        </div>
-                        <Separator orientation="vertical" className="h-4" />
-                        <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                                {match.location ?? 'Por definir'}
-                            </span>
-                        </div>
                     </div>
 
                     {/* Action buttons */}
@@ -344,5 +437,27 @@ export function MatchHero({
                 }
             />
         </>
+    );
+}
+
+function ScorerLine({
+    scorer,
+    align,
+}: {
+    scorer: ScorerSummary;
+    align: 'left' | 'right';
+}) {
+    return (
+        <p
+            className={cn(
+                'truncate text-xs',
+                align === 'right' ? 'text-right' : 'text-left',
+            )}
+        >
+            <span className="font-medium">{scorer.name}</span>{' '}
+            <span className="text-muted-foreground">
+                {scorer.minutes.map((m) => `${m}'`).join(', ')}
+            </span>
+        </p>
     );
 }

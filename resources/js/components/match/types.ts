@@ -68,5 +68,6 @@ export interface MatchPageMatch {
     notes?: string;
     home_team: MatchPageTeam;
     away_team?: MatchPageTeam;
+    tournament?: { id: number; name: string } | null;
     match_requests?: MatchRequest[];
 }
