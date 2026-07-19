@@ -289,7 +289,7 @@ export default function Show({
                                     {teams.map((team: Team) => (
                                         <Link
                                             key={team.id}
-                                            href={`/teams/${team.id}`}
+                                            href={`/teams/${team.public_id}`}
                                             className="group flex items-center gap-3 rounded-lg border bg-card p-3 transition-all hover:border-primary/50 hover:bg-accent/50 hover:shadow-md"
                                         >
                                             <TeamAvatar

@@ -11,6 +11,7 @@ export interface MatchPageUser {
 
 export interface MatchPageTeam {
     id: number;
+    public_id: string;
     name: string;
     variant: string;
     logo_url?: string;

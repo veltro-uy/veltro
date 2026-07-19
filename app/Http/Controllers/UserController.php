@@ -19,7 +19,7 @@ class UserController extends Controller
     {
         // Load active teams with eager loading
         $user->load(['activeTeams' => function ($query) {
-            $query->select('teams.id', 'teams.name', 'teams.variant', 'teams.logo_url', 'teams.logo_path')
+            $query->select('teams.id', 'teams.public_id', 'teams.name', 'teams.variant', 'teams.logo_url', 'teams.logo_path')
                 ->orderBy('teams.name');
         }]);
 
@@ -51,7 +51,7 @@ class UserController extends Controller
     {
         // Load active teams with eager loading
         $user->load(['activeTeams' => function ($query) {
-            $query->select('teams.id', 'teams.name', 'teams.variant', 'teams.logo_url')
+            $query->select('teams.id', 'teams.public_id', 'teams.name', 'teams.variant', 'teams.logo_url')
                 ->orderBy('teams.name');
         }]);
 
