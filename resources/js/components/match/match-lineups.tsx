@@ -1,8 +1,9 @@
 import type { LineupPlayer } from '@/components/match/types';
 import { TeamAvatar } from '@/components/team-avatar';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
-import { UserNameLink } from '@/components/user-name-link';
+import { Link } from '@inertiajs/react';
 
 interface MatchLineupsProps {
     homeTeamName: string;
@@ -14,8 +15,9 @@ interface MatchLineupsProps {
 }
 
 /**
- * Read-only view of the confirmed rosters for both teams. Leaders edit the
- * lineup on the dedicated `/lineup` page; this only displays who's selected.
+ * Read-only team-sheet view of the confirmed rosters for both teams. Leaders
+ * edit the lineup on the dedicated `/lineup` page; this only displays who's
+ * selected.
  */
 export function MatchLineups({
     homeTeamName,
@@ -33,7 +35,7 @@ export function MatchLineups({
                 <CardTitle>Alineaciones</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+                <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2">
                     <LineupColumn
                         teamName={homeTeamName}
                         teamLogoUrl={homeTeamLogoUrl}
@@ -62,8 +64,8 @@ function LineupColumn({
     players: LineupPlayer[];
 }) {
     return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2 border-b pb-2">
+        <div>
+            <div className="flex items-center gap-2 border-b pb-2.5">
                 <TeamAvatar
                     name={teamName}
                     logoUrl={teamLogoUrl}
@@ -73,28 +75,31 @@ function LineupColumn({
                 <p className="min-w-0 flex-1 truncate text-sm font-semibold">
                     {teamName}
                 </p>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                    {players.length}{' '}
-                    {players.length === 1 ? 'jugador' : 'jugadores'}
-                </span>
+                <Badge variant="secondary" className="shrink-0 tabular-nums">
+                    {players.length}
+                </Badge>
             </div>
             {players.length > 0 ? (
-                <ul className="space-y-2">
-                    {players.map((player) => (
-                        <li
-                            key={player.id}
-                            className="flex items-center gap-2.5"
-                        >
-                            <UserAvatar name={player.user.name} size="sm" />
-                            <UserNameLink
-                                user={player.user}
-                                className="truncate text-sm"
-                            />
+                <ul className="mt-2 space-y-0.5">
+                    {players.map((player, index) => (
+                        <li key={player.id}>
+                            <Link
+                                href={`/jugadores/${player.user.id}`}
+                                className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50"
+                            >
+                                <span className="w-5 shrink-0 text-center text-xs font-medium text-muted-foreground tabular-nums">
+                                    {index + 1}
+                                </span>
+                                <UserAvatar name={player.user.name} size="sm" />
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                    {player.user.name}
+                                </span>
+                            </Link>
                         </li>
                     ))}
                 </ul>
             ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="mt-3 text-sm text-muted-foreground">
                     Sin jugadores seleccionados.
                 </p>
             )}
