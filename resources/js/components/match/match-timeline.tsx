@@ -33,11 +33,11 @@ interface MatchTimelineProps {
 }
 
 /**
- * Merged, minute-ordered feed of every match event. Home-team events sit on the
- * left of a central spine, away-team events on the right — mirroring the hero's
- * home-left/away-right convention. This is the single event view: goals are
- * recorded from the hero's score buttons and deleted from here by the relevant
- * team's leader.
+ * Minute-ordered feed of every match event as a single vertical rail. Each row
+ * shows the minute, an event icon, the player, and the team crest — reading
+ * top-to-bottom like a match commentary. This is the single event view: goals
+ * are recorded from the hero's score buttons and deleted from here by the
+ * relevant team's leader.
  */
 export function MatchTimeline({
     events,
@@ -83,82 +83,114 @@ export function MatchTimeline({
                         {emptyMessage}
                     </p>
                 ) : (
-                    <div className="relative mx-auto max-w-xl">
-                        {/* Central spine */}
-                        <span
-                            aria-hidden
-                            className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border"
-                        />
-                        <ol className="relative space-y-3">
-                            {ordered.map((event) => {
-                                const isHome =
-                                    Number(event.team_id) ===
-                                    Number(homeTeam.id);
-                                const team = isHome ? homeTeam : awayTeam;
-                                const visual = getEventVisual(event.event_type);
-                                const deletable =
-                                    canDelete &&
-                                    event.event_type === 'goal' &&
-                                    (isHome ? isHomeLeader : isAwayLeader);
+                    <ol>
+                        {ordered.map((event, index) => {
+                            const isHome =
+                                Number(event.team_id) === Number(homeTeam.id);
+                            const team = isHome ? homeTeam : awayTeam;
+                            const {
+                                icon: Icon,
+                                label,
+                                colorClass,
+                            } = getEventVisual(event.event_type);
+                            const deletable =
+                                canDelete &&
+                                event.event_type === 'goal' &&
+                                (isHome ? isHomeLeader : isAwayLeader);
 
-                                return (
-                                    <li
-                                        key={event.id}
-                                        className="grid grid-cols-[1fr_auto_1fr] items-center gap-2"
-                                    >
-                                        {/* Home side */}
-                                        <div className="flex justify-end">
-                                            {isHome && (
-                                                <EventChip
-                                                    visual={visual}
-                                                    name={event.user?.name}
-                                                    description={
-                                                        event.description
-                                                    }
-                                                    team={team}
-                                                    side="home"
-                                                    deletable={deletable}
-                                                    onDelete={() =>
-                                                        setGoalToDelete(
-                                                            event.id,
-                                                        )
-                                                    }
-                                                />
-                                            )}
-                                        </div>
-
-                                        {/* Minute marker on the spine */}
-                                        <span className="z-10 rounded-full border bg-background px-2 py-0.5 text-xs font-semibold tabular-nums">
+                            return (
+                                <li
+                                    key={event.id}
+                                    className="flex items-stretch gap-3"
+                                >
+                                    {/* Minute */}
+                                    <div className="flex w-10 shrink-0 items-center justify-end">
+                                        <span className="text-sm font-semibold text-muted-foreground tabular-nums">
                                             {event.minute != null
                                                 ? `${event.minute}'`
                                                 : '·'}
                                         </span>
+                                    </div>
 
-                                        {/* Away side */}
-                                        <div className="flex justify-start">
-                                            {!isHome && (
-                                                <EventChip
-                                                    visual={visual}
-                                                    name={event.user?.name}
-                                                    description={
-                                                        event.description
-                                                    }
-                                                    team={team}
-                                                    side="away"
-                                                    deletable={deletable}
-                                                    onDelete={() =>
-                                                        setGoalToDelete(
-                                                            event.id,
-                                                        )
-                                                    }
-                                                />
+                                    {/* Rail with node */}
+                                    <div className="relative flex w-3 shrink-0 flex-col items-center">
+                                        <span
+                                            className={cn(
+                                                'w-px flex-1 bg-border',
+                                                index === 0 && 'opacity-0',
                                             )}
+                                        />
+                                        <span
+                                            className={cn(
+                                                'my-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-background bg-current',
+                                                colorClass,
+                                            )}
+                                        />
+                                        <span
+                                            className={cn(
+                                                'w-px flex-1 bg-border',
+                                                index === ordered.length - 1 &&
+                                                    'opacity-0',
+                                            )}
+                                        />
+                                    </div>
+
+                                    {/* Event card */}
+                                    <div className="group my-1.5 flex flex-1 items-center gap-2.5 rounded-xl border bg-card px-3 py-2 transition-colors hover:bg-muted/40">
+                                        <Icon
+                                            className={cn(
+                                                'h-4 w-4 shrink-0',
+                                                colorClass,
+                                            )}
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <p
+                                                className={cn(
+                                                    'truncate text-sm font-medium',
+                                                    !event.user &&
+                                                        'text-muted-foreground italic',
+                                                )}
+                                            >
+                                                {event.user?.name ??
+                                                    'Sin asignar'}
+                                            </p>
+                                            <p className="truncate text-xs text-muted-foreground">
+                                                {event.description
+                                                    ? `${label} · ${event.description}`
+                                                    : label}
+                                            </p>
                                         </div>
-                                    </li>
-                                );
-                            })}
-                        </ol>
-                    </div>
+                                        {team && (
+                                            <div className="flex shrink-0 items-center gap-2">
+                                                <span className="hidden max-w-[7rem] truncate text-xs text-muted-foreground sm:inline">
+                                                    {team.name}
+                                                </span>
+                                                <TeamAvatar
+                                                    name={team.name}
+                                                    logoUrl={team.logo_url}
+                                                    size="sm"
+                                                    className="h-6 w-6"
+                                                />
+                                            </div>
+                                        )}
+                                        {deletable && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                                                aria-label="Eliminar gol"
+                                                onClick={() =>
+                                                    setGoalToDelete(event.id)
+                                                }
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ol>
                 )}
             </CardContent>
 
@@ -188,72 +220,5 @@ export function MatchTimeline({
                 </AlertDialogContent>
             </AlertDialog>
         </Card>
-    );
-}
-
-interface EventChipProps {
-    visual: ReturnType<typeof getEventVisual>;
-    name?: string;
-    description?: string;
-    team?: TimelineTeam;
-    side: 'home' | 'away';
-    deletable: boolean;
-    onDelete: () => void;
-}
-
-function EventChip({
-    visual,
-    name,
-    description,
-    team,
-    side,
-    deletable,
-    onDelete,
-}: EventChipProps) {
-    const { icon: Icon, label, colorClass } = visual;
-    const isHome = side === 'home';
-
-    return (
-        <div
-            className={cn(
-                'group inline-flex max-w-full items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5',
-                isHome && 'flex-row-reverse text-right',
-            )}
-        >
-            {team && (
-                <TeamAvatar
-                    name={team.name}
-                    logoUrl={team.logo_url}
-                    size="sm"
-                    className="h-6 w-6 shrink-0"
-                />
-            )}
-            <div className="min-w-0">
-                <p
-                    className={cn(
-                        'flex items-center gap-1 text-sm font-medium',
-                        isHome && 'flex-row-reverse',
-                        !name && 'text-muted-foreground italic',
-                    )}
-                >
-                    <Icon className={cn('h-3.5 w-3.5 shrink-0', colorClass)} />
-                    <span className="truncate">{name ?? 'Sin asignar'}</span>
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                    {description ? `${label} · ${description}` : label}
-                </p>
-            </div>
-            {deletable && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                    aria-label="Eliminar gol"
-                    onClick={onDelete}
-                >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
-            )}
-        </div>
     );
 }
