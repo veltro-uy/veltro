@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 
 interface User {
     id: number;
+    public_id: string;
     name: string;
 }
 
