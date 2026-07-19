@@ -8,6 +8,7 @@ import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
+import users from '@/routes/users';
 import type { User } from '@/types';
 import { Link, router } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
@@ -28,7 +29,7 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
         <>
             <DropdownMenuLabel className="p-0 font-normal">
                 <Link
-                    href={`/jugadores/${user.id}`}
+                    href={users.show(user).url}
                     className="flex items-center gap-2 px-1 py-1.5 text-left text-sm transition-colors hover:bg-muted/50"
                     onClick={cleanup}
                 >

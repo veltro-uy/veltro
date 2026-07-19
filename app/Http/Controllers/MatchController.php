@@ -174,13 +174,13 @@ final class MatchController extends Controller
         if ($match->isConfirmed() || $match->isInProgress() || $match->isCompleted()) {
             $homeLineup = $match->lineups()
                 ->where('team_id', $match->home_team_id)
-                ->with('user:id,name')
+                ->with('user:id,public_id,name')
                 ->get();
 
             if ($match->away_team_id) {
                 $awayLineup = $match->lineups()
                     ->where('team_id', $match->away_team_id)
-                    ->with('user:id,name')
+                    ->with('user:id,public_id,name')
                     ->get();
             }
 
@@ -245,7 +245,7 @@ final class MatchController extends Controller
 
         return $leaders->map(function ($leader) {
             if (! $leader->relationLoaded('user')) {
-                $leader->load('user:id,name,phone_number');
+                $leader->load('user:id,public_id,name,phone_number');
             }
 
             return [
@@ -254,6 +254,7 @@ final class MatchController extends Controller
                 'role' => $leader->role,
                 'user' => [
                     'id' => $leader->user->id,
+                    'public_id' => $leader->user->public_id,
                     'name' => $leader->user->name,
                     'phone_number' => $leader->user->phone_number ?? null,
                 ],

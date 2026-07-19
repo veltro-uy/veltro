@@ -3,6 +3,7 @@ import { TeamAvatar } from '@/components/team-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserAvatar } from '@/components/user-avatar';
+import users from '@/routes/users';
 import { Link } from '@inertiajs/react';
 
 interface MatchLineupsProps {
@@ -84,7 +85,7 @@ function LineupColumn({
                     {players.map((player, index) => (
                         <li key={player.id}>
                             <Link
-                                href={`/jugadores/${player.user.id}`}
+                                href={users.show(player.user).url}
                                 className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50"
                             >
                                 <span className="w-5 shrink-0 text-center text-xs font-medium text-muted-foreground tabular-nums">
