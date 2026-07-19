@@ -76,6 +76,7 @@ interface TeamInvitation {
 }
 
 interface Team {
+    public_id: string;
     id: number;
     name: string;
     variant: string;
@@ -237,7 +238,7 @@ export default function Show({
         },
         {
             title: team.name,
-            href: teams.show(team.id).url,
+            href: teams.show(team.public_id).url,
         },
     ];
 

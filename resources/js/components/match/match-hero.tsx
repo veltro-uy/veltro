@@ -364,7 +364,12 @@ export function MatchHero({
                             {isHomeLeader && match.status === 'available' && (
                                 <>
                                     <Button asChild variant="outline">
-                                        <Link href={matches.edit(match.id).url}>
+                                        <Link
+                                            href={
+                                                matches.edit(match.public_id)
+                                                    .url
+                                            }
+                                        >
                                             <Edit className="mr-2 h-4 w-4" />
                                             Editar
                                         </Link>

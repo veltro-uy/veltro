@@ -56,6 +56,7 @@ export interface OpposingTeamLeader {
 
 export interface MatchPageMatch {
     id: number;
+    public_id: string;
     home_team_id: number;
     away_team_id?: number;
     tournament_id?: number;

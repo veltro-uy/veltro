@@ -13,8 +13,8 @@ Route::middleware(['auth', 'verified', 'throttle:matches', 'onboarding'])->group
     Route::get('/matches', [MatchController::class, 'index'])->name('matches.index');
     Route::get('/matches/create', [MatchController::class, 'create'])->name('matches.create');
     Route::post('/matches', [MatchController::class, 'store'])->name('matches.store');
-    Route::get('/matches/{id}', [MatchController::class, 'show'])->name('matches.show');
-    Route::get('/matches/{id}/edit', [MatchController::class, 'edit'])->name('matches.edit');
+    Route::get('/matches/{match}', [MatchController::class, 'show'])->name('matches.show');
+    Route::get('/matches/{match}/edit', [MatchController::class, 'edit'])->name('matches.edit');
     Route::put('/matches/{id}', [MatchController::class, 'update'])->name('matches.update');
     Route::post('/matches/{id}/cancel', [MatchController::class, 'cancel'])->name('matches.cancel');
     Route::post('/matches/{id}/complete', [MatchController::class, 'complete'])->name('matches.complete');
@@ -25,7 +25,7 @@ Route::middleware(['auth', 'verified', 'throttle:matches', 'onboarding'])->group
     Route::post('/match-requests/{id}/reject', [MatchController::class, 'rejectRequest'])->name('match-requests.reject');
 
     // Match Lineups
-    Route::get('/matches/{matchId}/lineup', [MatchLineupController::class, 'edit'])->name('matches.lineup.edit');
+    Route::get('/matches/{match}/lineup', [MatchLineupController::class, 'edit'])->name('matches.lineup.edit');
     Route::post('/matches/{matchId}/lineup', [MatchLineupController::class, 'update'])->name('matches.lineup.update');
 
     // Match Events

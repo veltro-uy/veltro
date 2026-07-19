@@ -45,6 +45,7 @@ interface Team {
 }
 
 interface Match {
+    public_id: string;
     id: number;
     home_team_id: number;
     away_team_id?: number;
@@ -82,7 +83,7 @@ export default function Lineup({
         },
         {
             title: 'Alineación',
-            href: matches.lineup.edit(match.id).url,
+            href: matches.lineup.edit(match.public_id).url,
         },
     ];
 
@@ -134,7 +135,7 @@ export default function Lineup({
             {
                 onSuccess: () => {
                     toast.success('¡Alineación actualizada exitosamente!');
-                    router.visit(matches.show(match.id).url);
+                    router.visit(matches.show(match.public_id).url);
                 },
                 onError: (errors) => {
                     const firstError = Object.values(errors)[0];
@@ -181,7 +182,7 @@ export default function Lineup({
                                 }
                                 onClick={() =>
                                     router.visit(
-                                        matches.lineup.edit(match.id, {
+                                        matches.lineup.edit(match.public_id, {
                                             query: { team: t.id },
                                         }).url,
                                     )
@@ -282,7 +283,9 @@ export default function Lineup({
                                 type="button"
                                 variant="outline"
                                 onClick={() =>
-                                    router.visit(matches.show(match.id).url)
+                                    router.visit(
+                                        matches.show(match.public_id).url,
+                                    )
                                 }
                             >
                                 Cancelar

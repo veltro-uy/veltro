@@ -60,7 +60,7 @@ test('captain sees pending invitations on team show page', function () {
     $invitation = makeInvitation();
 
     $this->actingAs($this->captain)
-        ->get(route('teams.show', $this->team->id))
+        ->get(route('teams.show', $this->team))
         ->assertSuccessful()
         ->assertInertia(fn ($page) => $page
             ->component('teams/show')
@@ -78,7 +78,7 @@ test('co-captain sees pending invitations on team show page', function () {
     makeInvitation();
 
     $this->actingAs($this->player)
-        ->get(route('teams.show', $this->team->id))
+        ->get(route('teams.show', $this->team))
         ->assertInertia(fn ($page) => $page
             ->where('canManage', true)
             ->has('pendingInvitations', 1)
@@ -89,7 +89,7 @@ test('regular player does not see pending invitations', function () {
     makeInvitation();
 
     $this->actingAs($this->player)
-        ->get(route('teams.show', $this->team->id))
+        ->get(route('teams.show', $this->team))
         ->assertInertia(fn ($page) => $page
             ->where('canManage', false)
             ->has('pendingInvitations', 0)
@@ -100,7 +100,7 @@ test('non-member does not see pending invitations', function () {
     makeInvitation();
 
     $this->actingAs($this->outsider)
-        ->get(route('teams.show', $this->team->id))
+        ->get(route('teams.show', $this->team))
         ->assertInertia(fn ($page) => $page
             ->where('canManage', false)
             ->has('pendingInvitations', 0)
@@ -114,7 +114,7 @@ test('show page surfaces pending, expired, and revoked invitations to leaders', 
     makeInvitation(['status' => 'accepted', 'accepted_at' => now()]);
 
     $this->actingAs($this->captain)
-        ->get(route('teams.show', $this->team->id))
+        ->get(route('teams.show', $this->team))
         ->assertInertia(fn ($page) => $page
             ->has('pendingInvitations', 3)
         );
@@ -126,7 +126,7 @@ test('expired pending invitations are auto-marked when leader views the page', f
     expect($invitation->status)->toBe('pending');
 
     $this->actingAs($this->captain)
-        ->get(route('teams.show', $this->team->id));
+        ->get(route('teams.show', $this->team));
 
     expect($invitation->fresh()->status)->toBe('expired');
 });
@@ -299,7 +299,7 @@ test('an authenticated member visiting the invite link is redirected to the team
 
     $this->actingAs($this->player)
         ->get(route('teams.invitation.show', $invitation->token))
-        ->assertRedirect(route('teams.show', $this->team->id));
+        ->assertRedirect(route('teams.show', $this->team));
 });
 
 test('invitation is not accepted when the team is full', function () {

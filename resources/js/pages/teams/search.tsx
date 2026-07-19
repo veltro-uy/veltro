@@ -53,6 +53,7 @@ interface TeamMember {
 }
 
 interface Team {
+    public_id: string;
     id: number;
     name: string;
     variant: string;
@@ -273,7 +274,10 @@ export default function SearchTeams({ teams: searchResults, filters }: Props) {
                                             className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
                                         >
                                             <Link
-                                                href={teams.show(team.id).url}
+                                                href={
+                                                    teams.show(team.public_id)
+                                                        .url
+                                                }
                                             >
                                                 Ver equipo
                                                 <ArrowRight className="ml-2 h-4 w-4" />

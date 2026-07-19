@@ -20,14 +20,14 @@ final class MatchLineupController extends Controller
     /**
      * Show the lineup form for a team in a match.
      */
-    public function edit(Request $request, int $matchId): Response
+    public function edit(Request $request, FootballMatch $match): Response
     {
-        $match = FootballMatch::with([
+        $match->load([
             'homeTeam.teamMembers.user',
             'awayTeam.teamMembers.user',
             'tournament',
             'lineups',
-        ])->findOrFail($matchId);
+        ]);
 
         $user = Auth::user();
 

@@ -40,7 +40,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $matchUrl = route('matches.show', $this->match->id);
+        $matchUrl = route('matches.show', $this->match);
         $opponent = $this->match->home_team_id === $this->team->id
             ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'A definir')
             : $this->match->homeTeam->name;
@@ -76,7 +76,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
             'type' => 'availability_reminder',
             'title' => 'Confirmá tu disponibilidad',
             'message' => "El partido contra {$opponent} es en 48 horas",
-            'action_url' => route('matches.show', $this->match->id),
+            'action_url' => route('matches.show', $this->match),
             'icon' => 'Clock',
             'related_model' => [
                 'match_id' => $this->match->id,

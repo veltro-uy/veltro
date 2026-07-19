@@ -48,7 +48,7 @@ class ProfileCommentNotification extends Notification implements ShouldQueue
             ->greeting("¡Hola {$notifiable->name}!")
             ->line("{$this->commenter->name} ha comentado en tu perfil:")
             ->line("\"{$preview}\"")
-            ->action('Ver Comentario', route('users.show', $notifiable->id))
+            ->action('Ver Comentario', route('users.show', $notifiable))
             ->line('Gracias por ser parte de la comunidad Veltro.');
     }
 
@@ -65,7 +65,7 @@ class ProfileCommentNotification extends Notification implements ShouldQueue
             'type' => 'profile_comment',
             'title' => "{$this->commenter->name} comentó en tu perfil",
             'message' => $preview,
-            'action_url' => route('users.show', $notifiable->id),
+            'action_url' => route('users.show', $notifiable),
             'icon' => 'MessageCircle',
             'related_model' => [
                 'comment_id' => $this->comment->id,

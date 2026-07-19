@@ -147,7 +147,7 @@ test('team description cannot exceed 1000 characters', function () {
 
 test('authenticated user can view a team', function () {
     $this->actingAs($this->captain)
-        ->get(route('teams.show', $this->team->id))
+        ->get(route('teams.show', $this->team))
         ->assertSuccessful();
 });
 
@@ -164,7 +164,7 @@ test('captain can update team', function () {
             'variant' => 'football_11',
             'description' => 'Updated description',
         ])
-        ->assertRedirect(route('teams.show', $this->team->id));
+        ->assertRedirect(route('teams.show', $this->team));
 
     $this->assertDatabaseHas('teams', [
         'id' => $this->team->id,
@@ -218,7 +218,7 @@ test('captain can update team with a logo', function () {
             'variant' => 'football_11',
             'logo' => UploadedFile::fake()->image('logo.png', 600, 600),
         ])
-        ->assertRedirect(route('teams.show', $this->team->id));
+        ->assertRedirect(route('teams.show', $this->team));
 
     $this->team->refresh();
     expect($this->team->logo_path)->not->toBeNull();

@@ -10,8 +10,11 @@ interface PageProps {
 
 const breadcrumbs = (tournament: Tournament): BreadcrumbItem[] => [
     { title: 'Torneos', href: tournaments.index().url },
-    { title: tournament.name, href: tournaments.show(tournament.id).url },
-    { title: 'Editar', href: tournaments.edit(tournament.id).url },
+    {
+        title: tournament.name,
+        href: tournaments.show(tournament.public_id).url,
+    },
+    { title: 'Editar', href: tournaments.edit(tournament.public_id).url },
 ];
 
 export default function TournamentEdit({ tournament }: PageProps) {

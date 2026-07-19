@@ -72,7 +72,7 @@ final class TournamentGroupController extends Controller
             }
         });
 
-        return redirect()->route('tournaments.show', $tournament->id)
+        return redirect()->route('tournaments.show', $tournament)
             ->with('success', 'Sorteo guardado.');
     }
 
@@ -87,7 +87,7 @@ final class TournamentGroupController extends Controller
         TournamentTeam::where('tournament_id', $tournament->id)
             ->update(['tournament_group_id' => null]);
 
-        return redirect()->route('tournaments.show', $tournament->id)
+        return redirect()->route('tournaments.show', $tournament)
             ->with('success', 'Sorteo reiniciado.');
     }
 }

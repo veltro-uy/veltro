@@ -34,7 +34,7 @@ class TeamInvitationAcceptedNotification extends Notification implements ShouldQ
             'type' => 'team_invitation_accepted',
             'title' => "{$this->acceptedBy->name} aceptó tu invitación",
             'message' => "{$this->acceptedBy->name} se unió a {$teamName}",
-            'action_url' => route('teams.show', $this->invitation->team_id),
+            'action_url' => route('teams.show', $this->invitation->team),
             'icon' => 'UserCheck',
             'related_model' => [
                 'team_id' => $this->invitation->team_id,

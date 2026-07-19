@@ -45,7 +45,7 @@ class MatchCancelledNotification extends Notification implements ShouldQueue
             'type' => 'match_cancelled',
             'title' => 'Partido cancelado',
             'message' => "{$this->cancellingTeam->name} canceló el partido",
-            'action_url' => route('matches.show', $this->match->id),
+            'action_url' => route('matches.show', $this->match),
             'icon' => 'X',
             'related_model' => [
                 'match_id' => $this->match->id,

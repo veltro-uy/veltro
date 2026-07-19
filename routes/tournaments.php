@@ -14,8 +14,8 @@ Route::middleware(['auth', 'verified', 'throttle:tournaments', 'onboarding'])->g
     Route::get('/tournaments', [TournamentController::class, 'index'])->name('tournaments.index');
     Route::get('/tournaments/create', [TournamentController::class, 'create'])->name('tournaments.create');
     Route::post('/tournaments', [TournamentController::class, 'store'])->name('tournaments.store');
-    Route::get('/tournaments/{id}', [TournamentController::class, 'show'])->name('tournaments.show');
-    Route::get('/tournaments/{id}/edit', [TournamentController::class, 'edit'])->name('tournaments.edit');
+    Route::get('/tournaments/{tournament}', [TournamentController::class, 'show'])->name('tournaments.show');
+    Route::get('/tournaments/{tournament}/edit', [TournamentController::class, 'edit'])->name('tournaments.edit');
     Route::put('/tournaments/{id}', [TournamentController::class, 'update'])->name('tournaments.update');
     Route::delete('/tournaments/{id}', [TournamentController::class, 'destroy'])->name('tournaments.destroy');
     Route::post('/tournaments/{id}/open-registration', [TournamentController::class, 'openRegistration'])->name('tournaments.open-registration');
@@ -23,7 +23,7 @@ Route::middleware(['auth', 'verified', 'throttle:tournaments', 'onboarding'])->g
     Route::post('/tournaments/{id}/cancel', [TournamentController::class, 'cancel'])->name('tournaments.cancel');
 
     // Tournament Match Scheduling
-    Route::patch('/tournaments/{tournament}/matches/{match}', [TournamentMatchController::class, 'update'])->name('tournaments.matches.update');
+    Route::patch('/tournaments/{tournament:id}/matches/{match:id}', [TournamentMatchController::class, 'update'])->name('tournaments.matches.update');
 
     // Tournament Groups (group_stage_knockout draw)
     Route::post('/tournaments/{id}/groups/draw', [TournamentGroupController::class, 'assign'])->name('tournaments.groups.assign');

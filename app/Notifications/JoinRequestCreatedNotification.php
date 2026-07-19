@@ -33,7 +33,7 @@ class JoinRequestCreatedNotification extends Notification implements ShouldQueue
             'type' => 'join_request_created',
             'title' => "Nueva solicitud para unirse a {$teamName}",
             'message' => "{$userName} quiere unirse a tu equipo",
-            'action_url' => route('teams.show', $this->joinRequest->team_id),
+            'action_url' => route('teams.show', $this->joinRequest->team),
             'icon' => 'UserPlus',
             'related_model' => [
                 'team_id' => $this->joinRequest->team_id,

@@ -33,6 +33,7 @@ export interface SharedData {
 
 export interface User {
     id: number;
+    public_id: string;
     name: string;
     email: string;
     avatar_url?: string;
@@ -146,6 +147,7 @@ export interface ProfileComment {
 
 export interface Team {
     id: number;
+    public_id: string;
     name: string;
     variant: string;
     logo_url?: string;
@@ -303,6 +305,7 @@ export interface TournamentGroup {
 
 export interface Tournament {
     id: number;
+    public_id: string;
     name: string;
     description?: string;
     logo_url?: string;
@@ -360,6 +363,7 @@ export interface TournamentRound {
 
 export interface FootballMatch {
     id: number;
+    public_id: string;
     home_team_id: number;
     away_team_id?: number;
     tournament_id?: number;

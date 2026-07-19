@@ -96,7 +96,7 @@ export default function Show({
         },
         {
             title: `${match.home_team.name}${match.away_team ? ` vs ${match.away_team.name}` : ''}`,
-            href: matches.show(match.id).url,
+            href: matches.show(match.public_id).url,
         },
     ];
 
@@ -296,7 +296,11 @@ export default function Show({
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <Button asChild className="w-full">
-                                <Link href={matches.lineup.edit(match.id).url}>
+                                <Link
+                                    href={
+                                        matches.lineup.edit(match.public_id).url
+                                    }
+                                >
                                     <Users className="mr-2 h-4 w-4" />
                                     Gestionar Alineación
                                 </Link>

@@ -32,7 +32,7 @@ class JoinRequestAcceptedNotification extends Notification implements ShouldQueu
             'type' => 'join_request_accepted',
             'title' => "¡Te aceptaron en {$teamName}!",
             'message' => "Tu solicitud para unirte a {$teamName} fue aceptada",
-            'action_url' => route('teams.show', $this->joinRequest->team_id),
+            'action_url' => route('teams.show', $this->joinRequest->team),
             'icon' => 'CheckCircle',
             'related_model' => [
                 'team_id' => $this->joinRequest->team_id,

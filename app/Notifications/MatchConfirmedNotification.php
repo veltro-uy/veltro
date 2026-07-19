@@ -32,7 +32,7 @@ class MatchConfirmedNotification extends Notification implements ShouldQueue
             'type' => 'match_confirmed',
             'title' => '¡Partido confirmado!',
             'message' => "Tu partido contra {$opponentName} quedó confirmado",
-            'action_url' => route('matches.show', $this->match->id),
+            'action_url' => route('matches.show', $this->match),
             'icon' => 'CalendarCheck',
             'related_model' => [
                 'match_id' => $this->match->id,

@@ -124,7 +124,7 @@ function QuickAction({
 
 function TeamRow({ team }: { team: MyTeam }) {
     return (
-        <Link href={teams.show(team.id).url} className="group block">
+        <Link href={teams.show(team.public_id).url} className="group block">
             <Card className="transition-all hover:border-primary/20 hover:shadow-md">
                 <CardContent className="flex items-center gap-3 py-3">
                     <TeamAvatar

@@ -128,7 +128,7 @@ test('authenticated user can view a match', function () {
     $match = createMatch();
 
     $this->actingAs($this->homeCaptain)
-        ->get(route('matches.show', $match->id))
+        ->get(route('matches.show', $match))
         ->assertSuccessful();
 });
 
@@ -141,7 +141,7 @@ test('match availability and opposing leaders are deferred', function () {
     $this->actingAs($this->homeCaptain);
 
     // The below-the-fold blocks are deferred → absent on the initial page load.
-    $this->get(route('matches.show', $match->id))
+    $this->get(route('matches.show', $match))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('matches/show')
@@ -154,7 +154,7 @@ test('match availability and opposing leaders are deferred', function () {
 
     // ...and delivered by the follow-up deferred (partial) request.
     $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
-    $this->get(route('matches.show', $match->id), [
+    $this->get(route('matches.show', $match), [
         'X-Inertia' => 'true',
         'X-Inertia-Version' => $version,
         'X-Inertia-Partial-Component' => 'matches/show',
@@ -226,8 +226,8 @@ test('cannot edit a match that has started', function () {
     ]);
 
     $this->actingAs($this->homeCaptain)
-        ->get(route('matches.edit', $match->id))
-        ->assertRedirect(route('matches.show', $match->id));
+        ->get(route('matches.edit', $match))
+        ->assertRedirect(route('matches.show', $match));
 });
 
 // ============================================================

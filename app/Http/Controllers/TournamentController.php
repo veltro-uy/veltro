@@ -138,7 +138,7 @@ final class TournamentController extends Controller
                 $this->uploadLogo($tournament, $request->file('logo'));
             }
 
-            return redirect()->route('tournaments.show', $tournament->id)
+            return redirect()->route('tournaments.show', $tournament)
                 ->with('success', 'Torneo creado exitosamente');
         } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage())->withInput();
@@ -148,7 +148,7 @@ final class TournamentController extends Controller
     /**
      * Display the specified tournament.
      */
-    public function show(int $id): Response
+    public function show(Tournament $tournament): Response
     {
         $tournament = Tournament::with([
             'organizer:id,name,avatar_path,google_avatar_url',
@@ -162,7 +162,7 @@ final class TournamentController extends Controller
             ->withCount(['tournamentTeams as registered_teams_count' => function ($query) {
                 $query->whereIn('status', ['pending', 'approved']);
             }])
-            ->findOrFail($id);
+            ->findOrFail($tournament->id);
 
         $this->authorize('view', $tournament);
 
@@ -320,15 +320,13 @@ final class TournamentController extends Controller
     /**
      * Show the form for editing the specified tournament.
      */
-    public function edit(int $id): Response|\Illuminate\Http\RedirectResponse
+    public function edit(Tournament $tournament): Response|\Illuminate\Http\RedirectResponse
     {
-        $tournament = Tournament::findOrFail($id);
-
         $this->authorize('update', $tournament);
 
         if (! $tournament->canBeEdited()) {
             return redirect()
-                ->route('tournaments.show', $tournament->id)
+                ->route('tournaments.show', $tournament)
                 ->with('error', 'Este torneo ya no se puede editar.');
         }
 
@@ -359,7 +357,7 @@ final class TournamentController extends Controller
                 $this->deleteLogo($tournament);
             }
 
-            return redirect()->route('tournaments.show', $tournament->id)
+            return redirect()->route('tournaments.show', $tournament)
                 ->with('success', 'Torneo actualizado exitosamente');
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             throw ValidationException::withMessages([
@@ -406,7 +404,7 @@ final class TournamentController extends Controller
 
         $tournament->update(['status' => 'registration_open']);
 
-        return redirect()->route('tournaments.show', $tournament->id)
+        return redirect()->route('tournaments.show', $tournament)
             ->with('success', 'Inscripción abierta. Los equipos ahora pueden registrarse.');
     }
 
@@ -422,7 +420,7 @@ final class TournamentController extends Controller
         try {
             $this->tournamentService->startTournament($tournament);
 
-            return redirect()->route('tournaments.show', $tournament->id)
+            return redirect()->route('tournaments.show', $tournament)
                 ->with('success', 'Torneo iniciado exitosamente. Se ha generado el bracket.');
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             throw ValidationException::withMessages([
@@ -443,7 +441,7 @@ final class TournamentController extends Controller
         try {
             $this->tournamentService->cancelTournament($tournament);
 
-            return redirect()->route('tournaments.show', $tournament->id)
+            return redirect()->route('tournaments.show', $tournament)
                 ->with('success', 'Torneo cancelado');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());

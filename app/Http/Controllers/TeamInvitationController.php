@@ -92,7 +92,7 @@ final class TeamInvitationController extends Controller
 
         // If already accepted
         if ($invitation->status === 'accepted') {
-            return redirect()->route('teams.show', $invitation->team_id)
+            return redirect()->route('teams.show', $invitation->team)
                 ->with('info', 'Esta invitación ya fue aceptada');
         }
 
@@ -120,7 +120,7 @@ final class TeamInvitationController extends Controller
                 ->exists();
 
             if ($isMember) {
-                return redirect()->route('teams.show', $invitation->team_id)
+                return redirect()->route('teams.show', $invitation->team)
                     ->with('info', 'Ya eres miembro de este equipo');
             }
 
@@ -176,7 +176,7 @@ final class TeamInvitationController extends Controller
             ->exists();
 
         if ($isMember) {
-            return redirect()->route('teams.show', $invitation->team_id)
+            return redirect()->route('teams.show', $invitation->team)
                 ->with('info', 'Ya eres miembro de este equipo');
         }
 
@@ -184,7 +184,7 @@ final class TeamInvitationController extends Controller
             return back()->with('error', 'El equipo ha alcanzado su capacidad máxima y no puede aceptar más miembros');
         }
 
-        return redirect()->route('teams.show', $invitation->team_id)
+        return redirect()->route('teams.show', $invitation->team)
             ->with('success', '¡Te has unido al equipo exitosamente!');
     }
 

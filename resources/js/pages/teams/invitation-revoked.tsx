@@ -12,6 +12,7 @@ import { Head, Link } from '@inertiajs/react';
 import { XCircle } from 'lucide-react';
 
 interface Team {
+    public_id: string;
     id: number;
     name: string;
     logo_url?: string;
@@ -55,7 +56,7 @@ export default function InvitationRevoked({ team }: Props) {
 
                     <div className="flex flex-col gap-3">
                         <Button asChild>
-                            <Link href={teams.show(team.id).url}>
+                            <Link href={teams.show(team.public_id).url}>
                                 Ver Equipo
                             </Link>
                         </Button>

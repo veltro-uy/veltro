@@ -100,7 +100,7 @@ final class MatchController extends Controller
                 $validated
             );
 
-            return redirect()->route('matches.show', $match->id)
+            return redirect()->route('matches.show', $match)
                 ->with('success', '¡Disponibilidad de partido creada exitosamente!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -110,9 +110,9 @@ final class MatchController extends Controller
     /**
      * Display the specified match.
      */
-    public function show(int $id): Response
+    public function show(FootballMatch $match): Response
     {
-        $match = $this->matchService->getMatchDetails($id);
+        $match = $this->matchService->getMatchDetails($match->id);
 
         if (! $match) {
             abort(404);
@@ -338,9 +338,9 @@ final class MatchController extends Controller
     /**
      * Show the form for editing the match.
      */
-    public function edit(int $id): Response|RedirectResponse
+    public function edit(FootballMatch $match): Response|RedirectResponse
     {
-        $match = FootballMatch::with(['homeTeam'])->findOrFail($id);
+        $match->load(['homeTeam']);
         $user = Auth::user();
 
         if (! $this->canSchedule($match, $user->id)) {
@@ -348,7 +348,7 @@ final class MatchController extends Controller
         }
 
         if ($match->hasStarted()) {
-            return redirect()->route('matches.show', $match->id)
+            return redirect()->route('matches.show', $match)
                 ->with('error', 'No se puede editar un partido que ya ha comenzado');
         }
 
@@ -379,7 +379,7 @@ final class MatchController extends Controller
         try {
             $match = $this->matchService->updateMatch($match, $validated);
 
-            return redirect()->route('matches.show', $match->id)
+            return redirect()->route('matches.show', $match)
                 ->with('success', '¡Partido actualizado exitosamente!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
@@ -521,7 +521,7 @@ final class MatchController extends Controller
         try {
             $this->matchService->completeMatch($match);
 
-            return redirect()->route('matches.show', $match->id)
+            return redirect()->route('matches.show', $match)
                 ->with('success', '¡Partido completado exitosamente!');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());

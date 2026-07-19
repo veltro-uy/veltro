@@ -196,7 +196,7 @@ export function TeamCard({ team, mode, currentUserId }: TeamCardProps) {
                 <div className="flex gap-2 pt-1">
                     {mode === 'mine' ? (
                         <Button asChild variant="outline" className="w-full">
-                            <Link href={teams.show(team.id).url}>
+                            <Link href={teams.show(team.public_id).url}>
                                 Ver equipo
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
@@ -211,7 +211,9 @@ export function TeamCard({ team, mode, currentUserId }: TeamCardProps) {
                                 Completo
                             </Button>
                             <Button asChild variant="outline">
-                                <Link href={teams.show(team.id).url}>Ver</Link>
+                                <Link href={teams.show(team.public_id).url}>
+                                    Ver
+                                </Link>
                             </Button>
                         </>
                     ) : (
@@ -227,7 +229,9 @@ export function TeamCard({ team, mode, currentUserId }: TeamCardProps) {
                                 }
                             />
                             <Button asChild variant="outline">
-                                <Link href={teams.show(team.id).url}>Ver</Link>
+                                <Link href={teams.show(team.public_id).url}>
+                                    Ver
+                                </Link>
                             </Button>
                         </>
                     )}

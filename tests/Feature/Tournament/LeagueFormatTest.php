@@ -213,7 +213,7 @@ test('tournament show endpoint includes standings for league format', function (
     $this->actingAs($organizer);
 
     // standings is a deferred prop, so it is absent on the initial page load...
-    $response = $this->get("/tournaments/{$tournament->id}");
+    $response = $this->get("/tournaments/{$tournament->public_id}");
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('tournaments/show')
@@ -222,7 +222,7 @@ test('tournament show endpoint includes standings for league format', function (
 
     // ...and is delivered by the follow-up deferred (partial) request.
     $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
-    $deferred = $this->get("/tournaments/{$tournament->id}", [
+    $deferred = $this->get("/tournaments/{$tournament->public_id}", [
         'X-Inertia' => 'true',
         'X-Inertia-Version' => $version,
         'X-Inertia-Partial-Component' => 'tournaments/show',

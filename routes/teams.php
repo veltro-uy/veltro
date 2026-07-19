@@ -32,7 +32,7 @@ Route::middleware(['auth', 'verified', 'throttle:teams', 'onboarding'])->group(f
         ->name('teams.invitation.accept');
 
     // Team CRUD - {id} routes must come after specific routes
-    Route::get('/teams/{id}', [TeamController::class, 'show'])->name('teams.show');
+    Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show');
     Route::put('/teams/{id}', [TeamController::class, 'update'])->name('teams.update');
     Route::delete('/teams/{id}', [TeamController::class, 'destroy'])->name('teams.destroy');
 

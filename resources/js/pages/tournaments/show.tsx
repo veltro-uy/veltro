@@ -254,7 +254,10 @@ function formatCountdown(prefix: string, days: number): string {
 
 const breadcrumbs = (tournament: Tournament): BreadcrumbItem[] => [
     { title: 'Torneos', href: tournaments.index().url },
-    { title: tournament.name, href: tournaments.show(tournament.id).url },
+    {
+        title: tournament.name,
+        href: tournaments.show(tournament.public_id).url,
+    },
 ];
 
 export default function TournamentShow({
