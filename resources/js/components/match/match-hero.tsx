@@ -79,10 +79,11 @@ export function MatchHero({
 
     return (
         <>
-            <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-background via-background to-muted/20 p-4 md:p-5">
-                <div className="absolute top-0 right-0 -mt-16 -mr-16 h-48 w-48 rounded-full bg-primary/5 blur-3xl" />
+            <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-background via-background to-muted/20 p-5 md:p-8">
+                <div className="absolute top-0 right-0 -mt-16 -mr-16 h-56 w-56 rounded-full bg-primary/5 blur-3xl" />
+                <div className="absolute bottom-0 left-0 -mb-16 -ml-16 h-56 w-56 rounded-full bg-primary/5 blur-3xl" />
 
-                <div className="relative space-y-4">
+                <div className="relative space-y-6">
                     {/* Status badges */}
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge className={getMatchStatusColor(match.status)}>
@@ -91,32 +92,32 @@ export function MatchHero({
                         <VariantBadge variant={match.variant} />
                     </div>
 
-                    {/* Scoreboard — home (local) left, away (visitante) right */}
-                    <div className="mx-auto grid w-full max-w-2xl grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-4">
-                        {/* Home team */}
+                    {/* Scoreboard — broadcast style: teams flank the score across the full width */}
+                    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-center gap-5 md:grid-cols-[1fr_auto_1fr] md:gap-8">
+                        {/* Home team (local) — left edge */}
                         <Link
                             href={`/teams/${match.home_team.id}`}
-                            className="group flex items-center justify-end gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-muted/50 md:gap-3"
+                            className="group flex items-center justify-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/50 md:justify-start md:gap-4"
                         >
                             <TeamAvatar
                                 name={match.home_team.name}
                                 logoUrl={match.home_team.logo_url}
-                                size="lg"
-                                className="h-12 w-12 shrink-0 md:h-16 md:w-16"
+                                size="xl"
+                                className="h-16 w-16 shrink-0 md:h-20 md:w-20"
                             />
-                            <div className="min-w-0 text-right">
-                                <h2 className="truncate text-base font-bold md:text-xl">
+                            <div className="min-w-0 text-center md:text-left">
+                                <h2 className="truncate text-xl font-bold md:text-2xl">
                                     {match.home_team.name}
                                 </h2>
-                                <div className="flex items-center justify-end gap-1 text-muted-foreground">
+                                <div className="flex items-center justify-center gap-1 text-muted-foreground md:justify-start">
                                     <Shield className="h-3.5 w-3.5" />
                                     <p className="text-xs md:text-sm">Local</p>
                                 </div>
                             </div>
                         </Link>
 
-                        {/* Score / countdown / placeholder */}
-                        <div className="flex flex-col items-center gap-1.5">
+                        {/* Score / countdown / placeholder — center */}
+                        <div className="flex flex-col items-center gap-2">
                             {showScore ? (
                                 <>
                                     {!matchHasStarted &&
@@ -130,7 +131,7 @@ export function MatchHero({
                                             </div>
                                         )}
 
-                                    <div className="flex items-center gap-1.5 rounded-xl border bg-card/80 px-3 py-2 shadow-sm backdrop-blur-sm md:gap-2">
+                                    <div className="flex items-center gap-2 rounded-2xl border bg-card/80 px-4 py-2.5 shadow-sm backdrop-blur-sm md:gap-3 md:px-6">
                                         {canRecord(isHomeLeader) && (
                                             <Button
                                                 variant="ghost"
@@ -149,7 +150,7 @@ export function MatchHero({
                                         )}
                                         <span
                                             className={cn(
-                                                'w-9 text-center text-3xl font-bold tabular-nums md:w-10',
+                                                'w-10 text-center text-4xl font-bold tabular-nums md:w-12 md:text-5xl',
                                                 match.status === 'completed' &&
                                                     homeScore > awayScore &&
                                                     'text-primary',
@@ -157,12 +158,12 @@ export function MatchHero({
                                         >
                                             {homeScore}
                                         </span>
-                                        <span className="text-lg font-bold text-muted-foreground">
+                                        <span className="text-xl font-bold text-muted-foreground md:text-2xl">
                                             -
                                         </span>
                                         <span
                                             className={cn(
-                                                'w-9 text-center text-3xl font-bold tabular-nums md:w-10',
+                                                'w-10 text-center text-4xl font-bold tabular-nums md:w-12 md:text-5xl',
                                                 match.status === 'completed' &&
                                                     awayScore > homeScore &&
                                                     'text-primary',
@@ -189,23 +190,23 @@ export function MatchHero({
                                     </div>
                                 </>
                             ) : (
-                                <div className="rounded-full border bg-card p-3 shadow-sm">
-                                    <Swords className="h-6 w-6 text-muted-foreground" />
+                                <div className="rounded-full border bg-card p-4 shadow-sm">
+                                    <Swords className="h-7 w-7 text-muted-foreground" />
                                 </div>
                             )}
                         </div>
 
-                        {/* Away team */}
+                        {/* Away team (visitante) — right edge */}
                         {match.away_team ? (
                             <Link
                                 href={`/teams/${match.away_team.id}`}
-                                className="group flex items-center justify-start gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-muted/50 md:gap-3"
+                                className="group flex items-center justify-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/50 md:justify-end md:gap-4"
                             >
-                                <div className="min-w-0 text-left">
-                                    <h2 className="truncate text-base font-bold md:text-xl">
+                                <div className="min-w-0 text-center md:text-right">
+                                    <h2 className="truncate text-xl font-bold md:text-2xl">
                                         {match.away_team.name}
                                     </h2>
-                                    <div className="flex items-center gap-1 text-muted-foreground">
+                                    <div className="flex items-center justify-center gap-1 text-muted-foreground md:justify-end">
                                         <Plane className="h-3.5 w-3.5" />
                                         <p className="text-xs md:text-sm">
                                             Visitante
@@ -215,22 +216,22 @@ export function MatchHero({
                                 <TeamAvatar
                                     name={match.away_team.name}
                                     logoUrl={match.away_team.logo_url}
-                                    size="lg"
-                                    className="h-12 w-12 shrink-0 md:h-16 md:w-16"
+                                    size="xl"
+                                    className="h-16 w-16 shrink-0 md:h-20 md:w-20"
                                 />
                             </Link>
                         ) : (
-                            <div className="flex items-center justify-start gap-2.5 rounded-lg border border-dashed bg-muted/30 p-2 md:gap-3">
-                                <div className="min-w-0">
-                                    <h3 className="truncate text-sm font-semibold">
+                            <div className="flex items-center justify-center gap-3 rounded-xl border border-dashed bg-muted/30 p-3 md:justify-end md:gap-4">
+                                <div className="min-w-0 text-center md:text-right">
+                                    <h3 className="truncate text-base font-semibold">
                                         Buscando rival
                                     </h3>
                                     <p className="truncate text-xs text-muted-foreground">
                                         Esperando solicitudes
                                     </p>
                                 </div>
-                                <div className="rounded-full bg-muted p-2.5">
-                                    <Users className="h-6 w-6 text-muted-foreground" />
+                                <div className="rounded-full bg-muted p-3">
+                                    <Users className="h-7 w-7 text-muted-foreground" />
                                 </div>
                             </div>
                         )}

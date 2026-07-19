@@ -36,7 +36,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 import matchRequests from '@/routes/match-requests';
 import matches from '@/routes/matches';
 import type {
@@ -183,11 +182,14 @@ export default function Show({
     const takesAvailability =
         match.status === 'available' || match.status === 'confirmed';
 
-    // Whether the sidebar rail will hold anything. When it won't (e.g. a
-    // completed match viewed by a non-leader) we drop the reserved column and
-    // center the narrative instead of leaving a third of the page empty.
+    const lineupsPresent =
+        isConfirmedOrLater && (homeLineup.length > 0 || awayLineup.length > 0);
+
+    // Whether the right column will hold anything. When it won't we let the
+    // narrative span the full width instead of leaving an empty half.
     const hasAside =
         (takesAvailability && userTeamId != null) ||
+        lineupsPresent ||
         (isLeader && isConfirmedOrLater);
 
     const mainContent = (
@@ -248,18 +250,6 @@ export default function Show({
                     ) : null}
                 </Deferred>
             )}
-
-            {isConfirmedOrLater &&
-                (homeLineup.length > 0 || awayLineup.length > 0) && (
-                    <MatchLineups
-                        homeTeamName={match.home_team.name}
-                        awayTeamName={match.away_team?.name}
-                        homeTeamLogoUrl={match.home_team.logo_url}
-                        awayTeamLogoUrl={match.away_team?.logo_url}
-                        homeLineup={homeLineup}
-                        awayLineup={awayLineup}
-                    />
-                )}
         </>
     );
 
@@ -269,6 +259,17 @@ export default function Show({
                 <AvailabilitySelector
                     matchId={match.id}
                     currentStatus={userAvailability ?? undefined}
+                />
+            )}
+
+            {lineupsPresent && (
+                <MatchLineups
+                    homeTeamName={match.home_team.name}
+                    awayTeamName={match.away_team?.name}
+                    homeTeamLogoUrl={match.home_team.logo_url}
+                    awayTeamLogoUrl={match.away_team?.logo_url}
+                    homeLineup={homeLineup}
+                    awayLineup={awayLineup}
                 />
             )}
 
@@ -339,12 +340,7 @@ export default function Show({
                 title={`${match.home_team.name}${match.away_team ? ` vs ${match.away_team.name}` : ''}`}
             />
 
-            <div
-                className={cn(
-                    'mx-auto flex w-full flex-1 flex-col gap-6 p-4 md:p-6',
-                    hasAside ? 'max-w-6xl' : 'max-w-3xl',
-                )}
-            >
+            <div className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col gap-6 p-4 md:p-6">
                 <MatchHero
                     match={match}
                     isHomeLeader={isHomeLeader}
@@ -358,10 +354,8 @@ export default function Show({
                 />
 
                 {hasAside ? (
-                    <div className="grid gap-6 lg:grid-cols-3">
-                        <div className="space-y-6 lg:col-span-2">
-                            {mainContent}
-                        </div>
+                    <div className="grid items-start gap-6 lg:grid-cols-2">
+                        <div className="space-y-6">{mainContent}</div>
                         <div className="space-y-6">{asideContent}</div>
                     </div>
                 ) : (
