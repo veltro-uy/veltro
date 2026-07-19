@@ -118,6 +118,26 @@ test('authenticated user can view matches index', function () {
         ->assertSuccessful();
 });
 
+test('base-role player sees their team matches in history', function () {
+    $player = User::factory()->create();
+    TeamMember::create([
+        'user_id' => $player->id,
+        'team_id' => $this->homeTeam->id,
+        'role' => 'player',
+        'status' => 'active',
+    ]);
+
+    $match = createMatch();
+
+    $this->actingAs($player)
+        ->get(route('matches.index'))
+        ->assertInertia(fn ($page) => $page
+            ->component('matches/index')
+            ->has('myMatches', 1)
+            ->where('myMatches.0.id', $match->id)
+        );
+});
+
 test('team leader can view the create match form', function () {
     $this->actingAs($this->homeCaptain)
         ->get(route('matches.create'))

@@ -23,7 +23,7 @@ final class DashboardController extends Controller
     public function index(Request $request): Response
     {
         $user = Auth::user();
-        $teamIds = $user->teams()->pluck('teams.id')->toArray();
+        $teamIds = $user->activeTeams()->pluck('teams.id')->toArray();
         $hasTeams = count($teamIds) > 0;
 
         // Variants of the user's teams — used to surface relevant open matches.
@@ -32,7 +32,7 @@ final class DashboardController extends Controller
             : [];
 
         // User's teams with member count
-        $myTeams = $user->teams()
+        $myTeams = $user->activeTeams()
             ->withCount('teamMembers')
             ->limit(4)
             ->get(['teams.id', 'teams.name', 'teams.variant', 'teams.logo_url', 'teams.max_members']);
