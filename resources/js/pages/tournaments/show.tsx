@@ -108,6 +108,128 @@ const teamStatusConfig: Record<
     withdrawn: { label: 'Retirado', variant: 'outline' },
 };
 
+function StatTile({
+    icon: Icon,
+    label,
+    children,
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-border/80">
+            <div className="mb-2.5 flex items-center gap-2">
+                <span className="flex size-6 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Icon className="size-3.5" />
+                </span>
+                <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                    {label}
+                </span>
+            </div>
+            {children}
+        </div>
+    );
+}
+
+function MatchSide({
+    team,
+    align,
+}: {
+    team?: Team | null;
+    align: 'start' | 'end';
+}) {
+    const name = team?.name ?? 'Por definir';
+    return (
+        <div
+            className={cn(
+                'flex min-w-0 flex-1 items-center gap-2.5',
+                align === 'end' && 'flex-row-reverse text-right',
+            )}
+        >
+            {team ? (
+                <TeamAvatar
+                    name={name}
+                    logoUrl={team.logo_url}
+                    size="sm"
+                    className="size-8 shrink-0"
+                />
+            ) : (
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed text-muted-foreground">
+                    <Users className="size-3.5" />
+                </span>
+            )}
+            <span
+                className={cn(
+                    'truncate text-sm font-medium',
+                    !team && 'text-muted-foreground',
+                )}
+            >
+                {name}
+            </span>
+        </div>
+    );
+}
+
+function ScheduleMatchRow({
+    match,
+    canEdit,
+    onSchedule,
+}: {
+    match: FootballMatch;
+    canEdit: boolean;
+    onSchedule: () => void;
+}) {
+    const scheduled = Boolean(match.scheduled_at);
+    return (
+        <div
+            className={cn(
+                'rounded-xl border bg-card/40 p-3.5 transition-colors',
+                canEdit && 'hover:border-primary/30 hover:bg-muted/20',
+            )}
+        >
+            <div className="flex items-center gap-3">
+                <MatchSide team={match.home_team} align="start" />
+                <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                    vs
+                </span>
+                <MatchSide team={match.away_team} align="end" />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/50 pt-3">
+                <span
+                    className={cn(
+                        'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs',
+                        scheduled
+                            ? 'bg-muted/60 text-foreground'
+                            : 'bg-amber-500/10 text-amber-500',
+                    )}
+                >
+                    <CalendarClock className="size-3.5" />
+                    {scheduled
+                        ? formatScheduledAt(match.scheduled_at)
+                        : 'Sin programar'}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-1 text-xs text-muted-foreground">
+                    <MapPin className="size-3.5" />
+                    {match.location ?? 'Por definir'}
+                </span>
+                {canEdit && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={onSchedule}
+                        className="ml-auto h-7 gap-1.5 px-2.5 text-xs"
+                    >
+                        <Pencil className="size-3.5" />
+                        {scheduled ? 'Editar' : 'Programar'}
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function SidebarLabel({
     label,
     children,
@@ -338,21 +460,19 @@ export default function TournamentShow({
 
                 {/* Stat strip */}
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <div className="rounded-xl border border-border bg-card p-4">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1.5">
-                                <Users className="size-3.5" />
-                                Equipos
+                    <StatTile icon={Users} label="Equipos">
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-2xl leading-none font-bold tracking-tight tabular-nums">
+                                {approvedTeams.length}
                             </span>
-                            <span>mín. {tournament.min_teams}</span>
+                            <span className="text-sm font-medium text-muted-foreground">
+                                / {tournament.max_teams}
+                            </span>
+                            <span className="ml-auto text-[11px] text-muted-foreground">
+                                mín. {tournament.min_teams}
+                            </span>
                         </div>
-                        <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">
-                            {approvedTeams.length}
-                            <span className="text-base font-medium text-muted-foreground">
-                                /{tournament.max_teams}
-                            </span>
-                        </p>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                             <div
                                 className={cn(
                                     'h-full rounded-full transition-all duration-500',
@@ -376,34 +496,28 @@ export default function TournamentShow({
                                 }}
                             />
                         </div>
-                    </div>
+                    </StatTile>
 
-                    <div className="rounded-xl border border-border bg-card p-4">
-                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Trophy className="size-3.5" />
-                            Formato
-                        </p>
-                        <p className="mt-1 text-lg font-semibold tracking-tight">
+                    <StatTile icon={Trophy} label="Formato">
+                        <p className="truncate text-lg leading-tight font-semibold tracking-tight">
                             {tournamentFormatLabel(tournament.format)}
                         </p>
-                    </div>
+                    </StatTile>
 
-                    <div className="rounded-xl border border-border bg-card p-4">
-                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Info className="size-3.5" />
-                            Estado
-                        </p>
-                        <p className="mt-1 text-lg font-semibold tracking-tight">
+                    <StatTile icon={Info} label="Estado">
+                        <p className="flex items-center gap-2 text-lg leading-tight font-semibold tracking-tight">
+                            {tournament.status === 'in_progress' && (
+                                <span className="relative flex size-2">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/70" />
+                                    <span className="relative inline-flex size-2 rounded-full bg-primary" />
+                                </span>
+                            )}
                             {tournamentStatusMeta(tournament).label}
                         </p>
-                    </div>
+                    </StatTile>
 
-                    <div className="rounded-xl border border-border bg-card p-4">
-                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CalendarClock className="size-3.5" />
-                            Inicio
-                        </p>
-                        <p className="mt-1 text-lg font-semibold tracking-tight">
+                    <StatTile icon={CalendarClock} label="Inicio">
+                        <p className="text-lg leading-tight font-semibold tracking-tight">
                             {tournament.starts_at
                                 ? formatDate(tournament.starts_at, {
                                       day: 'numeric',
@@ -412,7 +526,7 @@ export default function TournamentShow({
                                   })
                                 : 'Por definir'}
                         </p>
-                    </div>
+                    </StatTile>
                 </div>
 
                 <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
@@ -550,15 +664,26 @@ export default function TournamentShow({
                                                 : 'Fechas y canchas confirmadas por el organizador.'}
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent className="space-y-5">
+                                    <CardContent className="space-y-6">
                                         {tournament.rounds.map((round) => (
                                             <div
                                                 key={round.id}
-                                                className="space-y-2.5"
+                                                className="space-y-3"
                                             >
-                                                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                                    {round.name}
-                                                </h3>
+                                                <div className="flex items-center gap-3">
+                                                    <h3 className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                                                        {round.name}
+                                                    </h3>
+                                                    <span className="h-px flex-1 bg-border/60" />
+                                                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                                                        {round.matches
+                                                            ?.length ?? 0}{' '}
+                                                        {(round.matches
+                                                            ?.length ?? 0) === 1
+                                                            ? 'partido'
+                                                            : 'partidos'}
+                                                    </span>
+                                                </div>
                                                 <div className="space-y-2">
                                                     {(round.matches?.length ??
                                                         0) === 0 ? (
@@ -568,16 +693,6 @@ export default function TournamentShow({
                                                     ) : (
                                                         round.matches!.map(
                                                             (match) => {
-                                                                const home =
-                                                                    match
-                                                                        .home_team
-                                                                        ?.name ??
-                                                                    'Por definir';
-                                                                const away =
-                                                                    match
-                                                                        .away_team
-                                                                        ?.name ??
-                                                                    'Por definir';
                                                                 const isLocked =
                                                                     match.status ===
                                                                         'in_progress' ||
@@ -587,70 +702,22 @@ export default function TournamentShow({
                                                                     permissions.canScheduleMatches &&
                                                                     !isLocked;
                                                                 return (
-                                                                    <div
+                                                                    <ScheduleMatchRow
                                                                         key={
                                                                             match.id
                                                                         }
-                                                                        className={cn(
-                                                                            'flex flex-col gap-3 rounded-lg border bg-card/40 p-3 transition-colors sm:flex-row sm:items-center sm:justify-between',
-                                                                            canEditMatch &&
-                                                                                'hover:border-primary/30 hover:bg-muted/20',
-                                                                        )}
-                                                                    >
-                                                                        <div className="min-w-0 flex-1">
-                                                                            <p className="truncate text-sm font-medium">
-                                                                                {
-                                                                                    home
-                                                                                }{' '}
-                                                                                <span className="text-muted-foreground">
-                                                                                    vs
-                                                                                </span>{' '}
-                                                                                {
-                                                                                    away
-                                                                                }
-                                                                            </p>
-                                                                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                                                                <span className="flex items-center gap-1">
-                                                                                    <CalendarClock className="size-3.5" />
-                                                                                    {match.scheduled_at ? (
-                                                                                        formatScheduledAt(
-                                                                                            match.scheduled_at,
-                                                                                        )
-                                                                                    ) : (
-                                                                                        <Badge
-                                                                                            variant="outline"
-                                                                                            className="font-normal"
-                                                                                        >
-                                                                                            Sin
-                                                                                            programar
-                                                                                        </Badge>
-                                                                                    )}
-                                                                                </span>
-                                                                                <span className="flex items-center gap-1">
-                                                                                    <MapPin className="size-3.5" />
-                                                                                    {match.location ??
-                                                                                        'Por definir'}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                        {canEditMatch && (
-                                                                            <Button
-                                                                                size="sm"
-                                                                                variant="outline"
-                                                                                onClick={() =>
-                                                                                    setScheduleMatch(
-                                                                                        match,
-                                                                                    )
-                                                                                }
-                                                                                className="w-full gap-1.5 sm:w-auto"
-                                                                            >
-                                                                                <Pencil className="size-3.5" />
-                                                                                {match.scheduled_at
-                                                                                    ? 'Editar'
-                                                                                    : 'Programar'}
-                                                                            </Button>
-                                                                        )}
-                                                                    </div>
+                                                                        match={
+                                                                            match
+                                                                        }
+                                                                        canEdit={
+                                                                            canEditMatch
+                                                                        }
+                                                                        onSchedule={() =>
+                                                                            setScheduleMatch(
+                                                                                match,
+                                                                            )
+                                                                        }
+                                                                    />
                                                                 );
                                                             },
                                                         )
@@ -804,7 +871,7 @@ export default function TournamentShow({
                                             return (
                                                 <div
                                                     key={tt.id}
-                                                    className="flex items-center gap-3 rounded-lg border p-3"
+                                                    className="flex items-center gap-3 rounded-xl border bg-card/40 p-3 transition-colors hover:border-primary/30 hover:bg-muted/20"
                                                 >
                                                     <TeamAvatar
                                                         name={team.name}
