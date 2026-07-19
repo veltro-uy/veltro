@@ -19,7 +19,9 @@ const BracketMatch = ({ match }: BracketMatchProps) => {
     const winnerId = isCompleted ? getWinnerId(match) : null;
 
     const MatchWrapper = match.id ? Link : 'div';
-    const wrapperProps = match.id ? { href: `/matches/${match.id}` } : {};
+    const wrapperProps = match.id
+        ? { href: `/matches/${match.public_id}` }
+        : {};
 
     return (
         <MatchWrapper {...wrapperProps} className={cn(match.id && 'block')}>

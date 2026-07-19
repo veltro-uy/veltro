@@ -180,7 +180,7 @@ export function MatchHero({
                         <div className="grid grid-cols-1 items-center gap-5 md:grid-cols-[1fr_auto_1fr] md:gap-6">
                             {/* Home team (local) — name outer, crest inner */}
                             <Link
-                                href={`/teams/${match.home_team.id}`}
+                                href={`/teams/${match.home_team.public_id}`}
                                 className="group flex items-center justify-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/50 md:justify-end md:gap-4"
                             >
                                 <div className="min-w-0 text-center md:text-right">
@@ -290,7 +290,7 @@ export function MatchHero({
                             {/* Away team (visitante) — crest inner, name outer */}
                             {match.away_team ? (
                                 <Link
-                                    href={`/teams/${match.away_team.id}`}
+                                    href={`/teams/${match.away_team.public_id}`}
                                     className="group flex items-center justify-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/50 md:justify-start md:gap-4"
                                 >
                                     <TeamAvatar
