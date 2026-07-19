@@ -19,7 +19,7 @@ class ProfileCommentController extends Controller
     public function index(User $user): JsonResponse
     {
         $comments = ProfileComment::forProfile($user->id)
-            ->with('author:id,name,avatar_path,google_avatar_url')
+            ->with('author:id,public_id,name,avatar_path,google_avatar_url')
             ->paginate(20);
 
         return response()->json($comments);
@@ -53,7 +53,7 @@ class ProfileCommentController extends Controller
         ]);
 
         // Load author relationship
-        $comment->load('author:id,name,avatar_path,google_avatar_url');
+        $comment->load('author:id,public_id,name,avatar_path,google_avatar_url');
 
         // Send notification to profile owner
         $user->notify(new ProfileCommentNotification($authUser, $comment));
