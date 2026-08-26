@@ -737,3 +737,36 @@ test('leadsAnyTeam only counts captain and co_captain roles', function () {
         ->and($this->player->leadsAnyTeam())->toBeFalse()
         ->and($this->outsider->leadsAnyTeam())->toBeFalse();
 });
+
+test('team page does not expose member contact details to visitors', function () {
+    $this->player->update([
+        'phone_number' => '+598 99 123 456',
+        'date_of_birth' => '1990-01-01',
+    ]);
+
+    // The team page is viewable by any authenticated user, member or not.
+    $this->actingAs($this->outsider)
+        ->get(route('teams.show', $this->team))
+        ->assertOk()
+        ->assertInertia(function ($page) {
+            $members = collect($page->toArray()['props']['team']['team_members']);
+
+            expect($members)->not->toBeEmpty();
+
+            $members->each(function (array $member) {
+                expect($member['user'])
+                    ->not->toHaveKey('email')
+                    ->not->toHaveKey('phone_number')
+                    ->not->toHaveKey('date_of_birth')
+                    // The roster UI gets a boolean instead.
+                    ->toHaveKey('has_phone_number');
+            });
+        });
+});
+
+test('a leader still sees their own phone number in shared auth props', function () {
+    $this->actingAs($this->captain)
+        ->get(route('teams.show', $this->team))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('auth.user.phone_number', $this->captain->phone_number));
+});

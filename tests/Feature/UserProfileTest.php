@@ -26,10 +26,8 @@ test('user profile can be viewed by anyone', function () {
             'user' => [
                 'id',
                 'name',
-                'email',
                 'bio',
                 'location',
-                'date_of_birth',
                 'age',
                 'avatar_url',
             ],
@@ -40,6 +38,23 @@ test('user profile can be viewed by anyone', function () {
             ],
             'teams',
         ]);
+});
+
+test('public user profile does not expose contact or personal details', function () {
+    $user = User::factory()->create([
+        'date_of_birth' => '1990-01-01',
+        'phone_number' => '+598 99 123 456',
+    ]);
+
+    $response = $this->getJson("/api/users/{$user->id}");
+
+    $response->assertStatus(200)
+        ->assertJsonMissingPath('user.email')
+        ->assertJsonMissingPath('user.phone_number')
+        ->assertJsonMissingPath('user.date_of_birth');
+
+    // The derived age is still published; the exact date of birth is not.
+    expect($response->json('user.age'))->not->toBeNull();
 });
 
 test('user profile returns correct statistics', function () {

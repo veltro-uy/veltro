@@ -359,10 +359,18 @@ final class TeamService
      */
     public function getTeamWithDetails(int $teamId): ?Team
     {
+        // The team page is visible to any authenticated user, not just members,
+        // so every user relation here is narrowed to the columns the roster UI
+        // actually renders. Loading whole User models would ship each member's
+        // email, date of birth, bio and location to any visitor.
+        // phone_number is selected (never serialized - see User::$hidden) only
+        // so the has_phone_number boolean can be derived for the roster UI.
+        $userColumns = 'id,public_id,name,avatar_path,google_avatar_url,phone_number';
+
         return Team::with([
-            'teamMembers.user',
-            'creator',
-            'pendingJoinRequests.user',
+            'teamMembers.user:'.$userColumns,
+            'creator:'.$userColumns,
+            'pendingJoinRequests.user:'.$userColumns,
         ])->find($teamId);
     }
 

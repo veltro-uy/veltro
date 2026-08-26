@@ -56,6 +56,18 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
+        // Contact detail. Only released deliberately: to the authenticated
+        // owner (see HandleInertiaRequests) and to opposing team leaders once
+        // a match is confirmed (see MatchController::mapOpposingLeaders, which
+        // reads the attribute directly and so is unaffected by $hidden).
+        // Everywhere else the roster UI uses the has_phone_number boolean.
+        'phone_number',
+        // Contact / personal detail that no page renders for anyone but the
+        // owner. Rosters, match pages and public profiles previously shipped
+        // these to any authenticated visitor. The public profile exposes the
+        // derived `age` append, never the exact date of birth.
+        'email',
+        'date_of_birth',
     ];
 
     /**

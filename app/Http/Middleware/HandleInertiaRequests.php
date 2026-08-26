@@ -43,7 +43,12 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user(),
+                // phone_number is hidden globally (see User::$hidden), but the
+                // authenticated user must see their own: the profile form and
+                // the team-leadership gate both read it.
+                'user' => $request->user()?->makeVisible([
+                    'phone_number', 'email', 'date_of_birth',
+                ]),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'vapidPublicKey' => config('webpush.vapid.public_key'),
