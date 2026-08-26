@@ -390,7 +390,7 @@ export function EditTeamModal({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="w-full shrink-0 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground sm:w-auto"
+                            className="hover:text-destructive-foreground w-full shrink-0 border-destructive/30 text-destructive hover:bg-destructive sm:w-auto"
                             onClick={() => {
                                 // Close this dialog first, then let the parent
                                 // open the confirmation dialog to avoid
