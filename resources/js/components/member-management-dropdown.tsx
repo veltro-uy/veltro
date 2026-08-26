@@ -43,6 +43,8 @@ interface TeamMember {
         id: number;
         name: string;
         email: string;
+        /** Boolean mirror of users.phone_number — the leadership requirement. */
+        has_phone_number?: boolean;
     };
 }
 
@@ -63,6 +65,10 @@ export function MemberManagementDropdown({
 }: MemberManagementDropdownProps) {
     const isCurrentUser = member.user_id === currentUserId;
     const isMemberCaptain = member.role === 'captain';
+    // Leadership roles require a phone number: rival leaders are given it to
+    // coordinate confirmed matches. Members without one stay visible but
+    // disabled so the captain can see *why* they are not selectable.
+    const memberCanLead = member.user.has_phone_number === true;
     const [showTransferDialog, setShowTransferDialog] = useState(false);
     const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
@@ -193,10 +199,18 @@ export function MemberManagementDropdown({
                                         e.preventDefault();
                                         handleRoleChange('co_captain');
                                     }}
-                                    disabled={member.role === 'co_captain'}
+                                    disabled={
+                                        member.role === 'co_captain' ||
+                                        !memberCanLead
+                                    }
                                 >
                                     <Shield className="mr-2 h-4 w-4" />
                                     Vice-Capitán
+                                    {!memberCanLead && (
+                                        <span className="ml-auto pl-2 text-xs text-muted-foreground">
+                                            Sin teléfono
+                                        </span>
+                                    )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onSelect={(e) => {
@@ -275,12 +289,32 @@ export function MemberManagementDropdown({
                             <DropdownMenuItem
                                 onSelect={(e) => {
                                     e.preventDefault();
+                                    if (!memberCanLead) return;
                                     setShowTransferDialog(true);
                                 }}
+                                disabled={!memberCanLead}
                             >
                                 <ArrowLeftRight className="mr-2 h-4 w-4" />
                                 Transferir Capitanía
+                                {!memberCanLead && (
+                                    <span className="ml-auto pl-2 text-xs text-muted-foreground">
+                                        Sin teléfono
+                                    </span>
+                                )}
                             </DropdownMenuItem>
+                        </>
+                    )}
+
+                    {/* Why the leadership actions above are unavailable */}
+                    {isCaptain && !isMemberCaptain && !memberCanLead && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <p className="px-2 py-1.5 text-xs leading-snug text-muted-foreground">
+                                {member.user.name} no puede ser vice-capitán ni
+                                capitán hasta que agregue un número de teléfono
+                                a su perfil: los equipos rivales lo necesitan
+                                para coordinar los partidos.
+                            </p>
                         </>
                     )}
 

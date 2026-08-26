@@ -26,6 +26,7 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'phone_number' => '09'.fake()->numerify('#######'),
             'password' => static::$password ??= 'password',
             'remember_token' => Str::random(10),
             'two_factor_secret' => Str::random(10),
@@ -33,6 +34,17 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
             'onboarding_completed' => true,
         ];
+    }
+
+    /**
+     * Indicate that the model has no phone number on file, so it cannot hold a
+     * team leadership role.
+     */
+    public function withoutPhoneNumber(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'phone_number' => null,
+        ]);
     }
 
     /**

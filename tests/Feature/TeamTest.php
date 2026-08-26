@@ -607,3 +607,166 @@ test('team search results are paginated with filters preserved across pages', fu
             ->where('filters.name', 'Searchclub')
         );
 });
+
+// ============================================================
+// Phone number requirement for leadership roles
+// ============================================================
+
+test('user without a phone number cannot create a team', function () {
+    $noPhone = User::factory()->withoutPhoneNumber()->create();
+
+    $this->actingAs($noPhone)
+        ->post(route('teams.store'), [
+            'name' => 'Phoneless FC',
+            'variant' => 'football_7',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseMissing('teams', ['name' => 'Phoneless FC']);
+    $this->assertDatabaseMissing('team_members', ['user_id' => $noPhone->id]);
+});
+
+test('user with a phone number can create a team', function () {
+    $withPhone = User::factory()->create(['phone_number' => '099123456']);
+
+    $this->actingAs($withPhone)
+        ->post(route('teams.store'), [
+            'name' => 'Reachable FC',
+            'variant' => 'football_7',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $team = Team::where('name', 'Reachable FC')->first();
+
+    expect($team)->not->toBeNull();
+    $this->assertDatabaseHas('team_members', [
+        'team_id' => $team->id,
+        'user_id' => $withPhone->id,
+        'role' => 'captain',
+    ]);
+});
+
+test('captaincy cannot be transferred to a member without a phone number', function () {
+    $this->player->update(['phone_number' => null]);
+
+    $this->actingAs($this->captain)
+        ->post(route('teams.transfer-captaincy', $this->team->id), [
+            'new_captain_id' => $this->player->id,
+        ])
+        ->assertSessionHas('error');
+
+    // Roster untouched: the outgoing captain still holds the role.
+    $this->assertDatabaseHas('team_members', [
+        'team_id' => $this->team->id,
+        'user_id' => $this->captain->id,
+        'role' => 'captain',
+    ]);
+    $this->assertDatabaseHas('team_members', [
+        'team_id' => $this->team->id,
+        'user_id' => $this->player->id,
+        'role' => 'player',
+    ]);
+});
+
+test('captaincy can be transferred to a member with a phone number', function () {
+    $this->player->update(['phone_number' => '099888777']);
+
+    $this->actingAs($this->captain)
+        ->post(route('teams.transfer-captaincy', $this->team->id), [
+            'new_captain_id' => $this->player->id,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('team_members', [
+        'team_id' => $this->team->id,
+        'user_id' => $this->player->id,
+        'role' => 'captain',
+    ]);
+    $this->assertDatabaseHas('team_members', [
+        'team_id' => $this->team->id,
+        'user_id' => $this->captain->id,
+        'role' => 'player',
+    ]);
+});
+
+test('member without a phone number cannot be promoted to co_captain', function () {
+    $this->player->update(['phone_number' => null]);
+
+    $this->actingAs($this->captain)
+        ->put(route('teams.members.update-role', [$this->team->id, $this->player->id]), [
+            'role' => 'co_captain',
+        ])
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseHas('team_members', [
+        'team_id' => $this->team->id,
+        'user_id' => $this->player->id,
+        'role' => 'player',
+    ]);
+});
+
+test('co_captain without a phone number can still be demoted to player', function () {
+    $this->player->update(['phone_number' => null]);
+    TeamMember::where('team_id', $this->team->id)
+        ->where('user_id', $this->player->id)
+        ->update(['role' => 'co_captain']);
+
+    $this->actingAs($this->captain)
+        ->put(route('teams.members.update-role', [$this->team->id, $this->player->id]), [
+            'role' => 'player',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $this->assertDatabaseHas('team_members', [
+        'team_id' => $this->team->id,
+        'user_id' => $this->player->id,
+        'role' => 'player',
+    ]);
+});
+
+test('canLeadTeam reflects the presence of a phone number', function () {
+    expect(User::factory()->create(['phone_number' => '099111222'])->canLeadTeam())->toBeTrue()
+        ->and(User::factory()->withoutPhoneNumber()->create()->canLeadTeam())->toBeFalse();
+});
+
+test('leadsAnyTeam only counts captain and co_captain roles', function () {
+    expect($this->captain->leadsAnyTeam())->toBeTrue()
+        ->and($this->player->leadsAnyTeam())->toBeFalse()
+        ->and($this->outsider->leadsAnyTeam())->toBeFalse();
+});
+
+test('team page does not expose member contact details to visitors', function () {
+    $this->player->update([
+        'phone_number' => '+598 99 123 456',
+        'date_of_birth' => '1990-01-01',
+    ]);
+
+    // The team page is viewable by any authenticated user, member or not.
+    $this->actingAs($this->outsider)
+        ->get(route('teams.show', $this->team))
+        ->assertOk()
+        ->assertInertia(function ($page) {
+            $members = collect($page->toArray()['props']['team']['team_members']);
+
+            expect($members)->not->toBeEmpty();
+
+            $members->each(function (array $member) {
+                expect($member['user'])
+                    ->not->toHaveKey('email')
+                    ->not->toHaveKey('phone_number')
+                    ->not->toHaveKey('date_of_birth')
+                    // The roster UI gets a boolean instead.
+                    ->toHaveKey('has_phone_number');
+            });
+        });
+});
+
+test('a leader still sees their own phone number in shared auth props', function () {
+    $this->actingAs($this->captain)
+        ->get(route('teams.show', $this->team))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('auth.user.phone_number', $this->captain->phone_number));
+});

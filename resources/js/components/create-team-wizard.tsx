@@ -1,3 +1,7 @@
+import {
+    PhoneRequiredNotice,
+    useCanLeadTeam,
+} from '@/components/phone-required-notice';
 import { TeamAvatar } from '@/components/team-avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +31,8 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE = 2048 * 1024; // 2MB
 
 export function CreateTeamWizard() {
+    // The creator becomes captain, so a phone number is required up front.
+    const canLead = useCanLeadTeam();
     const [step, setStep] = useState(0);
     const [name, setName] = useState('');
     const [variant, setVariant] = useState(DEFAULT_VARIANT);
@@ -155,6 +161,13 @@ export function CreateTeamWizard() {
                         )}
                     </div>
 
+                    {!canLead && (
+                        <PhoneRequiredNotice
+                            className="mt-6"
+                            description="Al crear un equipo pasás a ser su capitán, y para eso necesitás un teléfono en tu perfil: los equipos rivales lo usan para coordinar los partidos confirmados."
+                        />
+                    )}
+
                     {/* Nav */}
                     <div className="mt-6 flex items-center justify-between gap-3 border-t border-border pt-5">
                         {step > 0 ? (
@@ -184,7 +197,7 @@ export function CreateTeamWizard() {
                             <Button
                                 type="button"
                                 onClick={submit}
-                                disabled={processing || !nameValid}
+                                disabled={processing || !nameValid || !canLead}
                             >
                                 {processing ? (
                                     <>

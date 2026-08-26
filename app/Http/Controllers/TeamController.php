@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Team;
 use App\Models\TeamInvitation;
+use App\Models\User;
 use App\Rules\CleanText;
 use App\Services\TeamService;
 use Illuminate\Http\Request;
@@ -68,6 +69,15 @@ final class TeamController extends Controller
         ]);
 
         $user = Auth::user();
+
+        // The creator becomes captain, and leaders must be reachable by phone
+        // so rival teams can coordinate confirmed matches.
+        if (! $user->canLeadTeam()) {
+            return back()
+                ->withInput()
+                ->with('error', 'Agregá tu número de teléfono en tu perfil antes de crear un equipo. Los equipos rivales lo necesitan para coordinar los partidos.');
+        }
+
         $team = $this->teamService->createTeam($user, [
             'name' => $validated['name'],
             'variant' => $validated['variant'],
@@ -96,6 +106,12 @@ final class TeamController extends Controller
         $user = Auth::user();
         $isMember = $team->hasMember($user->id);
         $canManage = $team->isLeader($user->id);
+
+        // Expose a boolean (never the phone number itself) so the roster UI can
+        // explain why a member cannot be promoted or handed the captaincy.
+        $team->teamMembers->each(
+            fn ($member) => $member->user?->append('has_phone_number')
+        );
         $statistics = $this->teamService->getTeamStatistics($team);
 
         $pendingInvitations = collect();
@@ -118,6 +134,7 @@ final class TeamController extends Controller
             'canManage' => $canManage,
             'statistics' => $statistics,
             'pendingInvitations' => $pendingInvitations,
+            'viewerCanLead' => $user->canLeadTeam(),
         ]);
     }
 
@@ -255,6 +272,15 @@ final class TeamController extends Controller
             'role' => ['required', 'in:player,co_captain'],
         ]);
 
+        // Only promotions are gated: demoting to player must always be possible.
+        if ($validated['role'] === 'co_captain') {
+            $target = User::find($userId);
+
+            if (! $target || ! $target->canLeadTeam()) {
+                return back()->with('error', 'El miembro debe tener un número de teléfono en su perfil para ser vice-capitán. Los equipos rivales lo necesitan para coordinar los partidos.');
+            }
+        }
+
         $this->teamService->updateMemberRole($team, $userId, $validated['role']);
 
         return back()->with('success', '¡Rol de miembro actualizado exitosamente!');
@@ -300,6 +326,13 @@ final class TeamController extends Controller
         // Check if new captain is a member
         if (! $team->hasMember($validated['new_captain_id'])) {
             return back()->with('error', 'El nuevo capitán debe ser miembro del equipo');
+        }
+
+        // The incoming captain — not the outgoing one — must be reachable.
+        $newCaptain = User::find($validated['new_captain_id']);
+
+        if (! $newCaptain || ! $newCaptain->canLeadTeam()) {
+            return back()->with('error', 'El nuevo capitán debe tener un número de teléfono en su perfil. Los equipos rivales lo necesitan para coordinar los partidos.');
         }
 
         $this->teamService->transferCaptaincy($team, $user->id, $validated['new_captain_id']);

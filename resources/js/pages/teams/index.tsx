@@ -1,3 +1,7 @@
+import {
+    PhoneRequiredNotice,
+    useCanLeadTeam,
+} from '@/components/phone-required-notice';
 import { TeamCard } from '@/components/team-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +22,35 @@ import {
     Users,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+/**
+ * "Crear Equipo" CTA. Creating a team makes you its captain, so it is disabled
+ * (with an explanation) while the user has no phone number on file.
+ */
+function CreateTeamButton() {
+    const canLead = useCanLeadTeam();
+
+    if (!canLead) {
+        return (
+            <Button
+                disabled
+                title="Agregá tu número de teléfono en tu perfil para crear un equipo"
+            >
+                <Plus className="mr-2 h-4 w-4" />
+                Crear Equipo
+            </Button>
+        );
+    }
+
+    return (
+        <Button asChild>
+            <Link href={teams.create().url}>
+                <Plus className="mr-2 h-4 w-4" />
+                Crear Equipo
+            </Link>
+        </Button>
+    );
+}
 
 const variantFilters: Array<{ value: string; label: string }> = [
     { value: 'all', label: 'Todas' },
@@ -51,6 +84,7 @@ interface Props {
 }
 
 export default function Index({ myTeams, discoverTeams, filters }: Props) {
+    const canLead = useCanLeadTeam();
     const page = usePage<{ auth: { user: { id: number } } }>();
     const { auth } = page.props;
     const initialView = new URLSearchParams(page.url.split('?')[1] ?? '').get(
@@ -143,13 +177,15 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                                 Gestioná tus equipos y descubrí nuevos rivales.
                             </p>
                         </div>
-                        <Button asChild>
-                            <Link href={teams.create().url}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Crear Equipo
-                            </Link>
-                        </Button>
+                        <CreateTeamButton />
                     </div>
+
+                    {!canLead && (
+                        <PhoneRequiredNotice
+                            className="mt-5"
+                            description="Para crear un equipo o ser vice-capitán necesitás un teléfono en tu perfil: los equipos rivales lo usan para coordinar los partidos confirmados."
+                        />
+                    )}
                 </div>
 
                 {/* View tabs + discover toolbar */}
@@ -238,12 +274,7 @@ export default function Index({ myTeams, discoverTeams, filters }: Props) {
                                             <Search className="mr-2 h-4 w-4" />
                                             Descubrir Equipos
                                         </Button>
-                                        <Button asChild>
-                                            <Link href={teams.create().url}>
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                Crear Equipo
-                                            </Link>
-                                        </Button>
+                                        <CreateTeamButton />
                                     </div>
                                 </div>
                             </div>

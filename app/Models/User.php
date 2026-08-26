@@ -56,6 +56,18 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
+        // Contact detail. Only released deliberately: to the authenticated
+        // owner (see HandleInertiaRequests) and to opposing team leaders once
+        // a match is confirmed (see MatchController::mapOpposingLeaders, which
+        // reads the attribute directly and so is unaffected by $hidden).
+        // Everywhere else the roster UI uses the has_phone_number boolean.
+        'phone_number',
+        // Contact / personal detail that no page renders for anyone but the
+        // owner. Rosters, match pages and public profiles previously shipped
+        // these to any authenticated visitor. The public profile exposes the
+        // derived `age` append, never the exact date of birth.
+        'email',
+        'date_of_birth',
     ];
 
     /**
@@ -83,6 +95,25 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Determine if the user may hold a leadership role (captain or co-captain).
+     *
+     * A phone number is required: when a match is confirmed the opposing team's
+     * leaders are shown each leader's phone so they can coordinate the match.
+     */
+    public function canLeadTeam(): bool
+    {
+        return filled($this->phone_number);
+    }
+
+    /**
+     * Determine if the user currently holds a leadership role in any team.
+     */
+    public function leadsAnyTeam(): bool
+    {
+        return $this->ledTeams()->exists();
+    }
+
+    /**
      * Determine if the user has a password set.
      */
     public function hasPassword(): bool
@@ -104,6 +135,17 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->google_avatar_url;
+    }
+
+    /**
+     * Whether the user has a phone number on file.
+     *
+     * Exposed to the frontend instead of the phone number itself so that UI can
+     * show who is eligible for a leadership role without leaking contact data.
+     */
+    public function getHasPhoneNumberAttribute(): bool
+    {
+        return filled($this->phone_number);
     }
 
     /**
@@ -135,6 +177,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Team::class, 'team_members')
             ->wherePivot('status', 'active')
+            ->withPivot(['role', 'status', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the teams where the user holds a leadership role (captain or co-captain).
+     */
+    public function ledTeams()
+    {
+        return $this->belongsToMany(Team::class, 'team_members')
+            ->wherePivot('status', 'active')
+            ->wherePivotIn('role', ['captain', 'co_captain'])
             ->withPivot(['role', 'status', 'joined_at'])
             ->withTimestamps();
     }

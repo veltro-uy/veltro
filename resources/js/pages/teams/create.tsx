@@ -2,7 +2,9 @@ import { CreateTeamWizard } from '@/components/create-team-wizard';
 import AppLayout from '@/layouts/app-layout';
 import teams from '@/routes/teams';
 import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -16,6 +18,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function CreateTeam() {
+    const { flash } = usePage<{ flash: { error?: string } }>().props;
+
+    // Surfaces the server-side guard (e.g. missing phone number) if the request
+    // ever gets through the disabled submit button.
+    useEffect(() => {
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Crear Equipo" />
