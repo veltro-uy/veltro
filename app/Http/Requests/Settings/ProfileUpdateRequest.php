@@ -7,6 +7,7 @@ use App\Rules\CleanText;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class ProfileUpdateRequest extends FormRequest
 {
@@ -56,6 +57,37 @@ class ProfileUpdateRequest extends FormRequest
                 'before:today',
                 'after:'.now()->subYears(100)->format('Y-m-d'),
             ],
+        ];
+    }
+
+    /**
+     * Extra checks that must run even when a field is submitted empty
+     * (the `nullable` rule short-circuits normal rules on empty values).
+     *
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                $user = $this->user();
+
+                // Only the *clearing* transition is blocked. Leaders who never
+                // had a phone number (grandfathered) can still edit their
+                // profile freely.
+                if (! $this->has('phone_number')) {
+                    return;
+                }
+
+                if (blank($this->input('phone_number'))
+                    && filled($user->phone_number)
+                    && $user->leadsAnyTeam()) {
+                    $validator->errors()->add(
+                        'phone_number',
+                        'No podés quitar tu número de teléfono mientras seas capitán o vice-capitán de un equipo. Los equipos rivales lo necesitan para coordinar los partidos.'
+                    );
+                }
+            },
         ];
     }
 }

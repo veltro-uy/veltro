@@ -39,6 +39,8 @@ export interface User {
     avatar_url?: string;
     avatar_path?: string;
     phone_number?: string;
+    /** Whether the user has a phone number on file (leadership requirement). */
+    has_phone_number?: boolean;
     bio?: string;
     location?: string;
     date_of_birth?: string;

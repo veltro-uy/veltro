@@ -2,6 +2,7 @@ import { EditTeamModal } from '@/components/edit-team-modal';
 import { InviteTeamMemberModal } from '@/components/invite-team-member-modal';
 import { JoinRequestDialog } from '@/components/join-request-dialog';
 import { MemberManagementDropdown } from '@/components/member-management-dropdown';
+import { PhoneRequiredNotice } from '@/components/phone-required-notice';
 import { TeamAvatar } from '@/components/team-avatar';
 import {
     AlertDialog,
@@ -182,6 +183,8 @@ interface Props {
     canManage: boolean;
     statistics: TeamStatistics;
     pendingInvitations?: TeamInvitation[];
+    /** Whether the viewer meets the leadership requirement (has a phone). */
+    viewerCanLead?: boolean;
 }
 
 export default function Show({
@@ -190,6 +193,7 @@ export default function Show({
     canManage,
     statistics,
     pendingInvitations = [],
+    viewerCanLead = true,
 }: Props) {
     const { flash, auth } = usePage<{
         flash: { success?: string; error?: string };
@@ -359,6 +363,15 @@ export default function Show({
 
     const hasStats = statistics.matches_played > 0;
 
+    // No one else on the roster can take over a leadership role. Surfaced so the
+    // captain understands why every option in the member menus is disabled.
+    const noEligibleSuccessors =
+        isCaptain &&
+        !sortedMembers.some(
+            (m) =>
+                m.user_id !== auth.user.id && m.user.has_phone_number === true,
+        );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={team.name} />
@@ -480,6 +493,23 @@ export default function Show({
                         />
                     </div>
                 </div>
+
+                {/* Grandfathered leaders: enforcement happens when a role is
+                    granted, so existing leaders may still have no phone. */}
+                {isLeader && !viewerCanLead && (
+                    <PhoneRequiredNotice
+                        title="Sos líder de este equipo y no tenés teléfono"
+                        description="Cuando un partido se confirma, los líderes del equipo rival ven tu teléfono para coordinar. Sin él no tienen forma de contactarte."
+                    />
+                )}
+
+                {noEligibleSuccessors && (
+                    <PhoneRequiredNotice
+                        title="Ningún miembro puede recibir la capitanía"
+                        description="Ninguno de los demás miembros tiene un número de teléfono en su perfil, así que no podés transferir la capitanía ni nombrar vice-capitán hasta que alguno lo agregue."
+                        linkToProfile={false}
+                    />
+                )}
 
                 {/* Tabs */}
                 <Tabs defaultValue="plantilla" className="gap-5">

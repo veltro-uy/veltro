@@ -83,6 +83,25 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Determine if the user may hold a leadership role (captain or co-captain).
+     *
+     * A phone number is required: when a match is confirmed the opposing team's
+     * leaders are shown each leader's phone so they can coordinate the match.
+     */
+    public function canLeadTeam(): bool
+    {
+        return filled($this->phone_number);
+    }
+
+    /**
+     * Determine if the user currently holds a leadership role in any team.
+     */
+    public function leadsAnyTeam(): bool
+    {
+        return $this->ledTeams()->exists();
+    }
+
+    /**
      * Determine if the user has a password set.
      */
     public function hasPassword(): bool
@@ -104,6 +123,17 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->google_avatar_url;
+    }
+
+    /**
+     * Whether the user has a phone number on file.
+     *
+     * Exposed to the frontend instead of the phone number itself so that UI can
+     * show who is eligible for a leadership role without leaking contact data.
+     */
+    public function getHasPhoneNumberAttribute(): bool
+    {
+        return filled($this->phone_number);
     }
 
     /**
@@ -135,6 +165,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Team::class, 'team_members')
             ->wherePivot('status', 'active')
+            ->withPivot(['role', 'status', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the teams where the user holds a leadership role (captain or co-captain).
+     */
+    public function ledTeams()
+    {
+        return $this->belongsToMany(Team::class, 'team_members')
+            ->wherePivot('status', 'active')
+            ->wherePivotIn('role', ['captain', 'co_captain'])
             ->withPivot(['role', 'status', 'joined_at'])
             ->withTimestamps();
     }
