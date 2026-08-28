@@ -14,6 +14,7 @@ Route::middleware(['auth', 'verified', 'throttle:matches', 'onboarding'])->group
     Route::get('/matches/create', [MatchController::class, 'create'])->name('matches.create');
     Route::post('/matches', [MatchController::class, 'store'])->name('matches.store');
     Route::get('/matches/{match}', [MatchController::class, 'show'])->name('matches.show');
+    Route::get('/matches/{match}/calendar', [MatchController::class, 'calendar'])->name('matches.calendar');
     Route::get('/matches/{match}/edit', [MatchController::class, 'edit'])->name('matches.edit');
     Route::put('/matches/{id}', [MatchController::class, 'update'])->name('matches.update');
     Route::post('/matches/{id}/cancel', [MatchController::class, 'cancel'])->name('matches.cancel');
@@ -37,4 +38,5 @@ Route::middleware(['auth', 'verified', 'throttle:matches', 'onboarding'])->group
 
     // Match Availability
     Route::post('/matches/{matchId}/availability', [MatchAvailabilityController::class, 'update'])->name('matches.availability.update');
+    Route::post('/matches/{match}/availability/remind', [MatchAvailabilityController::class, 'remind'])->name('matches.availability.remind');
 });

@@ -82,6 +82,17 @@ export function CompleteMatchDialog({
                                 como completado?
                             </p>
 
+                            <div className="rounded-md border px-3 py-2 text-sm">
+                                <p className="font-medium">
+                                    Antes de confirmar
+                                </p>
+                                <ul className="mt-1 list-inside list-disc text-muted-foreground">
+                                    <li>Revisá el marcador final</li>
+                                    <li>Revisá los goles y sus autores</li>
+                                    <li>El resultado quedará cerrado</li>
+                                </ul>
+                            </div>
+
                             <div className="rounded-lg border bg-muted/50 p-4">
                                 <div className="flex items-center justify-center gap-4 text-lg font-bold">
                                     <span>{match.home_team.name}</span>
