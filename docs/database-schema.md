@@ -23,7 +23,6 @@ erDiagram
         string password "nullable (Google OAuth)"
         string remember_token "nullable"
         string google_id "nullable, UK"
-        text google_token "nullable"
         string google_avatar_url "nullable"
         text two_factor_secret "nullable"
         text two_factor_recovery_codes "nullable"

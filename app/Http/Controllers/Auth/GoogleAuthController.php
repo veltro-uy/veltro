@@ -44,7 +44,6 @@ class GoogleAuthController extends Controller
                 // Update existing user with Google credentials
                 $user->update([
                     'google_id' => $googleUser->id,
-                    'google_token' => $googleUser->token,
                     'google_avatar_url' => $googleUser->avatar,
                 ]);
             } else {
@@ -53,10 +52,9 @@ class GoogleAuthController extends Controller
                     'name' => $googleUser->name,
                     'email' => $googleUser->email,
                     'google_id' => $googleUser->id,
-                    'google_token' => $googleUser->token,
                     'google_avatar_url' => $googleUser->avatar,
-                    'email_verified_at' => now(), // Google users are verified
                 ]);
+                $user->markEmailAsVerified();
             }
 
             // Check if user has two-factor authentication enabled

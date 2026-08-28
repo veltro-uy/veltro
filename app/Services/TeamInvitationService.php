@@ -8,6 +8,7 @@ use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Models\User;
 use App\Notifications\TeamInvitationAcceptedNotification;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 final class TeamInvitationService
@@ -21,6 +22,11 @@ final class TeamInvitationService
      */
     public function acceptInvitation(TeamInvitation $invitation, User $user): bool
     {
+        if (filled($invitation->email)
+            && strcasecmp(trim($invitation->email), trim($user->email)) !== 0) {
+            throw new AuthorizationException('Esta invitación fue enviada a otra dirección de correo.');
+        }
+
         // Already a member: nothing to do, treat as success.
         $isMember = $invitation->team->teamMembers()
             ->where('user_id', $user->id)

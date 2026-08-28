@@ -107,6 +107,10 @@ final class TeamController extends Controller
         $isMember = $team->hasMember($user->id);
         $canManage = $team->isLeader($user->id);
 
+        if (! $canManage) {
+            $team->unsetRelation('pendingJoinRequests');
+        }
+
         // Expose a boolean (never the phone number itself) so the roster UI can
         // explain why a member cannot be promoted or handed the captaincy.
         $team->teamMembers->each(

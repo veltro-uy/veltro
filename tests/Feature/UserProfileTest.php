@@ -44,6 +44,7 @@ test('public user profile does not expose contact or personal details', function
     $user = User::factory()->create([
         'date_of_birth' => '1990-01-01',
         'phone_number' => '+598 99 123 456',
+        'google_id' => 'google-account-id',
     ]);
 
     $response = $this->getJson("/api/users/{$user->id}");
@@ -51,7 +52,9 @@ test('public user profile does not expose contact or personal details', function
     $response->assertStatus(200)
         ->assertJsonMissingPath('user.email')
         ->assertJsonMissingPath('user.phone_number')
-        ->assertJsonMissingPath('user.date_of_birth');
+        ->assertJsonMissingPath('user.date_of_birth')
+        ->assertJsonMissingPath('user.google_id')
+        ->assertJsonMissingPath('user.google_token');
 
     // The derived age is still published; the exact date of birth is not.
     expect($response->json('user.age'))->not->toBeNull();

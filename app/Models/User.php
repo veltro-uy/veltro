@@ -31,7 +31,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'date_of_birth',
         'avatar_path',
         'google_id',
-        'google_token',
         'google_avatar_url',
         'onboarding_completed',
     ];
@@ -56,6 +55,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
+        'google_id',
+        'google_token',
         // Contact detail. Only released deliberately: to the authenticated
         // owner (see HandleInertiaRequests) and to opposing team leaders once
         // a match is confirmed (see MatchController::mapOpposingLeaders, which

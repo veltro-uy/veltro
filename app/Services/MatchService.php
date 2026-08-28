@@ -425,6 +425,11 @@ final class MatchService
             throw new \Exception('Team is not part of this match');
         }
 
+        if (! empty($eventData['user_id'])
+            && ! Team::findOrFail($teamId)->activeMembers()->where('user_id', $eventData['user_id'])->exists()) {
+            throw new \Exception('Player is not a member of this team');
+        }
+
         return DB::transaction(function () use ($match, $teamId, $eventData) {
             $event = MatchEvent::create([
                 'match_id' => $match->id,

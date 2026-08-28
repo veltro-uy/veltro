@@ -302,9 +302,20 @@ test('an authenticated member visiting the invite link is redirected to the team
         ->assertRedirect(route('teams.show', $this->team));
 });
 
+test('an email invitation cannot be accepted by a different user', function () {
+    $invitation = makeInvitation(['email' => 'intended@example.com']);
+
+    $this->actingAs($this->outsider)
+        ->post(route('teams.invitation.accept', $invitation->token))
+        ->assertForbidden();
+
+    expect($this->team->fresh()->hasMember($this->outsider->id))->toBeFalse();
+    expect($invitation->fresh()->status)->toBe('pending');
+});
+
 test('invitation is not accepted when the team is full', function () {
     $this->team->update(['max_members' => 2]); // captain + player already fill it
-    $invitation = makeInvitation();
+    $invitation = makeInvitation(['email' => null]);
 
     $this->actingAs($this->outsider)
         ->from(route('teams.invitation.show', $invitation->token))
