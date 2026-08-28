@@ -36,6 +36,10 @@ final class TeamInvitationService
             return true;
         }
 
+        if ($invitation->role === 'co_captain' && ! $user->canLeadTeam()) {
+            throw new AuthorizationException('Debes agregar un número de teléfono antes de ser co-capitán.');
+        }
+
         // Respect team capacity.
         if ($invitation->team->isFull()) {
             return false;

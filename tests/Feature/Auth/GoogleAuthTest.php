@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Team;
+use App\Models\TeamInvitation;
+use App\Models\TeamMember;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Fortify\Features;
@@ -113,4 +116,96 @@ test('google oauth login finds user by google_id', function () {
     // Should authenticate as the existing user (matched by google_id)
     expect(Auth::user()->id)->toBe($user->id)
         ->and(Auth::user()->email)->toBe('different@example.com');
+});
+
+test('google oauth defers a co-captain invitation until phone onboarding', function () {
+    $captain = User::factory()->create();
+    $team = Team::create([
+        'name' => 'OAuth Team',
+        'variant' => 'football_11',
+        'created_by' => $captain->id,
+        'max_members' => 25,
+    ]);
+    TeamMember::create([
+        'user_id' => $captain->id,
+        'team_id' => $team->id,
+        'role' => 'captain',
+        'status' => 'active',
+    ]);
+    $invitation = TeamInvitation::create([
+        'team_id' => $team->id,
+        'invited_by' => $captain->id,
+        'email' => 'john@example.com',
+        'token' => TeamInvitation::generateToken(),
+        'role' => 'co_captain',
+        'status' => 'pending',
+        'expires_at' => now()->addWeek(),
+    ]);
+
+    Socialite::shouldReceive('driver->user')
+        ->once()
+        ->andReturn($this->mockSocialiteUser);
+
+    $this->withSession(['invitation_token' => $invitation->token])
+        ->get(route('google.callback'))
+        ->assertRedirect(route('teams.invitation.show', $invitation->token))
+        ->assertSessionHas('invitation_token', $invitation->token);
+
+    $user = User::where('email', 'john@example.com')->firstOrFail();
+    expect($team->hasMember($user->id))->toBeFalse()
+        ->and($invitation->fresh()->status)->toBe('pending')
+        ->and($user->hasVerifiedEmail())->toBeTrue();
+
+    $onboarding = $this->get(route('onboarding.show'));
+    $onboarding->assertOk();
+    $onboarding->assertInertia(fn ($page) => $page->where('phoneRequired', true));
+});
+
+test('google oauth keeps invitation state through the two factor branch', function () {
+    if (! Features::canManageTwoFactorAuthentication()) {
+        $this->markTestSkipped('Two-factor authentication is not enabled.');
+    }
+
+    $user = User::factory()->withoutPhoneNumber()->create([
+        'email' => 'john@example.com',
+        'google_id' => '1234567890',
+    ]);
+    $captain = User::factory()->create();
+    $team = Team::create([
+        'name' => '2FA Team',
+        'variant' => 'football_11',
+        'created_by' => $captain->id,
+        'max_members' => 25,
+    ]);
+    TeamMember::create([
+        'user_id' => $captain->id,
+        'team_id' => $team->id,
+        'role' => 'captain',
+        'status' => 'active',
+    ]);
+    $invitation = TeamInvitation::create([
+        'team_id' => $team->id,
+        'invited_by' => $captain->id,
+        'email' => $user->email,
+        'token' => TeamInvitation::generateToken(),
+        'role' => 'co_captain',
+        'status' => 'pending',
+        'expires_at' => now()->addWeek(),
+    ]);
+    $intended = route('teams.invitation.show', $invitation->token);
+
+    Socialite::shouldReceive('driver->user')
+        ->once()
+        ->andReturn($this->mockSocialiteUser);
+
+    $this->withSession([
+        'invitation_token' => $invitation->token,
+        'url.intended' => $intended,
+    ])->get(route('google.callback'))
+        ->assertRedirect(route('two-factor.login'))
+        ->assertSessionHas('invitation_token', $invitation->token)
+        ->assertSessionHas('url.intended', $intended);
+
+    expect($team->hasMember($user->id))->toBeFalse()
+        ->and($invitation->fresh()->status)->toBe('pending');
 });
