@@ -54,8 +54,7 @@ export function MatchTimeline({
         (a, b) => (a.minute ?? 0) - (b.minute ?? 0),
     );
 
-    const canDelete =
-        matchStatus === 'in_progress' || matchStatus === 'completed';
+    const canDelete = matchStatus === 'in_progress';
 
     const handleDelete = () => {
         if (goalToDelete === null) return;

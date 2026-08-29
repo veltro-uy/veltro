@@ -546,7 +546,7 @@ final class MatchController extends Controller
         }
 
         // Check if match time has been reached
-        if ($match->scheduled_at->isFuture()) {
+        if ($match->scheduled_at?->isFuture()) {
             return back()->with('error', 'No se puede actualizar el marcador antes de que comience el partido');
         }
 
@@ -588,10 +588,43 @@ final class MatchController extends Controller
         }
 
         try {
-            $this->matchService->completeMatch($match);
+            $result = $this->matchService->submitResult($match, $user->id);
+
+            $message = $result->isCompleted()
+                ? '¡Partido completado exitosamente!'
+                : 'Resultado enviado al rival para su confirmación';
 
             return redirect()->route('matches.show', $match)
-                ->with('success', '¡Partido completado exitosamente!');
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function confirmResult(int $id)
+    {
+        $match = FootballMatch::findOrFail($id);
+        abort_unless($match->canReviewSubmittedResult(Auth::id()), 403, 'No autorizado');
+
+        try {
+            $this->matchService->confirmResult($match, Auth::id());
+
+            return redirect()->route('matches.show', $match)
+                ->with('success', 'Resultado confirmado. El partido quedó finalizado.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function rejectResult(int $id)
+    {
+        $match = FootballMatch::findOrFail($id);
+        abort_unless($match->canReviewSubmittedResult(Auth::id()), 403, 'No autorizado');
+
+        try {
+            $this->matchService->rejectResult($match, Auth::id());
+
+            return back()->with('success', 'Marcaste que el resultado no coincide. Ya puede corregirse y enviarse de nuevo.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }

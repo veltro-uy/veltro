@@ -3,6 +3,7 @@ import { InviteTeamMemberModal } from '@/components/invite-team-member-modal';
 import { JoinRequestDialog } from '@/components/join-request-dialog';
 import { MemberManagementDropdown } from '@/components/member-management-dropdown';
 import { PhoneRequiredNotice } from '@/components/phone-required-notice';
+import { ShareButton } from '@/components/share-button';
 import { TeamAvatar } from '@/components/team-avatar';
 import {
     AlertDialog,
@@ -412,6 +413,10 @@ export default function Show({
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2">
+                            <ShareButton
+                                title={`${team.name} en Veltro`}
+                                text={`Mirá el equipo ${team.name} en Veltro.`}
+                            />
                             {isLeader && (
                                 <InviteTeamMemberModal
                                     teamId={team.id}

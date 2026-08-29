@@ -224,6 +224,45 @@ test('recording a non-goal event does not affect score', function () {
     expect($fresh->away_score)->toBe(0);
 });
 
+test('events cannot change while a result awaits confirmation', function () {
+    $this->match->update([
+        'status' => 'in_progress',
+        'result_submitted_by_team_id' => $this->homeTeam->id,
+        'result_submitted_at' => now(),
+    ]);
+
+    $this->actingAs($this->awayCaptain)
+        ->post(route('match-events.store'), [
+            'match_id' => $this->match->id,
+            'team_id' => $this->awayTeam->id,
+            'event_type' => 'goal',
+        ])
+        ->assertSessionHas('error');
+
+    expect($this->match->events()->count())->toBe(0)
+        ->and($this->match->fresh()->away_score)->toBe(0);
+});
+
+test('events cannot change after a result is completed', function () {
+    $event = MatchEvent::create([
+        'match_id' => $this->match->id,
+        'team_id' => $this->homeTeam->id,
+        'event_type' => 'goal',
+    ]);
+    $this->match->update([
+        'status' => 'completed',
+        'home_score' => 1,
+        'completed_at' => now(),
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->delete(route('match-events.destroy', $event->id))
+        ->assertSessionHas('error');
+
+    expect($event->fresh())->not->toBeNull()
+        ->and($this->match->fresh()->home_score)->toBe(1);
+});
+
 test('all valid event types are accepted', function (string $eventType) {
     $this->actingAs($this->homeCaptain)
         ->post(route('match-events.store'), [

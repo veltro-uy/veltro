@@ -23,6 +23,17 @@ interface UseNotificationsReturn {
 // WebSockets carry the real-time load; polling is now just a safety-net fallback.
 const POLLING_INTERVAL = 120000; // 2 minutes
 
+function mergeNotifications(
+    current: Notification[],
+    incoming: Notification[],
+): Notification[] {
+    return Array.from(
+        new Map(
+            [...current, ...incoming].map((item) => [item.id, item]),
+        ).values(),
+    );
+}
+
 // Build headers for notification writes. We read the live `XSRF-TOKEN` cookie
 // (which Laravel refreshes on every response) rather than the
 // `<meta name="csrf-token">` tag — that tag is only rendered on the initial
@@ -140,7 +151,9 @@ export function useNotifications(): UseNotificationsReturn {
                         if (page === 1) {
                             setNotifications(data.data);
                         } else {
-                            setNotifications((prev) => [...prev, ...data.data]);
+                            setNotifications((prev) =>
+                                mergeNotifications(prev, data.data),
+                            );
                         }
                         setCurrentPage(data.current_page);
                         setHasMore(data.current_page < data.last_page);

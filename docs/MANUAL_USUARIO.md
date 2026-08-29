@@ -30,7 +30,7 @@ el usuario.
 7. [Torneos](#7-torneos)
 8. [Notificaciones](#8-notificaciones)
 9. [Ajustes](#9-ajustes)
-10. [Preguntas frecuentes](#10-preguntas-frecuentes)
+10. [Preguntas frecuente#10-preguntas-frecuentes)
 
 ---
 

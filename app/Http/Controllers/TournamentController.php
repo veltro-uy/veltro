@@ -31,11 +31,13 @@ final class TournamentController extends Controller
         $user = Auth::user();
         $status = $request->string('status')->toString();
         $variant = $request->string('variant')->toString();
+        $format = $request->string('format')->toString();
         $sort = $request->string('sort')->toString();
 
         $filters = [
             'status' => in_array($status, ['draft', 'registration_open', 'in_progress', 'completed', 'cancelled'], true) ? $status : 'all',
             'variant' => in_array($variant, ['football_11', 'football_7', 'football_5', 'futsal'], true) ? $variant : 'all',
+            'format' => in_array($format, ['single_elimination', 'league', 'group_stage_knockout'], true) ? $format : 'all',
             'search' => trim($request->string('search')->toString()),
             'sort' => in_array($sort, ['newest', 'start_soon', 'name'], true) ? $sort : 'newest',
         ];
@@ -60,6 +62,10 @@ final class TournamentController extends Controller
 
         if ($filters['variant'] !== 'all') {
             $query->where('variant', $filters['variant']);
+        }
+
+        if ($filters['format'] !== 'all') {
+            $query->where('format', $filters['format']);
         }
 
         if ($filters['search'] !== '') {

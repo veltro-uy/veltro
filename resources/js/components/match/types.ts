@@ -66,9 +66,12 @@ export interface MatchPageMatch {
     variant: string;
     scheduled_at: string | null;
     location: string | null;
+    location_coords?: string | null;
     status: string;
     home_score?: number;
     away_score?: number;
+    result_submitted_by_team_id?: number | null;
+    result_submitted_at?: string | null;
     notes?: string;
     home_team: MatchPageTeam;
     away_team?: MatchPageTeam;

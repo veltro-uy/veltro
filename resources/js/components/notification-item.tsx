@@ -63,6 +63,7 @@ const iconColorMap: Record<string, string> = {
     captaincy_transferred: 'text-emerald-600 dark:text-emerald-500',
     tournament_registration_reviewed: 'text-emerald-600 dark:text-emerald-500',
     match_score_updated: 'text-lime-600 dark:text-lime-500',
+    match_result_submitted: 'text-amber-600 dark:text-amber-500',
     // Reminders & social keep distinct accents.
     availability_reminder: 'text-sky-600 dark:text-sky-500',
     commendation_received: 'text-amber-600 dark:text-amber-500',
@@ -85,6 +86,7 @@ const iconBgMap: Record<string, string> = {
     captaincy_transferred: 'bg-emerald-50 dark:bg-emerald-950/20',
     tournament_registration_reviewed: 'bg-emerald-50 dark:bg-emerald-950/20',
     match_score_updated: 'bg-lime-50 dark:bg-lime-950/20',
+    match_result_submitted: 'bg-amber-50 dark:bg-amber-950/20',
     // Reminders & social keep distinct accents.
     availability_reminder: 'bg-sky-50 dark:bg-sky-950/20',
     commendation_received: 'bg-amber-50 dark:bg-amber-950/20',
@@ -93,6 +95,17 @@ const iconBgMap: Record<string, string> = {
     match_request_rejected: 'bg-red-50 dark:bg-red-950/20',
     join_request_rejected: 'bg-red-50 dark:bg-red-950/20',
     match_cancelled: 'bg-orange-50 dark:bg-orange-950/20',
+};
+
+const actionLabelMap: Record<string, string> = {
+    availability_reminder: 'Responder disponibilidad',
+    join_request_created: 'Revisar solicitud',
+    match_request_received: 'Revisar solicitud',
+    match_result_submitted: 'Confirmar resultado',
+    team_invitation: 'Ver invitación',
+    tournament_registration_reviewed: 'Ver torneo',
+    commendation_received: 'Ver perfil',
+    profile_comment: 'Ver comentario',
 };
 
 export function NotificationItem({
@@ -169,6 +182,15 @@ export function NotificationItem({
                                 },
                             )}
                         </p>
+                        <span className="inline-block text-xs font-semibold text-primary">
+                            {actionLabelMap[notification.data.type] ??
+                                (notification.data.related_model.match_id
+                                    ? 'Ver partido'
+                                    : notification.data.related_model.team_id
+                                      ? 'Ver equipo'
+                                      : 'Ver detalle')}
+                            {' →'}
+                        </span>
                     </div>
                     {isUnread && (
                         <div className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-primary ring-2 ring-background" />

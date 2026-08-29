@@ -23,12 +23,23 @@ class UserController extends Controller
                 ->orderBy('teams.name');
         }]);
 
+        $statistics = $user->getStatistics();
+        $profileUrl = route('users.show', $user);
+        $description = "{$user->name} en Veltro: {$statistics['matches_played']} partidos, {$statistics['goals']} goles y {$statistics['assists']} asistencias.";
+
         $data = [
             'user' => $user,
-            'statistics' => $user->getStatistics(),
+            'statistics' => $statistics,
             'teams' => $user->activeTeams,
             'commendation_stats' => $user->getCommendationStats(),
             'comments_count' => $user->profileComments()->count(),
+            'profile_url' => $profileUrl,
+            'seo' => [
+                'title' => "{$user->name} en Veltro",
+                'description' => $description,
+                'url' => $profileUrl,
+                'image' => $user->avatar_url,
+            ],
         ];
 
         // Add can_commend flag if user is authenticated

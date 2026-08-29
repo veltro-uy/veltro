@@ -1,3 +1,4 @@
+import { ShareButton } from '@/components/share-button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -110,6 +111,11 @@ export function TournamentHeader({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                    <ShareButton
+                        title={tournament.name}
+                        text={`Mirá ${tournament.name} en Veltro`}
+                        size="sm"
+                    />
                     {permissions.canEdit && (
                         <Button
                             asChild

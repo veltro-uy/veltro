@@ -19,6 +19,8 @@ Route::middleware(['auth', 'verified', 'throttle:matches', 'onboarding'])->group
     Route::put('/matches/{id}', [MatchController::class, 'update'])->name('matches.update');
     Route::post('/matches/{id}/cancel', [MatchController::class, 'cancel'])->name('matches.cancel');
     Route::post('/matches/{id}/complete', [MatchController::class, 'complete'])->name('matches.complete');
+    Route::post('/matches/{id}/result/confirm', [MatchController::class, 'confirmResult'])->name('matches.result.confirm');
+    Route::post('/matches/{id}/result/reject', [MatchController::class, 'rejectResult'])->name('matches.result.reject');
 
     // Match Requests
     Route::post('/match-requests', [MatchController::class, 'createRequest'])->name('match-requests.create');

@@ -17,6 +17,7 @@ interface CompleteMatchDialogProps {
     match: MatchPageMatch;
     events: MatchEvent[];
     onConfirm: () => void;
+    requiresOpponentConfirmation: boolean;
 }
 
 export function CompleteMatchDialog({
@@ -25,6 +26,7 @@ export function CompleteMatchDialog({
     match,
     events,
     onConfirm,
+    requiresOpponentConfirmation,
 }: CompleteMatchDialogProps) {
     const homeScore = match.home_score ?? 0;
     const awayScore = match.away_score ?? 0;
@@ -46,8 +48,6 @@ export function CompleteMatchDialog({
     const hasScoreMismatch =
         homeRegisteredGoals !== homeScore ||
         (!!match.away_team && awayRegisteredGoals !== awayScore);
-
-    const isTournamentDraw = !!match.tournament_id && homeScore === awayScore;
 
     const homeGoals = events
         .filter(
@@ -78,8 +78,9 @@ export function CompleteMatchDialog({
                     <AlertDialogDescription asChild>
                         <div className="space-y-4">
                             <p>
-                                ¿Estás seguro de que quieres marcar este partido
-                                como completado?
+                                {requiresOpponentConfirmation
+                                    ? 'El rival deberá confirmar este marcador antes de que el partido quede finalizado.'
+                                    : '¿Estás seguro de que quieres marcar este partido como completado?'}
                             </p>
 
                             <div className="rounded-md border px-3 py-2 text-sm">
@@ -89,7 +90,11 @@ export function CompleteMatchDialog({
                                 <ul className="mt-1 list-inside list-disc text-muted-foreground">
                                     <li>Revisá el marcador final</li>
                                     <li>Revisá los goles y sus autores</li>
-                                    <li>El resultado quedará cerrado</li>
+                                    <li>
+                                        {requiresOpponentConfirmation
+                                            ? 'El marcador quedará bloqueado mientras se confirma'
+                                            : 'El resultado quedará cerrado'}
+                                    </li>
                                 </ul>
                             </div>
 
@@ -160,24 +165,15 @@ export function CompleteMatchDialog({
                                     marcador
                                 </div>
                             )}
-
-                            {isTournamentDraw && (
-                                <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-400">
-                                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                                    Los partidos de torneo no pueden terminar en
-                                    empate. Actualiza el marcador.
-                                </div>
-                            )}
                         </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                        onClick={onConfirm}
-                        disabled={isTournamentDraw}
-                    >
-                        Completar Partido
+                    <AlertDialogAction onClick={onConfirm}>
+                        {requiresOpponentConfirmation
+                            ? 'Enviar resultado'
+                            : 'Completar partido'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

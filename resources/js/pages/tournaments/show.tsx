@@ -24,6 +24,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserAvatar } from '@/components/user-avatar';
 import AppLayout from '@/layouts/app-layout';
 import { calendarDaysUntil, formatDate, formatDateTime } from '@/lib/datetime';
@@ -48,11 +49,15 @@ import type {
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     CalendarClock,
+    ChartNoAxesColumnIncreasing,
     Check,
     Info,
+    ListChecks,
     Loader2,
     MapPin,
     Pencil,
+    Settings,
+    Swords,
     Trophy,
     Users,
     X,
@@ -92,6 +97,24 @@ function formatScheduledAt(value: string | null): string {
         month: 'short',
         hour: '2-digit',
         minute: '2-digit',
+    });
+}
+
+function matchSortValue(match: FootballMatch): number {
+    if (match.status === 'completed') return 2;
+    if (!match.scheduled_at) return 1;
+    return 0;
+}
+
+function sortMatchesUpcomingFirst(matches: FootballMatch[]): FootballMatch[] {
+    return [...matches].sort((a, b) => {
+        const statusDifference = matchSortValue(a) - matchSortValue(b);
+        if (statusDifference !== 0) return statusDifference;
+
+        const aDate = a.scheduled_at ? new Date(a.scheduled_at).getTime() : 0;
+        const bDate = b.scheduled_at ? new Date(b.scheduled_at).getTime() : 0;
+
+        return a.status === 'completed' ? bDate - aDate : aDate - bDate;
     });
 }
 
@@ -283,6 +306,14 @@ export default function TournamentShow({
     const [scheduleMatch, setScheduleMatch] = useState<FootballMatch | null>(
         null,
     );
+    const [selectedRoundId, setSelectedRoundId] = useState(() => {
+        const activeRound = tournament.rounds.find((round) =>
+            round.matches?.some((match) => match.status !== 'completed'),
+        );
+        const fallbackRound = tournament.rounds.at(-1);
+
+        return String(activeRound?.id ?? fallbackRound?.id ?? '');
+    });
 
     const [processing, setProcessing] = useState(false);
     const { flash } = usePage<{
@@ -420,6 +451,28 @@ export default function TournamentShow({
     const pendingTeams = tournament.tournament_teams.filter(
         (tt) => tt.status === 'pending',
     );
+    const selectedRound =
+        tournament.rounds.find(
+            (round) => String(round.id) === selectedRoundId,
+        ) ?? tournament.rounds.at(-1);
+    const selectedMatches = sortMatchesUpcomingFirst(
+        selectedRound?.matches ?? [],
+    );
+    const matchCount = tournament.rounds.reduce(
+        (total, round) => total + (round.matches?.length ?? 0),
+        0,
+    );
+    const competitionLabel =
+        tournament.format === 'league'
+            ? 'Tabla'
+            : tournament.format === 'single_elimination'
+              ? 'Llaves'
+              : 'Competencia';
+    const hasOrganizerManagement =
+        permissions.canApprove ||
+        permissions.canDrawGroups ||
+        permissions.canEdit ||
+        permissions.canScheduleMatches;
 
     const hasBracket =
         (tournament.status === 'in_progress' ||
@@ -461,396 +514,648 @@ export default function TournamentShow({
                     onDelete={() => setShowDeleteDialog(true)}
                 />
 
-                {/* Stat strip */}
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <StatTile icon={Users} label="Equipos">
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-2xl leading-none font-bold tracking-tight tabular-nums">
-                                {approvedTeams.length}
-                            </span>
-                            <span className="text-sm font-medium text-muted-foreground">
-                                / {tournament.max_teams}
-                            </span>
-                            <span className="ml-auto text-[11px] text-muted-foreground">
-                                mín. {tournament.min_teams}
-                            </span>
-                        </div>
-                        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                            <div
-                                className={cn(
-                                    'h-full rounded-full transition-all duration-500',
-                                    tournamentCapacityColor(
-                                        approvedTeams.length,
-                                        tournament.max_teams,
-                                    ),
-                                )}
-                                style={{
-                                    width: `${Math.max(
-                                        Math.min(
-                                            100,
-                                            Math.round(
-                                                (approvedTeams.length /
-                                                    tournament.max_teams) *
-                                                    100,
-                                            ),
-                                        ),
-                                        4,
-                                    )}%`,
-                                }}
-                            />
-                        </div>
-                    </StatTile>
-
-                    <StatTile icon={Trophy} label="Formato">
-                        <p className="truncate text-lg leading-tight font-semibold tracking-tight">
-                            {tournamentFormatLabel(tournament.format)}
-                        </p>
-                    </StatTile>
-
-                    <StatTile icon={Info} label="Estado">
-                        <p className="flex items-center gap-2 text-lg leading-tight font-semibold tracking-tight">
-                            {tournament.status === 'in_progress' && (
-                                <span className="relative flex size-2">
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/70" />
-                                    <span className="relative inline-flex size-2 rounded-full bg-primary" />
+                <Tabs defaultValue="overview" className="gap-5">
+                    <div className="sticky top-14 z-20 -mx-4 overflow-x-auto border-y bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+                        <TabsList variant="line" className="h-10 w-max">
+                            <TabsTrigger value="overview">
+                                <Info />
+                                Resumen
+                            </TabsTrigger>
+                            <TabsTrigger value="matches">
+                                <Swords />
+                                Partidos
+                                <span className="rounded-full bg-muted px-1.5 text-xs font-semibold text-foreground">
+                                    {matchCount}
                                 </span>
+                            </TabsTrigger>
+                            <TabsTrigger value="competition">
+                                <ChartNoAxesColumnIncreasing />
+                                {competitionLabel}
+                            </TabsTrigger>
+                            <TabsTrigger value="teams">
+                                <Users />
+                                Equipos
+                                <span className="rounded-full bg-muted px-1.5 text-xs font-semibold text-foreground">
+                                    {approvedTeams.length}
+                                </span>
+                            </TabsTrigger>
+                            {hasOrganizerManagement && (
+                                <TabsTrigger value="management">
+                                    <Settings />
+                                    Gestión
+                                    {pendingTeams.length > 0 && (
+                                        <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                                            {pendingTeams.length}
+                                        </span>
+                                    )}
+                                </TabsTrigger>
                             )}
-                            {tournamentStatusMeta(tournament).label}
-                        </p>
-                    </StatTile>
+                        </TabsList>
+                    </div>
 
-                    <StatTile icon={CalendarClock} label="Inicio">
-                        <p className="text-lg leading-tight font-semibold tracking-tight">
-                            {tournament.starts_at
-                                ? formatDate(tournament.starts_at, {
-                                      day: 'numeric',
-                                      month: 'short',
-                                      year: 'numeric',
-                                  })
-                                : 'Por definir'}
-                        </p>
-                    </StatTile>
-                </div>
-
-                <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
-                    <div className="min-w-0 space-y-6">
-                        {/* Group draw (group_stage_knockout, pre-start) */}
-                        {tournament.format === 'group_stage_knockout' &&
-                            permissions.canDrawGroups &&
-                            tournament.groups &&
-                            tournament.groups.length > 0 &&
-                            (tournament.status === 'draft' ||
-                                tournament.status === 'registration_open') && (
-                                <GroupDraw
-                                    tournamentId={tournament.id}
-                                    groups={tournament.groups}
-                                    approvedTeams={
-                                        approvedTeams as (TournamentTeam & {
-                                            team: Team;
-                                        })[]
-                                    }
-                                    groupSize={tournament.group_size ?? 4}
-                                />
-                            )}
-
-                        {/* Bracket / Standings / Groups */}
-                        {hasBracket ? (
-                            <>
-                                {tournament.format === 'league' ? (
-                                    <Deferred
-                                        data="standings"
-                                        fallback={<StandingsSkeleton />}
-                                    >
-                                        {standings ? (
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle>
-                                                        Tabla de Posiciones
-                                                    </CardTitle>
-                                                    <CardDescription>
-                                                        Clasificación general
-                                                        del torneo
-                                                    </CardDescription>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <StandingsTable
-                                                        rows={standings}
-                                                        highlightTopN={1}
-                                                    />
-                                                </CardContent>
-                                            </Card>
-                                        ) : null}
-                                    </Deferred>
-                                ) : tournament.format ===
-                                  'group_stage_knockout' ? (
-                                    <>
-                                        {tournament.groups && (
-                                            <Deferred
-                                                data="groupStandings"
-                                                fallback={<StandingsSkeleton />}
-                                            >
-                                                {groupStandings ? (
-                                                    <section className="space-y-4">
-                                                        <h2 className="text-lg font-semibold">
-                                                            {tournament.phase ===
-                                                                'knockout' ||
-                                                            tournament.phase ===
-                                                                'completed'
-                                                                ? 'Tablas Finales de Grupos'
-                                                                : 'Fase de Grupos'}
-                                                        </h2>
-                                                        <GroupsGrid
-                                                            groups={
-                                                                tournament.groups
-                                                            }
-                                                            standingsByGroup={
-                                                                groupStandings
-                                                            }
-                                                            highlightTopN={2}
-                                                        />
-                                                    </section>
-                                                ) : null}
-                                            </Deferred>
-                                        )}
-                                        {(tournament.phase === 'knockout' ||
-                                            tournament.phase ===
-                                                'completed') && (
-                                            <Card>
-                                                <CardHeader>
-                                                    <CardTitle>
-                                                        Bracket
-                                                    </CardTitle>
-                                                    <CardDescription>
-                                                        Cruces de eliminación
-                                                        directa
-                                                    </CardDescription>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <TournamentBracket
-                                                        rounds={tournament.rounds.filter(
-                                                            (r) =>
-                                                                !r.matches?.some(
-                                                                    (m) =>
-                                                                        m.tournament_group_id !=
-                                                                        null,
-                                                                ),
-                                                        )}
-                                                    />
-                                                </CardContent>
-                                            </Card>
-                                        )}
-                                    </>
-                                ) : (
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Bracket</CardTitle>
-                                            <CardDescription>
-                                                Camino hacia la final del torneo
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <TournamentBracket
-                                                rounds={tournament.rounds}
-                                            />
-                                        </CardContent>
-                                    </Card>
-                                )}
-
-                                <Card>
-                                    <CardHeader className="border-b">
-                                        <CardTitle className="text-base">
-                                            Programación de partidos
-                                        </CardTitle>
-                                        <CardDescription>
-                                            {permissions.canScheduleMatches
-                                                ? 'Definí la fecha, hora y cancha de cada partido.'
-                                                : 'Fechas y canchas confirmadas por el organizador.'}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        {tournament.rounds.map((round) => (
-                                            <div
-                                                key={round.id}
-                                                className="space-y-3"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                                                        {round.name}
-                                                    </h3>
-                                                    <span className="h-px flex-1 bg-border/60" />
-                                                    <span className="text-[11px] text-muted-foreground tabular-nums">
-                                                        {round.matches
-                                                            ?.length ?? 0}{' '}
-                                                        {(round.matches
-                                                            ?.length ?? 0) === 1
-                                                            ? 'partido'
-                                                            : 'partidos'}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {(round.matches?.length ??
-                                                        0) === 0 ? (
-                                                        <p className="text-sm text-muted-foreground">
-                                                            Sin partidos
-                                                        </p>
-                                                    ) : (
-                                                        round.matches!.map(
-                                                            (match) => {
-                                                                const isLocked =
-                                                                    match.status ===
-                                                                        'in_progress' ||
-                                                                    match.status ===
-                                                                        'completed';
-                                                                const canEditMatch =
-                                                                    permissions.canScheduleMatches &&
-                                                                    !isLocked;
-                                                                return (
-                                                                    <ScheduleMatchRow
-                                                                        key={
-                                                                            match.id
-                                                                        }
-                                                                        match={
-                                                                            match
-                                                                        }
-                                                                        canEdit={
-                                                                            canEditMatch
-                                                                        }
-                                                                        onSchedule={() =>
-                                                                            setScheduleMatch(
-                                                                                match,
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                );
-                                                            },
-                                                        )
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </CardContent>
-                                </Card>
-                            </>
-                        ) : (
-                            (tournament.status === 'draft' ||
-                                tournament.status === 'registration_open') && (
-                                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-10 text-center">
-                                    <Trophy className="size-8 text-muted-foreground" />
-                                    <p className="text-sm font-medium">
-                                        El bracket se generará cuando el torneo
-                                        comience
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Necesitas al menos{' '}
-                                        {tournament.min_teams} equipos aprobados
-                                    </p>
+                    <TabsContent
+                        value="overview"
+                        className="space-y-6 focus-visible:outline-none"
+                    >
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                            <StatTile icon={Users} label="Equipos">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl leading-none font-bold tracking-tight tabular-nums">
+                                        {approvedTeams.length}
+                                    </span>
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                        / {tournament.max_teams}
+                                    </span>
+                                    <span className="ml-auto text-[11px] text-muted-foreground">
+                                        mín. {tournament.min_teams}
+                                    </span>
                                 </div>
-                            )
-                        )}
+                                <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        className={cn(
+                                            'h-full rounded-full transition-all duration-500',
+                                            tournamentCapacityColor(
+                                                approvedTeams.length,
+                                                tournament.max_teams,
+                                            ),
+                                        )}
+                                        style={{
+                                            width: `${Math.max(
+                                                Math.min(
+                                                    100,
+                                                    Math.round(
+                                                        (approvedTeams.length /
+                                                            tournament.max_teams) *
+                                                            100,
+                                                    ),
+                                                ),
+                                                4,
+                                            )}%`,
+                                        }}
+                                    />
+                                </div>
+                            </StatTile>
 
-                        {/* Pending Teams (organizer only) */}
-                        {permissions.canApprove && pendingTeams.length > 0 && (
+                            <StatTile icon={Trophy} label="Formato">
+                                <p className="truncate text-lg leading-tight font-semibold tracking-tight">
+                                    {tournamentFormatLabel(tournament.format)}
+                                </p>
+                            </StatTile>
+
+                            <StatTile icon={Info} label="Estado">
+                                <p className="flex items-center gap-2 text-lg leading-tight font-semibold tracking-tight">
+                                    {tournament.status === 'in_progress' && (
+                                        <span className="relative flex size-2">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/70" />
+                                            <span className="relative inline-flex size-2 rounded-full bg-primary" />
+                                        </span>
+                                    )}
+                                    {tournamentStatusMeta(tournament).label}
+                                </p>
+                            </StatTile>
+
+                            <StatTile icon={CalendarClock} label="Inicio">
+                                <p className="text-lg leading-tight font-semibold tracking-tight">
+                                    {tournament.starts_at
+                                        ? formatDate(tournament.starts_at, {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              year: 'numeric',
+                                          })
+                                        : 'Por definir'}
+                                </p>
+                            </StatTile>
+                        </div>
+
+                        <div className="grid items-start gap-6 lg:grid-cols-2">
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="text-base">
-                                        Equipos Pendientes (
-                                        {pendingTeams.length})
+                                        Información
                                     </CardTitle>
-                                    <CardDescription>
-                                        Revisa y aprueba las solicitudes de
-                                        registro
-                                    </CardDescription>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        {pendingTeams.map((tt) => {
-                                            const team = tt.team!;
-                                            const memberCount =
-                                                team.team_members?.length ?? 0;
-                                            return (
-                                                <div
-                                                    key={tt.id}
-                                                    className="flex items-center justify-between rounded-lg border p-3"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <TeamAvatar
-                                                            name={team.name}
-                                                            logoUrl={
-                                                                team.logo_url
-                                                            }
-                                                            size="sm"
-                                                        />
-                                                        <div>
-                                                            <p className="font-medium">
-                                                                {team.name}
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {memberCount}{' '}
-                                                                jugador
-                                                                {memberCount ===
-                                                                1
-                                                                    ? ''
-                                                                    : 'es'}
-                                                                {
-                                                                    ' · Registrado '
-                                                                }
-                                                                {formatDate(
-                                                                    tt.registered_at,
-                                                                    {
-                                                                        day: 'numeric',
-                                                                        month: 'numeric',
-                                                                        year: 'numeric',
-                                                                    },
-                                                                )}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                handleApprove(
-                                                                    tt.id,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                            className="gap-1"
-                                                        >
-                                                            <Check className="size-3" />
-                                                            Aprobar
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() =>
-                                                                handleReject(
-                                                                    tt.id,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                            className="gap-1"
-                                                        >
-                                                            <X className="size-3" />
-                                                            Rechazar
-                                                        </Button>
-                                                    </div>
+                                <CardContent className="space-y-4">
+                                    {tournament.organizer && (
+                                        <>
+                                            <div className="flex items-center gap-3">
+                                                <UserAvatar
+                                                    name={
+                                                        tournament.organizer
+                                                            .name
+                                                    }
+                                                    avatarUrl={
+                                                        tournament.organizer
+                                                            .avatar_url
+                                                    }
+                                                    size="md"
+                                                />
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-medium">
+                                                        {
+                                                            tournament.organizer
+                                                                .name
+                                                        }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Organizador
+                                                    </p>
                                                 </div>
-                                            );
-                                        })}
+                                            </div>
+                                            <Separator />
+                                        </>
+                                    )}
+                                    <div className="divide-y">
+                                        <SidebarLabel label="Visibilidad">
+                                            {tournament.visibility === 'public'
+                                                ? 'Público'
+                                                : 'Solo invitación'}
+                                        </SidebarLabel>
+                                        <SidebarLabel label="Equipos">
+                                            {tournament.min_teams} –{' '}
+                                            {tournament.max_teams}
+                                        </SidebarLabel>
+                                        {tournament.registration_deadline && (
+                                            <SidebarLabel label="Cierre inscripción">
+                                                {formatDate(
+                                                    tournament.registration_deadline,
+                                                    {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric',
+                                                    },
+                                                )}
+                                            </SidebarLabel>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
-                        )}
 
-                        {/* Approved Teams */}
+                            {(userRegistration || canUserRegister) && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">
+                                            Inscripción
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {userRegistration && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <TeamAvatar
+                                                        name={
+                                                            userRegistration
+                                                                .team!.name
+                                                        }
+                                                        logoUrl={
+                                                            userRegistration
+                                                                .team!.logo_url
+                                                        }
+                                                        size="sm"
+                                                    />
+                                                    <div>
+                                                        <p className="text-sm font-medium">
+                                                            {
+                                                                userRegistration
+                                                                    .team!.name
+                                                            }
+                                                        </p>
+                                                        <Badge
+                                                            variant={
+                                                                teamStatusConfig[
+                                                                    userRegistration
+                                                                        .status
+                                                                ].variant
+                                                            }
+                                                            className="mt-0.5"
+                                                        >
+                                                            {
+                                                                teamStatusConfig[
+                                                                    userRegistration
+                                                                        .status
+                                                                ].label
+                                                            }
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                                {userRegistration.status ===
+                                                    'pending' && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            setWithdrawId(
+                                                                userRegistration.id,
+                                                            )
+                                                        }
+                                                        disabled={processing}
+                                                    >
+                                                        Retirar
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {canUserRegister && (
+                                            <div className="space-y-3">
+                                                {eligibleTeams.length === 0 ? (
+                                                    <div className="rounded-lg border border-dashed p-3 text-center text-sm">
+                                                        <p className="font-medium">
+                                                            No tienes equipos
+                                                            con esta variante
+                                                        </p>
+                                                        <Link
+                                                            href={
+                                                                teams.index()
+                                                                    .url
+                                                            }
+                                                        >
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="mt-2"
+                                                            >
+                                                                Ver Equipos
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <Select
+                                                            value={
+                                                                selectedTeamId?.toString() ||
+                                                                ''
+                                                            }
+                                                            onValueChange={(
+                                                                v,
+                                                            ) =>
+                                                                setSelectedTeamId(
+                                                                    parseInt(v),
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona equipo" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {eligibleTeams.map(
+                                                                    (team) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                team.id
+                                                                            }
+                                                                            value={team.id.toString()}
+                                                                        >
+                                                                            {
+                                                                                team.name
+                                                                            }
+                                                                        </SelectItem>
+                                                                    ),
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <Button
+                                                            onClick={
+                                                                handleRegister
+                                                            }
+                                                            disabled={
+                                                                !selectedTeamId ||
+                                                                processing
+                                                            }
+                                                            className="w-full gap-2"
+                                                        >
+                                                            {processing ? (
+                                                                <>
+                                                                    <Loader2 className="size-4 animate-spin" />
+                                                                    Registrando...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Check className="size-4" />
+                                                                    Registrar
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+
+                        <div className="grid gap-3 lg:grid-cols-2">
+                            {tournament.status === 'draft' &&
+                                permissions.canEdit && (
+                                    <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
+                                        <Info className="mt-0.5 size-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                Torneo en borrador
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Abre la inscripción para que los
+                                                equipos puedan registrarse.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                            {tournament.status === 'registration_open' &&
+                                permissions.canApprove &&
+                                !permissions.canStart && (
+                                    <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
+                                        <Info className="mt-0.5 size-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                Aún no puedes iniciar el torneo
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Necesitas {tournament.min_teams}{' '}
+                                                o más equipos aprobados, y la
+                                                cantidad debe ser potencia de 2
+                                                (4, 8, 16, 32, 64).
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                            {tournament.status === 'draft' &&
+                                !permissions.canEdit && (
+                                    <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
+                                        <Info className="mt-0.5 size-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                Inscripción no disponible
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                El organizador abrirá las
+                                                inscripciones pronto.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                            {tournament.is_registration_open &&
+                                !canUserRegister &&
+                                !userRegistration &&
+                                userTeams.length === 0 && (
+                                    <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
+                                        <Users className="mt-0.5 size-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                Necesitas un equipo
+                                            </p>
+                                            <p className="mb-2 text-xs text-muted-foreground">
+                                                Para participar necesitas ser
+                                                capitán o co-capitán de un
+                                                equipo con la variante{' '}
+                                                {tournament.variant}.
+                                            </p>
+                                            <Link href={teams.create().url}>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    Ver Mis Equipos
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
+
+                            {tournament.status === 'registration_open' &&
+                                !tournament.is_registration_open &&
+                                !userRegistration && (
+                                    <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
+                                        <Info className="mt-0.5 size-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-sm font-medium">
+                                                Inscripción cerrada
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                El plazo de inscripción
+                                                finalizó. El organizador
+                                                iniciará el torneo próximamente.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent
+                        value="matches"
+                        className="focus-visible:outline-none"
+                    >
+                        <Card>
+                            <CardHeader className="gap-4 border-b sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <CardTitle className="text-base">
+                                        Programación de partidos
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {permissions.canScheduleMatches
+                                            ? 'Definí la fecha, hora y cancha de cada partido.'
+                                            : 'Fechas y canchas confirmadas por el organizador.'}
+                                    </CardDescription>
+                                </div>
+                                {tournament.rounds.length > 0 && (
+                                    <Select
+                                        value={selectedRoundId}
+                                        onValueChange={setSelectedRoundId}
+                                    >
+                                        <SelectTrigger className="w-full sm:w-56">
+                                            <SelectValue placeholder="Seleccioná una ronda" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {tournament.rounds.map((round) => (
+                                                <SelectItem
+                                                    key={round.id}
+                                                    value={String(round.id)}
+                                                >
+                                                    {round.name} ·{' '}
+                                                    {round.matches?.length ?? 0}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            </CardHeader>
+                            <CardContent>
+                                {!selectedRound ? (
+                                    <div className="flex flex-col items-center gap-2 py-12 text-center">
+                                        <CalendarClock className="size-8 text-muted-foreground" />
+                                        <p className="font-medium">
+                                            Todavía no hay partidos
+                                        </p>
+                                        <p className="max-w-md text-sm text-muted-foreground">
+                                            El calendario aparecerá cuando el
+                                            torneo comience y se generen las
+                                            rondas.
+                                        </p>
+                                    </div>
+                                ) : selectedMatches.length === 0 ? (
+                                    <div className="flex flex-col items-center gap-2 py-12 text-center">
+                                        <Swords className="size-8 text-muted-foreground" />
+                                        <p className="font-medium">
+                                            {selectedRound.name} no tiene
+                                            partidos todavía
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {selectedMatches.map((match) => {
+                                            const isLocked =
+                                                match.status ===
+                                                    'in_progress' ||
+                                                match.status === 'completed';
+                                            return (
+                                                <ScheduleMatchRow
+                                                    key={match.id}
+                                                    match={match}
+                                                    canEdit={
+                                                        permissions.canScheduleMatches &&
+                                                        !isLocked
+                                                    }
+                                                    onSchedule={() =>
+                                                        setScheduleMatch(match)
+                                                    }
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent
+                        value="competition"
+                        className="space-y-6 focus-visible:outline-none"
+                    >
+                        {hasBracket ? (
+                            tournament.format === 'league' ? (
+                                <Deferred
+                                    data="standings"
+                                    fallback={<StandingsSkeleton />}
+                                >
+                                    {standings ? (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>
+                                                    Tabla de posiciones
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    Clasificación general del
+                                                    torneo
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <StandingsTable
+                                                    rows={standings}
+                                                    highlightTopN={1}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    ) : null}
+                                </Deferred>
+                            ) : tournament.format === 'group_stage_knockout' ? (
+                                <>
+                                    {tournament.groups && (
+                                        <Deferred
+                                            data="groupStandings"
+                                            fallback={<StandingsSkeleton />}
+                                        >
+                                            {groupStandings ? (
+                                                <section className="space-y-4">
+                                                    <h2 className="text-lg font-semibold">
+                                                        {tournament.phase ===
+                                                            'knockout' ||
+                                                        tournament.phase ===
+                                                            'completed'
+                                                            ? 'Tablas finales de grupos'
+                                                            : 'Fase de grupos'}
+                                                    </h2>
+                                                    <GroupsGrid
+                                                        groups={
+                                                            tournament.groups
+                                                        }
+                                                        standingsByGroup={
+                                                            groupStandings
+                                                        }
+                                                        highlightTopN={2}
+                                                    />
+                                                </section>
+                                            ) : null}
+                                        </Deferred>
+                                    )}
+                                    {(tournament.phase === 'knockout' ||
+                                        tournament.phase === 'completed') && (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Llaves</CardTitle>
+                                                <CardDescription>
+                                                    Cruces de eliminación
+                                                    directa
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <TournamentBracket
+                                                    rounds={tournament.rounds.filter(
+                                                        (round) =>
+                                                            !round.matches?.some(
+                                                                (match) =>
+                                                                    match.tournament_group_id !=
+                                                                    null,
+                                                            ),
+                                                    )}
+                                                />
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </>
+                            ) : (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Llaves</CardTitle>
+                                        <CardDescription>
+                                            Camino hacia la final del torneo
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <TournamentBracket
+                                            rounds={tournament.rounds}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            )
+                        ) : (
+                            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-12 text-center">
+                                <Trophy className="size-8 text-muted-foreground" />
+                                <p className="font-medium">
+                                    La competencia todavía no comenzó
+                                </p>
+                                <p className="max-w-md text-sm text-muted-foreground">
+                                    {tournament.status === 'cancelled'
+                                        ? 'El torneo fue cancelado antes de generar la competencia.'
+                                        : `La tabla o las llaves aparecerán al iniciar con al menos ${tournament.min_teams} equipos aprobados.`}
+                                </p>
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent
+                        value="teams"
+                        className="focus-visible:outline-none"
+                    >
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-base">
-                                    Equipos Confirmados ({approvedTeams.length})
+                                    Equipos confirmados ({approvedTeams.length})
                                 </CardTitle>
                                 <CardDescription>
                                     Equipos que participarán en el torneo
@@ -858,18 +1163,27 @@ export default function TournamentShow({
                             </CardHeader>
                             <CardContent>
                                 {approvedTeams.length === 0 ? (
-                                    <div className="py-8 text-center text-sm text-muted-foreground">
-                                        No hay equipos confirmados aún
+                                    <div className="flex flex-col items-center gap-2 py-12 text-center">
+                                        <Users className="size-8 text-muted-foreground" />
+                                        <p className="font-medium">
+                                            Todavía no hay equipos confirmados
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Las inscripciones aprobadas
+                                            aparecerán acá.
+                                        </p>
                                     </div>
                                 ) : (
-                                    <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                         {approvedTeams.map((tt) => {
                                             const team = tt.team!;
                                             const memberCount =
                                                 team.team_members?.length ?? 0;
                                             const captain =
                                                 team.team_members?.find(
-                                                    (m) => m.role === 'captain',
+                                                    (member) =>
+                                                        member.role ===
+                                                        'captain',
                                                 )?.user?.name;
                                             return (
                                                 <div
@@ -906,310 +1220,139 @@ export default function TournamentShow({
                                 )}
                             </CardContent>
                         </Card>
-                    </div>
+                    </TabsContent>
 
-                    <div className="order-first space-y-4 xl:sticky xl:top-20 xl:order-none">
-                        {/* Tournament Info */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">
-                                    Información
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {tournament.organizer && (
-                                    <>
-                                        <div className="flex items-center gap-3">
-                                            <UserAvatar
-                                                name={tournament.organizer.name}
-                                                avatarUrl={
-                                                    tournament.organizer
-                                                        .avatar_url
-                                                }
-                                                size="md"
-                                            />
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-medium">
-                                                    {tournament.organizer.name}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Organizador
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Separator />
-                                    </>
+                    {hasOrganizerManagement && (
+                        <TabsContent
+                            value="management"
+                            className="space-y-6 focus-visible:outline-none"
+                        >
+                            {tournament.format === 'group_stage_knockout' &&
+                                permissions.canDrawGroups &&
+                                tournament.groups &&
+                                tournament.groups.length > 0 &&
+                                (tournament.status === 'draft' ||
+                                    tournament.status ===
+                                        'registration_open') && (
+                                    <GroupDraw
+                                        tournamentId={tournament.id}
+                                        groups={tournament.groups}
+                                        approvedTeams={
+                                            approvedTeams as (TournamentTeam & {
+                                                team: Team;
+                                            })[]
+                                        }
+                                        groupSize={tournament.group_size ?? 4}
+                                    />
                                 )}
-                                <div className="divide-y">
-                                    <SidebarLabel label="Visibilidad">
-                                        {tournament.visibility === 'public'
-                                            ? 'Público'
-                                            : 'Solo invitación'}
-                                    </SidebarLabel>
-                                    <SidebarLabel label="Equipos">
-                                        {tournament.min_teams} –{' '}
-                                        {tournament.max_teams}
-                                    </SidebarLabel>
-                                    {tournament.registration_deadline && (
-                                        <SidebarLabel label="Cierre inscripción">
-                                            {formatDate(
-                                                tournament.registration_deadline,
-                                                {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    year: 'numeric',
-                                                },
-                                            )}
-                                        </SidebarLabel>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
 
-                        {/* Registration + User Status */}
-                        {(userRegistration || canUserRegister) && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base">
-                                        Inscripción
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {userRegistration && (
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <TeamAvatar
-                                                    name={
-                                                        userRegistration.team!
-                                                            .name
-                                                    }
-                                                    logoUrl={
-                                                        userRegistration.team!
-                                                            .logo_url
-                                                    }
-                                                    size="sm"
-                                                />
-                                                <div>
-                                                    <p className="text-sm font-medium">
-                                                        {
-                                                            userRegistration
-                                                                .team!.name
-                                                        }
-                                                    </p>
-                                                    <Badge
-                                                        variant={
-                                                            teamStatusConfig[
-                                                                userRegistration
-                                                                    .status
-                                                            ].variant
-                                                        }
-                                                        className="mt-0.5"
-                                                    >
-                                                        {
-                                                            teamStatusConfig[
-                                                                userRegistration
-                                                                    .status
-                                                            ].label
-                                                        }
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                            {userRegistration.status ===
-                                                'pending' && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        setWithdrawId(
-                                                            userRegistration.id,
-                                                        )
-                                                    }
-                                                    disabled={processing}
+                            {permissions.canApprove &&
+                            pendingTeams.length > 0 ? (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">
+                                            Equipos pendientes (
+                                            {pendingTeams.length})
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Revisá las solicitudes de registro
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {pendingTeams.map((tt) => {
+                                            const team = tt.team!;
+                                            const memberCount =
+                                                team.team_members?.length ?? 0;
+                                            return (
+                                                <div
+                                                    key={tt.id}
+                                                    className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
                                                 >
-                                                    Retirar
-                                                </Button>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {canUserRegister && (
-                                        <div className="space-y-3">
-                                            {eligibleTeams.length === 0 ? (
-                                                <div className="rounded-lg border border-dashed p-3 text-center text-sm">
-                                                    <p className="font-medium">
-                                                        No tienes equipos con
-                                                        esta variante
-                                                    </p>
-                                                    <Link
-                                                        href={teams.index().url}
-                                                    >
+                                                    <div className="flex items-center gap-3">
+                                                        <TeamAvatar
+                                                            name={team.name}
+                                                            logoUrl={
+                                                                team.logo_url
+                                                            }
+                                                            size="sm"
+                                                        />
+                                                        <div>
+                                                            <p className="font-medium">
+                                                                {team.name}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {memberCount}{' '}
+                                                                jugador
+                                                                {memberCount ===
+                                                                1
+                                                                    ? ''
+                                                                    : 'es'}
+                                                                {
+                                                                    ' · Registrado '
+                                                                }
+                                                                {formatDate(
+                                                                    tt.registered_at,
+                                                                    {
+                                                                        day: 'numeric',
+                                                                        month: 'numeric',
+                                                                        year: 'numeric',
+                                                                    },
+                                                                )}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2 sm:justify-end">
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                handleApprove(
+                                                                    tt.id,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                            className="flex-1 gap-1 sm:flex-none"
+                                                        >
+                                                            <Check className="size-3" />
+                                                            Aprobar
+                                                        </Button>
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            className="mt-2"
+                                                            onClick={() =>
+                                                                handleReject(
+                                                                    tt.id,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                            className="flex-1 gap-1 sm:flex-none"
                                                         >
-                                                            Ver Equipos
+                                                            <X className="size-3" />
+                                                            Rechazar
                                                         </Button>
-                                                    </Link>
+                                                    </div>
                                                 </div>
-                                            ) : (
-                                                <>
-                                                    <Select
-                                                        value={
-                                                            selectedTeamId?.toString() ||
-                                                            ''
-                                                        }
-                                                        onValueChange={(v) =>
-                                                            setSelectedTeamId(
-                                                                parseInt(v),
-                                                            )
-                                                        }
-                                                        disabled={processing}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Selecciona equipo" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {eligibleTeams.map(
-                                                                (team) => (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            team.id
-                                                                        }
-                                                                        value={team.id.toString()}
-                                                                    >
-                                                                        {
-                                                                            team.name
-                                                                        }
-                                                                    </SelectItem>
-                                                                ),
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <Button
-                                                        onClick={handleRegister}
-                                                        disabled={
-                                                            !selectedTeamId ||
-                                                            processing
-                                                        }
-                                                        className="w-full gap-2"
-                                                    >
-                                                        {processing ? (
-                                                            <>
-                                                                <Loader2 className="size-4 animate-spin" />
-                                                                Registrando...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Check className="size-4" />
-                                                                Registrar
-                                                            </>
-                                                        )}
-                                                    </Button>
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Notices */}
-                        {tournament.status === 'draft' &&
-                            permissions.canEdit && (
-                                <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
-                                    <Info className="mt-0.5 size-4 text-muted-foreground" />
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            Torneo en borrador
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Abre la inscripción para que los
-                                            equipos puedan registrarse.
-                                        </p>
-                                    </div>
+                                            );
+                                        })}
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-12 text-center">
+                                    <ListChecks className="size-8 text-muted-foreground" />
+                                    <p className="font-medium">
+                                        No hay gestiones pendientes
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Las solicitudes nuevas aparecerán acá.
+                                    </p>
                                 </div>
                             )}
-
-                        {tournament.status === 'registration_open' &&
-                            permissions.canApprove &&
-                            !permissions.canStart && (
-                                <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
-                                    <Info className="mt-0.5 size-4 text-muted-foreground" />
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            Aún no puedes iniciar el torneo
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Necesitas {tournament.min_teams} o
-                                            más equipos aprobados, y la cantidad
-                                            debe ser potencia de 2 (4, 8, 16,
-                                            32, 64).
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                        {tournament.status === 'draft' &&
-                            !permissions.canEdit && (
-                                <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
-                                    <Info className="mt-0.5 size-4 text-muted-foreground" />
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            Inscripción no disponible
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            El organizador abrirá las
-                                            inscripciones pronto.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                        {tournament.is_registration_open &&
-                            !canUserRegister &&
-                            !userRegistration &&
-                            userTeams.length === 0 && (
-                                <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
-                                    <Users className="mt-0.5 size-4 text-muted-foreground" />
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            Necesitas un equipo
-                                        </p>
-                                        <p className="mb-2 text-xs text-muted-foreground">
-                                            Para participar necesitas ser
-                                            capitán o co-capitán de un equipo
-                                            con la variante {tournament.variant}
-                                            .
-                                        </p>
-                                        <Link href={teams.create().url}>
-                                            <Button size="sm" variant="outline">
-                                                Ver Mis Equipos
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
-
-                        {tournament.status === 'registration_open' &&
-                            !tournament.is_registration_open &&
-                            !userRegistration && (
-                                <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
-                                    <Info className="mt-0.5 size-4 text-muted-foreground" />
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            Inscripción cerrada
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            El plazo de inscripción finalizó. El
-                                            organizador iniciará el torneo
-                                            próximamente.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                    </div>
-                </div>
+                        </TabsContent>
+                    )}
+                </Tabs>
             </div>
 
             <ScheduleMatchDialog
