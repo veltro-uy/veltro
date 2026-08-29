@@ -47,6 +47,7 @@ interface PageProps {
     filters: {
         status: TournamentStatusFilter;
         variant: string;
+        format: string;
         search: string;
         sort: string;
     };
@@ -69,6 +70,7 @@ const cleanFilters = (
 ) => ({
     status: filters.status === 'all' ? undefined : filters.status,
     variant: filters.variant === 'all' ? undefined : filters.variant,
+    format: filters.format === 'all' ? undefined : filters.format,
     search: filters.search.trim() === '' ? undefined : filters.search.trim(),
     sort: filters.sort === 'newest' ? undefined : filters.sort,
     page: filters.page ?? undefined,
@@ -119,6 +121,7 @@ export default function TournamentsIndex({
             [
                 filters.status !== 'all',
                 filters.variant !== 'all',
+                filters.format !== 'all',
                 filters.search.trim() !== '',
                 filters.sort !== 'newest',
             ].filter(Boolean).length,
@@ -212,8 +215,8 @@ export default function TournamentsIndex({
                 </div>
 
                 {/* Filter bar */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="relative min-w-0 flex-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap">
+                    <div className="relative min-w-0 flex-1 sm:basis-full lg:basis-auto">
                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             value={searchQuery}
@@ -242,6 +245,29 @@ export default function TournamentsIndex({
                             <SelectItem value="football_7">Fútbol 7</SelectItem>
                             <SelectItem value="football_5">Fútbol 5</SelectItem>
                             <SelectItem value="futsal">Futsal</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select
+                        value={filters.format}
+                        onValueChange={(format) =>
+                            updateFilters({ format, page: null })
+                        }
+                    >
+                        <SelectTrigger className="w-full sm:w-52">
+                            <SelectValue placeholder="Formato" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                Todos los formatos
+                            </SelectItem>
+                            <SelectItem value="single_elimination">
+                                Eliminación directa
+                            </SelectItem>
+                            <SelectItem value="league">Liga</SelectItem>
+                            <SelectItem value="group_stage_knockout">
+                                Grupos y eliminatorias
+                            </SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -276,6 +302,7 @@ export default function TournamentsIndex({
                                 updateFilters({
                                     status: 'all',
                                     variant: 'all',
+                                    format: 'all',
                                     search: '',
                                     sort: 'newest',
                                     page: null,

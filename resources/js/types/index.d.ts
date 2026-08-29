@@ -180,6 +180,7 @@ export type NotificationType =
     | 'match_request_rejected'
     | 'match_cancelled'
     | 'match_score_updated'
+    | 'match_result_submitted'
     | 'availability_reminder'
     | 'team_invitation'
     | 'commendation_received'

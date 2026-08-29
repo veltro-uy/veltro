@@ -17,6 +17,7 @@ use App\Notifications\MatchConfirmedNotification;
 use App\Notifications\MatchRequestAcceptedNotification;
 use App\Notifications\MatchRequestReceivedNotification;
 use App\Notifications\MatchRequestRejectedNotification;
+use App\Notifications\MatchResultSubmittedNotification;
 use App\Notifications\MatchScoreUpdatedNotification;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -173,7 +174,11 @@ final class MatchService
             }
 
             // Update match status
-            $match->update(['status' => 'cancelled']);
+            $match->update([
+                'status' => 'cancelled',
+                'result_submitted_by_team_id' => null,
+                'result_submitted_at' => null,
+            ]);
 
             return true;
         });
@@ -391,28 +396,32 @@ final class MatchService
      */
     public function updateScore(FootballMatch $match, int $homeScore, int $awayScore, ?int $userId = null): FootballMatch
     {
-        // Verify match is in progress or confirmed
-        if (! $match->isInProgress() && ! $match->isConfirmed()) {
-            throw new \Exception('Can only update score for in-progress or confirmed matches');
-        }
+        $match = DB::transaction(function () use ($match, $homeScore, $awayScore) {
+            $match = FootballMatch::query()->lockForUpdate()->findOrFail($match->id);
 
-        // Verify match time has been reached
-        if ($match->scheduled_at->isFuture()) {
-            throw new \Exception('Cannot update score before the match starts');
-        }
+            if ($match->isAwaitingResultConfirmation()) {
+                throw new \Exception('Cannot update a score while its result is awaiting confirmation');
+            }
 
-        // If match was confirmed, change to in_progress
-        $updates = [
-            'home_score' => $homeScore,
-            'away_score' => $awayScore,
-        ];
+            if (! $match->isInProgress() && ! $match->isConfirmed()) {
+                throw new \Exception('Can only update score for in-progress or confirmed matches');
+            }
 
-        if ($match->isConfirmed()) {
-            $updates['status'] = 'in_progress';
-            $updates['started_at'] = now();
-        }
+            if ($match->scheduled_at?->isFuture()) {
+                throw new \Exception('Cannot update score before the match starts');
+            }
 
-        $match->update($updates);
+            $updates = ['home_score' => $homeScore, 'away_score' => $awayScore];
+
+            if ($match->isConfirmed()) {
+                $updates['status'] = 'in_progress';
+                $updates['started_at'] = now();
+            }
+
+            $match->update($updates);
+
+            return $match->fresh();
+        });
 
         // Notify opposing team leaders if userId is provided
         if ($userId && $match->away_team_id) {
@@ -437,7 +446,7 @@ final class MatchService
             }
         }
 
-        return $match->fresh();
+        return $match;
     }
 
     /**
@@ -445,9 +454,8 @@ final class MatchService
      */
     public function recordEvent(FootballMatch $match, int $teamId, array $eventData): MatchEvent
     {
-        // Verify match is in progress, confirmed, or completed
-        if (! $match->isInProgress() && ! $match->isCompleted() && ! $match->isConfirmed()) {
-            throw new \Exception('Can only record events for confirmed, in-progress, or completed matches');
+        if (! $match->isInProgress() && ! $match->isConfirmed()) {
+            throw new \Exception('Can only record events for confirmed or in-progress matches');
         }
 
         // Verify team is part of the match
@@ -461,6 +469,16 @@ final class MatchService
         }
 
         return DB::transaction(function () use ($match, $teamId, $eventData) {
+            $match = FootballMatch::query()->lockForUpdate()->findOrFail($match->id);
+
+            if (! $match->isInProgress() && ! $match->isConfirmed()) {
+                throw new \Exception('Can only record events for confirmed or in-progress matches');
+            }
+
+            if ($match->isAwaitingResultConfirmation()) {
+                throw new \Exception('Cannot change events while the result is awaiting confirmation');
+            }
+
             $event = MatchEvent::create([
                 'match_id' => $match->id,
                 'team_id' => $teamId,
@@ -481,7 +499,7 @@ final class MatchService
                 $match->save();
 
                 // Auto-start match if confirmed and scheduled time has passed
-                if ($match->isConfirmed() && ! $match->scheduled_at->isFuture()) {
+                if ($match->isConfirmed() && ($match->scheduled_at === null || ! $match->scheduled_at->isFuture())) {
                     $match->update(['status' => 'in_progress', 'started_at' => now()]);
                 }
             }
@@ -494,6 +512,131 @@ final class MatchService
      * Complete a match.
      */
     public function completeMatch(FootballMatch $match): FootballMatch
+    {
+        return DB::transaction(function () use ($match) {
+            $match = FootballMatch::query()->lockForUpdate()->findOrFail($match->id);
+
+            return $this->finalizeMatch($match);
+        });
+    }
+
+    /**
+     * Submit a friendly result for the opponent, or immediately finalize an
+     * organizer-controlled/no-opponent match.
+     */
+    public function submitResult(FootballMatch $match, int $userId): FootballMatch
+    {
+        $submittingTeam = null;
+
+        $match = DB::transaction(function () use ($match, $userId, &$submittingTeam) {
+            $match = FootballMatch::query()->lockForUpdate()->findOrFail($match->id);
+
+            if (! $match->canManage($userId)) {
+                throw new \Exception('You cannot manage this match result');
+            }
+
+            if ($match->isTournamentMatch() || ! $match->away_team_id) {
+                return $this->finalizeMatch($match);
+            }
+
+            $this->validateCompletion($match);
+
+            if ($match->isAwaitingResultConfirmation()) {
+                throw new \Exception('This result is already awaiting confirmation');
+            }
+
+            $submittingTeam = $match->isHomeTeamLeader($userId)
+                ? $match->homeTeam
+                : $match->awayTeam;
+
+            $match->update([
+                'result_submitted_by_team_id' => $submittingTeam->id,
+                'result_submitted_at' => now(),
+            ]);
+
+            return $match->fresh();
+        });
+
+        if ($submittingTeam) {
+            $opposingTeam = $submittingTeam->id === $match->home_team_id
+                ? $match->awayTeam
+                : $match->homeTeam;
+            Notification::send(
+                $opposingTeam->getLeaders()->with('user')->get()->pluck('user'),
+                new MatchResultSubmittedNotification($match, $submittingTeam),
+            );
+        }
+
+        return $match;
+    }
+
+    public function confirmResult(FootballMatch $match, int $userId): FootballMatch
+    {
+        return DB::transaction(function () use ($match, $userId) {
+            $match = FootballMatch::query()->lockForUpdate()->findOrFail($match->id);
+
+            if (! $match->isAwaitingResultConfirmation()) {
+                throw new \Exception('There is no result awaiting confirmation');
+            }
+
+            if (! $match->canReviewSubmittedResult($userId)) {
+                throw new \Exception('Only an opposing team leader can confirm this result');
+            }
+
+            return $this->finalizeMatch($match);
+        });
+    }
+
+    public function rejectResult(FootballMatch $match, int $userId): FootballMatch
+    {
+        return DB::transaction(function () use ($match, $userId) {
+            $match = FootballMatch::query()->lockForUpdate()->findOrFail($match->id);
+
+            if (! $match->isAwaitingResultConfirmation()) {
+                throw new \Exception('There is no result awaiting confirmation');
+            }
+
+            if (! $match->canReviewSubmittedResult($userId)) {
+                throw new \Exception('Only an opposing team leader can reject this result');
+            }
+
+            $match->update([
+                'result_submitted_by_team_id' => null,
+                'result_submitted_at' => null,
+            ]);
+
+            return $match->fresh();
+        });
+    }
+
+    private function finalizeMatch(FootballMatch $match): FootballMatch
+    {
+        $this->validateCompletion($match);
+
+        $match->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+            'result_submitted_by_team_id' => null,
+            'result_submitted_at' => null,
+        ]);
+
+        if ($match->isTournamentMatch()) {
+            $tournamentService = app(TournamentService::class);
+            $tournament = $match->tournament;
+
+            if ($tournament->isSingleElimination() || $tournament->inKnockout()) {
+                $tournamentService->advanceWinner($match);
+            } elseif ($tournament->isLeague()) {
+                $tournamentService->completeLeagueIfDone($tournament);
+            } elseif ($tournament->inGroupStage()) {
+                $tournamentService->maybeTransitionToKnockout($tournament);
+            }
+        }
+
+        return $match->fresh();
+    }
+
+    private function validateCompletion(FootballMatch $match): void
     {
         if (! $match->isInProgress()) {
             throw new \Exception('Can only complete in-progress matches');
@@ -513,25 +656,6 @@ final class MatchService
             }
         }
 
-        $match->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-        ]);
-
-        if ($match->isTournamentMatch()) {
-            $tournamentService = app(TournamentService::class);
-            $tournament = $match->tournament;
-
-            if ($tournament->isSingleElimination() || $tournament->inKnockout()) {
-                $tournamentService->advanceWinner($match);
-            } elseif ($tournament->isLeague()) {
-                $tournamentService->completeLeagueIfDone($tournament);
-            } elseif ($tournament->inGroupStage()) {
-                $tournamentService->maybeTransitionToKnockout($tournament);
-            }
-        }
-
-        return $match->fresh();
     }
 
     /**
@@ -624,8 +748,8 @@ final class MatchService
         $homeLeaders = collect();
         $awayLeaders = collect();
 
-        // Only return leaders if match is confirmed and user is a leader of one of the teams
-        if (! $match->isConfirmed() || ! $match->isTeamLeader($userId)) {
+        // Contact details remain useful through match day and result review.
+        if ((! $match->isConfirmed() && ! $match->isInProgress()) || ! $match->isTeamLeader($userId)) {
             return [
                 'home_leaders' => $homeLeaders,
                 'away_leaders' => $awayLeaders,
@@ -712,6 +836,16 @@ final class MatchService
         }
 
         return DB::transaction(function () use ($event, $match) {
+            $match = FootballMatch::query()->lockForUpdate()->findOrFail($match->id);
+
+            if ($match->isAwaitingResultConfirmation()) {
+                throw new \Exception('Cannot change events while the result is awaiting confirmation');
+            }
+
+            if ($match->isCompleted()) {
+                throw new \Exception('Cannot change events after the result is completed');
+            }
+
             $eventType = $event->event_type;
             $teamId = $event->team_id;
 

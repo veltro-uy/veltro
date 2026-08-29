@@ -3,6 +3,19 @@
 use App\Models\Team;
 use App\Models\User;
 
+test('public profile includes share and social metadata', function () {
+    $user = User::factory()->create(['name' => 'María Fútbol']);
+
+    $this->get("/jugadores/{$user->public_id}")
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('users/show')
+            ->where('profile_url', route('users.show', $user))
+            ->where('seo.title', 'María Fútbol en Veltro')
+            ->where('seo.url', route('users.show', $user))
+        );
+});
+
 test('user profile can be viewed by anyone', function () {
     $user = User::factory()->create([
         'name' => 'Test User',

@@ -1,6 +1,7 @@
 import { AddCommentForm } from '@/components/add-comment-form';
 import { ProfileCommendations } from '@/components/profile-commendations';
 import { ProfileComments } from '@/components/profile-comments';
+import { ShareButton } from '@/components/share-button';
 import { TeamAvatar } from '@/components/team-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ interface Props {
     comments_count: number;
     can_commend?: boolean;
     is_own_profile: boolean;
+    profile_url: string;
 }
 
 export default function Show({
@@ -55,6 +57,7 @@ export default function Show({
     comments_count,
     can_commend = false,
     is_own_profile,
+    profile_url,
 }: Props) {
     const [currentCommendationStats, setCurrentCommendationStats] =
         useState<CommendationStats>(commendation_stats);
@@ -73,10 +76,25 @@ export default function Show({
     const breadcrumbs: BreadcrumbItem[] = [
         { title: user.name, href: `/jugadores/${user.public_id}` },
     ];
+    const profileDescription = `${user.name} en Veltro: ${statistics.matches_played} partidos, ${statistics.goals} goles y ${statistics.assists} asistencias.`;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${user.name} - Perfil`} />
+            <Head title={`${user.name} - Perfil`}>
+                <meta name="description" content={profileDescription} />
+                <link rel="canonical" href={profile_url} />
+                <meta property="og:title" content={`${user.name} en Veltro`} />
+                <meta property="og:description" content={profileDescription} />
+                <meta property="og:url" content={profile_url} />
+                {user.avatar_url && (
+                    <meta property="og:image" content={user.avatar_url} />
+                )}
+                <meta name="twitter:title" content={`${user.name} en Veltro`} />
+                <meta name="twitter:description" content={profileDescription} />
+                {user.avatar_url && (
+                    <meta name="twitter:image" content={user.avatar_url} />
+                )}
+            </Head>
 
             <div className="container mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6 lg:px-8">
                 {/* Hero Header Section */}
@@ -110,9 +128,17 @@ export default function Show({
                                 {/* User Info */}
                                 <div className="flex-1 space-y-3">
                                     <div className="space-y-2">
-                                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-                                            {user.name}
-                                        </h1>
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+                                                {user.name}
+                                            </h1>
+                                            <ShareButton
+                                                title={`${user.name} en Veltro`}
+                                                text={profileDescription}
+                                                url={profile_url}
+                                                size="sm"
+                                            />
+                                        </div>
 
                                         {/* Meta Badges */}
                                         <div className="flex flex-wrap items-center gap-2">

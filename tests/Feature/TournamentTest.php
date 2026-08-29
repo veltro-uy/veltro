@@ -145,6 +145,30 @@ test('tournament list shows public tournaments', function () {
     );
 });
 
+test('tournament list filters by format', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    Tournament::factory()->create([
+        'name' => 'Liga visible',
+        'visibility' => 'public',
+        'format' => 'league',
+    ]);
+    Tournament::factory()->create([
+        'name' => 'Copa oculta por filtro',
+        'visibility' => 'public',
+        'format' => 'single_elimination',
+    ]);
+
+    $this->actingAs($user)
+        ->get('/tournaments?format=league')
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('tournaments/index')
+            ->where('filters.format', 'league')
+            ->has('tournaments.data', 1)
+            ->where('tournaments.data.0.name', 'Liga visible')
+        );
+});
+
 test('tournament list hides invite-only tournaments from non-participants', function () {
     $user = User::factory()->create(['email_verified_at' => now()]);
     Tournament::factory()->create([

@@ -175,6 +175,26 @@ export default function Show({
         );
     };
 
+    const handleConfirmResult = () => {
+        router.post(
+            matches.result.confirm(match.id).url,
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
+    };
+
+    const handleRejectResult = () => {
+        router.post(
+            matches.result.reject(match.id).url,
+            {},
+            {
+                preserveScroll: true,
+            },
+        );
+    };
+
     const isConfirmedOrLater =
         match.status === 'confirmed' ||
         match.status === 'in_progress' ||
@@ -345,7 +365,7 @@ export default function Show({
                 title={`${match.home_team.name}${match.away_team ? ` vs ${match.away_team.name}` : ''}`}
             />
 
-            <div className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col gap-6 p-4 pb-36 md:p-6">
                 <MatchHero
                     match={match}
                     isHomeLeader={isHomeLeader}
@@ -362,6 +382,8 @@ export default function Show({
                     }
                     onCancelClick={() => setShowCancelDialog(true)}
                     onCompleteClick={() => setShowCompleteDialog(true)}
+                    onConfirmResult={handleConfirmResult}
+                    onRejectResult={handleRejectResult}
                 />
 
                 {hasAside ? (
@@ -405,6 +427,9 @@ export default function Show({
                 match={match}
                 events={events}
                 onConfirm={handleCompleteMatch}
+                requiresOpponentConfirmation={
+                    match.tournament_id == null && match.away_team != null
+                }
             />
         </AppLayout>
     );

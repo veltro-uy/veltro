@@ -32,6 +32,18 @@ it('returns one row per team with zeros when no matches exist', function () {
     expect(array_map(fn ($r) => $r->teamId, $rows))->toBe([1, 2, 3]);
 });
 
+it('does not count an unconfirmed submitted result', function () {
+    $match = standingsMatch(1, 2, 4, 0, 'in_progress');
+    $match->result_submitted_by_team_id = 1;
+
+    $rows = (new StandingsService)->compute(collect([$match]), collect([1, 2]));
+
+    expect($rows[0]->played)->toBe(0)
+        ->and($rows[0]->points)->toBe(0)
+        ->and($rows[1]->played)->toBe(0)
+        ->and($rows[1]->points)->toBe(0);
+});
+
 it('aggregates wins, draws, losses, goals, and points correctly', function () {
     $matches = collect([
         standingsMatch(1, 2, 3, 1),  // 1 beats 2

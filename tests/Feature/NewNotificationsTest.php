@@ -14,6 +14,7 @@ use App\Notifications\CaptaincyTransferredNotification;
 use App\Notifications\JoinRequestCreatedNotification;
 use App\Notifications\MatchConfirmedNotification;
 use App\Notifications\MatchRequestAcceptedNotification;
+use App\Notifications\MatchResultSubmittedNotification;
 use App\Notifications\TeamInvitationAcceptedNotification;
 use App\Notifications\TournamentRegistrationReviewedNotification;
 use App\Services\MatchService;
@@ -166,6 +167,29 @@ test('accepting a match request confirms the match for the home team', function 
 
     Notification::assertSentTo($homeCaptain, MatchConfirmedNotification::class);
     Notification::assertSentTo($awayCaptain, MatchRequestAcceptedNotification::class);
+});
+
+test('submitting a friendly result notifies only the opposing leaders', function () {
+    Notification::fake();
+
+    $homeCaptain = User::factory()->create();
+    $awayCaptain = User::factory()->create();
+    $homeTeam = teamWithCaptain($homeCaptain);
+    $awayTeam = teamWithCaptain($awayCaptain);
+    $match = FootballMatch::factory()->create([
+        'home_team_id' => $homeTeam->id,
+        'away_team_id' => $awayTeam->id,
+        'status' => 'in_progress',
+        'scheduled_at' => now()->subHour(),
+        'started_at' => now()->subHour(),
+        'home_score' => 2,
+        'away_score' => 1,
+    ]);
+
+    app(MatchService::class)->submitResult($match, $homeCaptain->id);
+
+    Notification::assertSentTo($awayCaptain, MatchResultSubmittedNotification::class);
+    Notification::assertNotSentTo($homeCaptain, MatchResultSubmittedNotification::class);
 });
 
 // ============================================================

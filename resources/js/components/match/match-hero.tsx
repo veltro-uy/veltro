@@ -6,6 +6,7 @@ import type {
     MatchPageTeam,
 } from '@/components/match/types';
 import { RecordGoalDialog } from '@/components/record-goal-dialog';
+import { ShareButton } from '@/components/share-button';
 import { TeamAvatar } from '@/components/team-avatar';
 import { Button } from '@/components/ui/button';
 import { VariantBadge } from '@/components/variant-badge';
@@ -20,9 +21,11 @@ import matches from '@/routes/matches';
 import { Link } from '@inertiajs/react';
 import {
     Calendar,
+    Check,
     Clock,
     Edit,
     MapPin,
+    Navigation,
     Plane,
     Plus,
     Shield,
@@ -46,6 +49,8 @@ interface MatchHeroProps {
     canDownloadCalendar: boolean;
     onCancelClick: () => void;
     onCompleteClick: () => void;
+    onConfirmResult: () => void;
+    onRejectResult: () => void;
 }
 
 interface ScorerSummary {
@@ -87,6 +92,8 @@ export function MatchHero({
     canDownloadCalendar,
     onCancelClick,
     onCompleteClick,
+    onConfirmResult,
+    onRejectResult,
 }: MatchHeroProps) {
     const { countdown, hasStarted: matchHasStarted } = useMatchCountdown(
         match.scheduled_at,
@@ -107,8 +114,23 @@ export function MatchHero({
     const showScorers =
         match.status === 'in_progress' || match.status === 'completed';
 
+    const awaitingConfirmation = match.result_submitted_by_team_id != null;
+    const canReviewResult =
+        awaitingConfirmation &&
+        ((isHomeLeader &&
+            match.result_submitted_by_team_id === match.away_team_id) ||
+            (isAwayLeader &&
+                match.result_submitted_by_team_id === match.home_team_id));
+
     const canRecord = (leader: boolean) =>
-        leader && match.status !== 'completed' && matchHasStarted;
+        leader &&
+        match.status !== 'completed' &&
+        !awaitingConfirmation &&
+        matchHasStarted;
+
+    const mapsUrl = match.location
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location_coords || match.location)}`
+        : null;
 
     const homeScorers = showScorers
         ? groupScorers(events, match.home_team.id)
@@ -119,14 +141,15 @@ export function MatchHero({
             : [];
     const hasScorers = homeScorers.length > 0 || awayScorers.length > 0;
 
-    const statusLabel =
-        match.status === 'completed'
-            ? 'Finalizado'
-            : match.status === 'in_progress'
-              ? 'En vivo'
-              : !matchHasStarted && countdown
-                ? countdown
-                : getMatchStatusText(match.status);
+    const statusLabel = awaitingConfirmation
+        ? 'Esperando confirmación'
+        : match.status === 'completed'
+          ? 'Finalizado'
+          : match.status === 'in_progress'
+            ? 'En vivo'
+            : !matchHasStarted && countdown
+              ? countdown
+              : getMatchStatusText(match.status);
 
     return (
         <>
@@ -170,10 +193,22 @@ export function MatchHero({
                                 {formatMatchTime(match.scheduled_at)}
                             </span>
                             <span aria-hidden>·</span>
-                            <span className="flex items-center gap-1.5">
-                                <MapPin className="h-3.5 w-3.5" />
-                                {match.location ?? 'Por definir'}
-                            </span>
+                            {mapsUrl ? (
+                                <a
+                                    href={mapsUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-1.5 underline-offset-4 hover:text-foreground hover:underline"
+                                >
+                                    <MapPin className="h-3.5 w-3.5" />
+                                    {match.location}
+                                </a>
+                            ) : (
+                                <span className="flex items-center gap-1.5">
+                                    <MapPin className="h-3.5 w-3.5" />
+                                    Por definir
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -356,50 +391,62 @@ export function MatchHero({
                         )}
                     </div>
 
-                    {/* Action buttons */}
-                    {(isHomeLeader && match.status === 'available') ||
-                    (isLeader && match.status === 'in_progress') ||
-                    canDownloadCalendar ||
-                    (!isLeader &&
-                        match.status === 'available' &&
-                        eligibleTeams.length > 0) ? (
-                        <div className="flex flex-wrap justify-center gap-3">
-                            {canDownloadCalendar && (
+                    {awaitingConfirmation && (
+                        <div className="mx-auto max-w-xl rounded-xl border border-primary/25 bg-primary/5 p-3 text-center text-sm">
+                            {canReviewResult
+                                ? `El rival envió el ${homeScore} - ${awayScore}. Confirmalo o marcá que no coincide.`
+                                : 'El marcador está bloqueado hasta que un líder del rival lo confirme.'}
+                        </div>
+                    )}
+
+                    {/* Desktop action buttons */}
+                    <div className="hidden flex-wrap justify-center gap-3 md:flex">
+                        <ShareButton
+                            title={`${match.home_team.name}${match.away_team ? ` vs ${match.away_team.name}` : ''}`}
+                            text={`${formatMatchDate(match.scheduled_at)} · ${match.location ?? 'Lugar por definir'}`}
+                        />
+                        {mapsUrl && (
+                            <Button asChild variant="outline">
+                                <a
+                                    href={mapsUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Navigation className="mr-2 h-4 w-4" />
+                                    Cómo llegar
+                                </a>
+                            </Button>
+                        )}
+                        {canDownloadCalendar && (
+                            <Button asChild variant="outline">
+                                <a href={matches.calendar(match.public_id).url}>
+                                    <Calendar className="mr-2 h-4 w-4" />
+                                    Agregar al calendario
+                                </a>
+                            </Button>
+                        )}
+                        {isHomeLeader && match.status === 'available' && (
+                            <>
                                 <Button asChild variant="outline">
-                                    <a
-                                        href={
-                                            matches.calendar(match.public_id)
-                                                .url
-                                        }
+                                    <Link
+                                        href={matches.edit(match.public_id).url}
                                     >
-                                        <Calendar className="mr-2 h-4 w-4" />
-                                        Agregar al calendario
-                                    </a>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Editar
+                                    </Link>
                                 </Button>
-                            )}
-                            {isHomeLeader && match.status === 'available' && (
-                                <>
-                                    <Button asChild variant="outline">
-                                        <Link
-                                            href={
-                                                matches.edit(match.public_id)
-                                                    .url
-                                            }
-                                        >
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Editar
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        onClick={onCancelClick}
-                                    >
-                                        <X className="mr-2 h-4 w-4" />
-                                        Cancelar Partido
-                                    </Button>
-                                </>
-                            )}
-                            {isLeader && match.status === 'in_progress' && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={onCancelClick}
+                                >
+                                    <X className="mr-2 h-4 w-4" />
+                                    Cancelar Partido
+                                </Button>
+                            </>
+                        )}
+                        {isLeader &&
+                            match.status === 'in_progress' &&
+                            !awaitingConfirmation && (
                                 <Button
                                     onClick={onCompleteClick}
                                     disabled={!matchHasStarted}
@@ -413,16 +460,29 @@ export function MatchHero({
                                     Completar Partido
                                 </Button>
                             )}
-                            {!isLeader &&
-                                match.status === 'available' &&
-                                eligibleTeams.length > 0 && (
-                                    <CreateMatchRequestDialog
-                                        matchId={match.id}
-                                        eligibleTeams={eligibleTeams}
-                                    />
-                                )}
-                        </div>
-                    ) : null}
+                        {canReviewResult && (
+                            <>
+                                <Button onClick={onConfirmResult}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Confirmar resultado
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={onRejectResult}
+                                >
+                                    No coincide
+                                </Button>
+                            </>
+                        )}
+                        {!isLeader &&
+                            match.status === 'available' &&
+                            eligibleTeams.length > 0 && (
+                                <CreateMatchRequestDialog
+                                    matchId={match.id}
+                                    eligibleTeams={eligibleTeams}
+                                />
+                            )}
+                    </div>
 
                     {!isLeader &&
                         match.tournament_id != null &&
@@ -435,6 +495,127 @@ export function MatchHero({
                             </p>
                         )}
                 </div>
+            </div>
+
+            <div className="fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-md items-center gap-2 rounded-2xl border bg-background/95 p-2 shadow-xl backdrop-blur md:hidden">
+                {canReviewResult ? (
+                    <>
+                        {mapsUrl && (
+                            <Button asChild variant="outline" size="sm">
+                                <a
+                                    href={mapsUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Navigation className="h-4 w-4" />
+                                    Llegar
+                                </a>
+                            </Button>
+                        )}
+                        <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={onConfirmResult}
+                        >
+                            <Check className="mr-1 h-4 w-4" />
+                            Confirmar
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={onRejectResult}
+                        >
+                            No coincide
+                        </Button>
+                    </>
+                ) : isLeader &&
+                  match.status === 'in_progress' &&
+                  !awaitingConfirmation ? (
+                    <>
+                        {mapsUrl && !(isHomeLeader && isAwayLeader) && (
+                            <Button asChild variant="outline" size="sm">
+                                <a
+                                    href={mapsUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Navigation className="h-4 w-4" />
+                                    Llegar
+                                </a>
+                            </Button>
+                        )}
+                        {canRecord(isHomeLeader) && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                    setRecordGoalDialog({
+                                        open: true,
+                                        team: 'home',
+                                    })
+                                }
+                            >
+                                + Gol local
+                            </Button>
+                        )}
+                        {canRecord(isAwayLeader) && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                    setRecordGoalDialog({
+                                        open: true,
+                                        team: 'away',
+                                    })
+                                }
+                            >
+                                + Gol visita
+                            </Button>
+                        )}
+                        <Button size="sm" onClick={onCompleteClick}>
+                            Finalizar
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <ShareButton
+                            title={`${match.home_team.name}${match.away_team ? ` vs ${match.away_team.name}` : ''}`}
+                            label="Compartir"
+                            size="sm"
+                            className="flex-1"
+                        />
+                        {mapsUrl && (
+                            <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                            >
+                                <a
+                                    href={mapsUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    <Navigation className="mr-1 h-4 w-4" />
+                                    Llegar
+                                </a>
+                            </Button>
+                        )}
+                        {canDownloadCalendar && (
+                            <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                            >
+                                <a href={matches.calendar(match.public_id).url}>
+                                    <Calendar className="mr-1 h-4 w-4" />
+                                    Agenda
+                                </a>
+                            </Button>
+                        )}
+                    </>
+                )}
             </div>
 
             <RecordGoalDialog

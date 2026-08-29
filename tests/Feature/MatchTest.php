@@ -683,7 +683,7 @@ test('score update validates integer values', function () {
 // Match Completion
 // ============================================================
 
-test('team leader can complete an in-progress match', function () {
+test('friendly result requires confirmation from an opposing leader', function () {
     $match = createMatch([
         'status' => 'in_progress',
         'away_team_id' => $this->awayTeam->id,
@@ -699,9 +699,103 @@ test('team leader can complete an in-progress match', function () {
 
     $this->assertDatabaseHas('matches', [
         'id' => $match->id,
-        'status' => 'completed',
+        'status' => 'in_progress',
+        'result_submitted_by_team_id' => $this->homeTeam->id,
     ]);
-    expect($match->fresh()->completed_at)->not->toBeNull();
+    expect($match->fresh()->completed_at)->toBeNull();
+
+    $this->actingAs($this->awayCaptain)
+        ->post(route('matches.result.confirm', $match->id))
+        ->assertRedirect();
+
+    $completed = $match->fresh();
+    expect($completed->status)->toBe('completed')
+        ->and($completed->completed_at)->not->toBeNull()
+        ->and($completed->result_submitted_by_team_id)->toBeNull();
+});
+
+test('submitting team and outsiders cannot confirm a friendly result', function () {
+    $match = createMatch([
+        'status' => 'in_progress',
+        'away_team_id' => $this->awayTeam->id,
+        'scheduled_at' => now()->subHour(),
+        'started_at' => now()->subHour(),
+        'result_submitted_by_team_id' => $this->homeTeam->id,
+        'result_submitted_at' => now(),
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->post(route('matches.result.confirm', $match->id))
+        ->assertForbidden();
+    $this->actingAs($this->outsider)
+        ->post(route('matches.result.confirm', $match->id))
+        ->assertForbidden();
+
+    expect($match->fresh()->status)->toBe('in_progress');
+});
+
+test('opposing leader can reject a mismatched result and allow correction', function () {
+    $match = createMatch([
+        'status' => 'in_progress',
+        'away_team_id' => $this->awayTeam->id,
+        'scheduled_at' => now()->subHour(),
+        'started_at' => now()->subHour(),
+        'home_score' => 2,
+        'away_score' => 1,
+        'result_submitted_by_team_id' => $this->homeTeam->id,
+        'result_submitted_at' => now(),
+    ]);
+
+    $this->actingAs($this->awayCaptain)
+        ->post(route('matches.result.reject', $match->id))
+        ->assertRedirect();
+
+    expect($match->fresh()->result_submitted_by_team_id)->toBeNull();
+
+    $this->actingAs($this->awayCaptain)
+        ->post(route('matches.update-score', $match->id), [
+            'home_score' => 2,
+            'away_score' => 2,
+        ])->assertRedirect();
+
+    expect($match->fresh()->away_score)->toBe(2);
+});
+
+test('score cannot change while a friendly result awaits confirmation', function () {
+    $match = createMatch([
+        'status' => 'in_progress',
+        'away_team_id' => $this->awayTeam->id,
+        'scheduled_at' => now()->subHour(),
+        'started_at' => now()->subHour(),
+        'home_score' => 2,
+        'away_score' => 1,
+        'result_submitted_by_team_id' => $this->homeTeam->id,
+        'result_submitted_at' => now(),
+    ]);
+
+    $this->actingAs($this->awayCaptain)
+        ->post(route('matches.update-score', $match->id), [
+            'home_score' => 9,
+            'away_score' => 9,
+        ])->assertSessionHas('error');
+
+    expect($match->fresh()->home_score)->toBe(2)
+        ->and($match->away_score)->toBe(1);
+});
+
+test('a match without an opponent completes immediately', function () {
+    $match = createMatch([
+        'status' => 'in_progress',
+        'away_team_id' => null,
+        'scheduled_at' => now()->subHour(),
+        'started_at' => now()->subHour(),
+    ]);
+
+    $this->actingAs($this->homeCaptain)
+        ->post(route('matches.complete', $match->id))
+        ->assertRedirect();
+
+    expect($match->fresh()->status)->toBe('completed');
 });
 
 test('cannot complete a match before scheduled time', function () {

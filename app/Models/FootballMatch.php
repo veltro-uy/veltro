@@ -47,6 +47,8 @@ final class FootballMatch extends Model
         'confirmed_at',
         'started_at',
         'completed_at',
+        'result_submitted_by_team_id',
+        'result_submitted_at',
     ];
 
     /**
@@ -61,6 +63,7 @@ final class FootballMatch extends Model
             'confirmed_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'result_submitted_at' => 'datetime',
             'home_score' => 'integer',
             'away_score' => 'integer',
         ];
@@ -213,6 +216,22 @@ final class FootballMatch extends Model
     public function isCompleted(): bool
     {
         return $this->status === 'completed';
+    }
+
+    public function isAwaitingResultConfirmation(): bool
+    {
+        return $this->status === 'in_progress' && $this->result_submitted_by_team_id !== null;
+    }
+
+    public function canReviewSubmittedResult(int $userId): bool
+    {
+        if (! $this->isAwaitingResultConfirmation()) {
+            return false;
+        }
+
+        return $this->result_submitted_by_team_id === $this->home_team_id
+            ? $this->isAwayTeamLeader($userId)
+            : $this->isHomeTeamLeader($userId);
     }
 
     /**

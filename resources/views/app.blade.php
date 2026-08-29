@@ -33,27 +33,29 @@
 
     {{-- SEO / social sharing --}}
     @php
+        $seo = $page['props']['seo'] ?? [];
         $seoName = config('app.name', 'Veltro');
-        $seoDescription = 'Gestioná tu equipo de fútbol amateur: organizá partidos, seguí la asistencia, las estadísticas y los torneos en una sola app. Hecho en Uruguay para fútbol 11, 7, 5 y futsal.';
-        $seoImage = url('/og-image.png');
-        $seoUrl = url()->current();
+        $seoTitle = $seo['title'] ?? $seoName;
+        $seoDescription = $seo['description'] ?? 'Gestioná tu equipo de fútbol amateur: organizá partidos, seguí la asistencia, las estadísticas y los torneos en una sola app. Hecho en Uruguay para fútbol 11, 7, 5 y futsal.';
+        $seoImage = $seo['image'] ?? url('/og-image.png');
+        $seoUrl = $seo['url'] ?? url()->current();
     @endphp
     <meta name="description" content="{{ $seoDescription }}">
     <link rel="canonical" href="{{ $seoUrl }}">
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ $seoName }}">
-    <meta property="og:title" content="{{ $seoName }}">
+    <meta property="og:title" content="{{ $seoTitle }}">
     <meta property="og:description" content="{{ $seoDescription }}">
     <meta property="og:url" content="{{ $seoUrl }}">
     <meta property="og:image" content="{{ $seoImage }}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="{{ $seoName }}">
+    <meta property="og:image:alt" content="{{ $seoTitle }}">
     <meta property="og:locale" content="es_UY">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $seoName }}">
+    <meta name="twitter:title" content="{{ $seoTitle }}">
     <meta name="twitter:description" content="{{ $seoDescription }}">
     <meta name="twitter:image" content="{{ $seoImage }}">
 
