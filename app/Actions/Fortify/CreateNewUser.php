@@ -49,7 +49,19 @@ class CreateNewUser implements CreatesNewUsers
                     ->first();
 
                 if ($invitation && $invitation->isValid()) {
-                    app(TeamInvitationService::class)->acceptInvitation($invitation, $user);
+                    $emailMatches = blank($invitation->email)
+                        || strcasecmp(trim($invitation->email), trim($user->email)) === 0;
+
+                    if ($invitation->role === 'co_captain' && $emailMatches && ! $user->canLeadTeam()) {
+                        if (! $invitation->team->isFull()) {
+                            session([
+                                'invitation_token' => $invitation->token,
+                                'url.intended' => route('teams.invitation.show', $invitation->token),
+                            ]);
+                        }
+                    } else {
+                        app(TeamInvitationService::class)->acceptInvitation($invitation, $user);
+                    }
                 }
             }
 

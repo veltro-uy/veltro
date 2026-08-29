@@ -13,9 +13,10 @@ import { toast } from 'sonner';
 
 interface Props {
     user: Pick<User, 'name' | 'email' | 'phone_number'>;
+    phoneRequired: boolean;
 }
 
-export default function PhoneNumber({ user }: Props) {
+export default function PhoneNumber({ user, phoneRequired }: Props) {
     const [isSkipping, setIsSkipping] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
@@ -70,9 +71,9 @@ export default function PhoneNumber({ user }: Props) {
                         />
                         <InputError message={errors.phone_number} />
                         <p className="text-sm text-muted-foreground">
-                            Tu número será visible para los líderes de equipos
-                            oponentes en partidos confirmados, facilitando la
-                            coordinación.
+                            {phoneRequired
+                                ? 'Necesitamos tu número para que puedas coordinar partidos como co-capitán.'
+                                : 'Tu número será visible para los líderes de equipos oponentes en partidos confirmados, facilitando la coordinación.'}
                         </p>
                     </div>
                 </div>
@@ -87,25 +88,28 @@ export default function PhoneNumber({ user }: Props) {
                         Continuar
                     </Button>
 
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="w-full text-muted-foreground"
-                        onClick={handleSkip}
-                        disabled={processing || isSkipping}
-                    >
-                        {isSkipping ? (
-                            <Spinner className="mr-2" />
-                        ) : (
-                            <SkipForward className="mr-2 h-4 w-4" />
-                        )}
-                        Omitir por ahora
-                    </Button>
+                    {!phoneRequired && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="w-full text-muted-foreground"
+                            onClick={handleSkip}
+                            disabled={processing || isSkipping}
+                        >
+                            {isSkipping ? (
+                                <Spinner className="mr-2" />
+                            ) : (
+                                <SkipForward className="mr-2 h-4 w-4" />
+                            )}
+                            Omitir por ahora
+                        </Button>
+                    )}
                 </div>
 
                 <p className="text-center text-xs text-muted-foreground">
-                    Siempre puedes agregar o cambiar tu número de teléfono más
-                    tarde en la configuración de tu perfil.
+                    {phoneRequired
+                        ? 'Podrás cambiar tu número más tarde desde la configuración de tu perfil.'
+                        : 'Siempre puedes agregar o cambiar tu número de teléfono más tarde en la configuración de tu perfil.'}
                 </p>
             </form>
         </AuthLayout>

@@ -142,7 +142,6 @@ Table users {
   password varchar [null, note: 'nullable for Google OAuth users']
   remember_token varchar(100) [null]
   google_id varchar [unique, null]
-  google_token text [null]
   google_avatar_url varchar [null]
   two_factor_secret text [null]
   two_factor_recovery_codes text [null]

@@ -91,6 +91,23 @@ test('home leader can record a goal event', function () {
     ]);
 });
 
+test('leader cannot attribute an event to a user outside the team', function () {
+    $this->actingAs($this->homeCaptain)
+        ->post(route('match-events.store'), [
+            'match_id' => $this->match->id,
+            'team_id' => $this->homeTeam->id,
+            'user_id' => $this->outsider->id,
+            'event_type' => 'goal',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseMissing('match_events', [
+        'match_id' => $this->match->id,
+        'user_id' => $this->outsider->id,
+    ]);
+});
+
 test('recording a home goal auto-increments home_score', function () {
     $this->actingAs($this->homeCaptain)
         ->post(route('match-events.store'), [

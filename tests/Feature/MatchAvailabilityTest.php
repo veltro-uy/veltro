@@ -4,6 +4,8 @@ use App\Models\FootballMatch;
 use App\Models\MatchAvailability;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\AvailabilityReminderNotification;
+use Illuminate\Support\Facades\Notification;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
@@ -151,3 +153,81 @@ test('availability status accepts all valid options', function (string $status) 
         ->first())
         ->status->toBe($status);
 })->with(['available', 'maybe', 'unavailable']);
+
+test('team leader can remind only pending active players once', function () {
+    Notification::fake();
+
+    $pendingPlayer = User::factory()->create();
+    $answeredPlayer = User::factory()->create();
+    $alreadyRemindedPlayer = User::factory()->create();
+
+    foreach ([$pendingPlayer, $answeredPlayer, $alreadyRemindedPlayer] as $player) {
+        $this->team->teamMembers()->create([
+            'user_id' => $player->id,
+            'role' => 'player',
+            'status' => 'active',
+        ]);
+    }
+
+    MatchAvailability::create([
+        'match_id' => $this->match->id,
+        'user_id' => $this->user->id,
+        'team_id' => $this->team->id,
+        'status' => 'available',
+    ]);
+    MatchAvailability::create([
+        'match_id' => $this->match->id,
+        'user_id' => $answeredPlayer->id,
+        'team_id' => $this->team->id,
+        'status' => 'unavailable',
+    ]);
+    MatchAvailability::create([
+        'match_id' => $this->match->id,
+        'user_id' => $alreadyRemindedPlayer->id,
+        'team_id' => $this->team->id,
+        'status' => 'pending',
+        'reminded_at' => now()->subHour(),
+    ]);
+
+    $this->actingAs($this->user)
+        ->post(route('matches.availability.remind', $this->match), [
+            'team_id' => $this->team->id,
+        ])
+        ->assertRedirect();
+
+    Notification::assertSentTo($pendingPlayer, AvailabilityReminderNotification::class);
+    Notification::assertNotSentTo($answeredPlayer, AvailabilityReminderNotification::class);
+    Notification::assertNotSentTo($alreadyRemindedPlayer, AvailabilityReminderNotification::class);
+    expect(MatchAvailability::where('match_id', $this->match->id)
+        ->where('user_id', $pendingPlayer->id)
+        ->first()?->reminded_at)->not->toBeNull();
+
+    $this->post(route('matches.availability.remind', $this->match), [
+        'team_id' => $this->team->id,
+    ]);
+
+    Notification::assertSentToTimes($pendingPlayer, AvailabilityReminderNotification::class, 1);
+});
+
+test('leader cannot remind players for the opposing team', function () {
+    $this->actingAs($this->user)
+        ->post(route('matches.availability.remind', $this->match), [
+            'team_id' => $this->opponent->id,
+        ])
+        ->assertForbidden();
+});
+
+test('base-role player cannot send availability reminders', function () {
+    $player = User::factory()->create();
+    $this->team->teamMembers()->create([
+        'user_id' => $player->id,
+        'role' => 'player',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($player)
+        ->post(route('matches.availability.remind', $this->match), [
+            'team_id' => $this->team->id,
+        ])
+        ->assertForbidden();
+});

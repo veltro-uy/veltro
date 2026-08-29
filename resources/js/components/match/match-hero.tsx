@@ -43,6 +43,7 @@ interface MatchHeroProps {
     homeLineup: LineupPlayer[];
     awayLineup: LineupPlayer[];
     events: MatchEvent[];
+    canDownloadCalendar: boolean;
     onCancelClick: () => void;
     onCompleteClick: () => void;
 }
@@ -83,6 +84,7 @@ export function MatchHero({
     homeLineup,
     awayLineup,
     events,
+    canDownloadCalendar,
     onCancelClick,
     onCompleteClick,
 }: MatchHeroProps) {
@@ -357,10 +359,24 @@ export function MatchHero({
                     {/* Action buttons */}
                     {(isHomeLeader && match.status === 'available') ||
                     (isLeader && match.status === 'in_progress') ||
+                    canDownloadCalendar ||
                     (!isLeader &&
                         match.status === 'available' &&
                         eligibleTeams.length > 0) ? (
                         <div className="flex flex-wrap justify-center gap-3">
+                            {canDownloadCalendar && (
+                                <Button asChild variant="outline">
+                                    <a
+                                        href={
+                                            matches.calendar(match.public_id)
+                                                .url
+                                        }
+                                    >
+                                        <Calendar className="mr-2 h-4 w-4" />
+                                        Agregar al calendario
+                                    </a>
+                                </Button>
+                            )}
                             {isHomeLeader && match.status === 'available' && (
                                 <>
                                     <Button asChild variant="outline">

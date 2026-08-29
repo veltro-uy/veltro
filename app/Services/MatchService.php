@@ -11,6 +11,7 @@ use App\Models\MatchLineup;
 use App\Models\MatchRequest;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\AvailabilityReminderNotification;
 use App\Notifications\MatchCancelledNotification;
 use App\Notifications\MatchConfirmedNotification;
 use App\Notifications\MatchRequestAcceptedNotification;
@@ -93,6 +94,35 @@ final class MatchService
                 'confirmed_at' => now(),
             ],
         );
+    }
+
+    /**
+     * Send one reminder to each active team member who has not responded yet.
+     */
+    public function remindPendingPlayers(FootballMatch $match, Team $team): int
+    {
+        $sent = 0;
+
+        foreach ($team->activeMembers()->with('user')->get() as $member) {
+            $availability = MatchAvailability::firstOrCreate(
+                [
+                    'match_id' => $match->id,
+                    'user_id' => $member->user_id,
+                    'team_id' => $team->id,
+                ],
+                ['status' => 'pending']
+            );
+
+            if (! $availability->isPending() || $availability->reminded_at) {
+                continue;
+            }
+
+            $member->user->notify(new AvailabilityReminderNotification($match, $team));
+            $availability->update(['reminded_at' => now()]);
+            $sent++;
+        }
+
+        return $sent;
     }
 
     /**
@@ -423,6 +453,11 @@ final class MatchService
         // Verify team is part of the match
         if ($match->home_team_id !== $teamId && $match->away_team_id !== $teamId) {
             throw new \Exception('Team is not part of this match');
+        }
+
+        if (! empty($eventData['user_id'])
+            && ! Team::findOrFail($teamId)->activeMembers()->where('user_id', $eventData['user_id'])->exists()) {
+            throw new \Exception('Player is not a member of this team');
         }
 
         return DB::transaction(function () use ($match, $teamId, $eventData) {

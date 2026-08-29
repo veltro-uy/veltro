@@ -7,6 +7,8 @@ use App\Models\TeamInvitation;
 use App\Models\TeamMember;
 use App\Models\User;
 use App\Notifications\TeamInvitationNotification;
+use App\Services\TeamInvitationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
@@ -284,6 +286,40 @@ test('registering with an invitation token auto-joins the team', function () {
     expect($invitation->fresh()->accepted_by)->toBe($newUser->id);
 });
 
+test('registering with a co-captain invitation defers membership until phone onboarding', function () {
+    $invitation = makeInvitation(['email' => null, 'role' => 'co_captain']);
+
+    $response = $this->post(route('register.store'), [
+        'name' => 'New Leader',
+        'email' => 'leader@example.com',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'invitation_token' => $invitation->token,
+    ]);
+
+    $newUser = User::where('email', 'leader@example.com')->firstOrFail();
+
+    expect($this->team->fresh()->hasMember($newUser->id))->toBeFalse()
+        ->and($invitation->fresh()->status)->toBe('pending')
+        ->and(session('invitation_token'))->toBe($invitation->token);
+    $response->assertRedirect(route('teams.invitation.show', $invitation->token));
+});
+
+test('registration cannot claim an invitation addressed to another email', function () {
+    $invitation = makeInvitation(['email' => 'intended@example.com']);
+
+    $this->post(route('register.store'), [
+        'name' => 'Wrong Recipient',
+        'email' => 'attacker@example.com',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'invitation_token' => $invitation->token,
+    ])->assertForbidden();
+
+    expect(User::where('email', 'attacker@example.com')->exists())->toBeFalse();
+    expect($invitation->fresh()->status)->toBe('pending');
+});
+
 test('completing onboarding redirects to the intended team after invite signup', function () {
     $invitation = makeInvitation();
     $newUser = User::factory()->create(['onboarding_completed' => false]);
@@ -294,6 +330,120 @@ test('completing onboarding redirects to the intended team after invite signup',
         ->assertRedirect(route('teams.invitation.show', $invitation->token));
 });
 
+test('co-captain onboarding requires a phone and accepts the invitation after submission', function () {
+    $invitation = makeInvitation(['email' => null, 'role' => 'co_captain']);
+    $newUser = User::factory()->withoutPhoneNumber()->withoutOnboarding()->create();
+
+    $this->actingAs($newUser)
+        ->withSession(['invitation_token' => $invitation->token])
+        ->get(route('onboarding.show'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->component('onboarding/phone-number')
+            ->where('phoneRequired', true)
+        );
+
+    $this->actingAs($newUser)
+        ->withSession(['invitation_token' => $invitation->token])
+        ->post(route('onboarding.skip'))
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    expect($newUser->fresh()->onboarding_completed)->toBeFalse()
+        ->and($this->team->fresh()->hasMember($newUser->id))->toBeFalse();
+
+    $this->actingAs($newUser)
+        ->withSession([
+            'invitation_token' => $invitation->token,
+            'url.intended' => route('teams.invitation.show', $invitation->token),
+        ])
+        ->post(route('onboarding.update'), ['phone_number' => '+59899123456'])
+        ->assertRedirect(route('teams.show', $this->team));
+
+    expect($newUser->fresh()->phone_number)->toBe('+59899123456')
+        ->and($newUser->onboarding_completed)->toBeTrue()
+        ->and($invitation->fresh()->status)->toBe('accepted')
+        ->and(TeamMember::where('team_id', $this->team->id)
+            ->where('user_id', $newUser->id)
+            ->where('role', 'co_captain')
+            ->exists())->toBeTrue();
+});
+
+test('ordinary player onboarding remains skippable', function () {
+    $invitation = makeInvitation(['email' => null, 'role' => 'player']);
+    $newUser = User::factory()->withoutPhoneNumber()->withoutOnboarding()->create();
+
+    $this->actingAs($newUser)
+        ->withSession(['invitation_token' => $invitation->token])
+        ->get(route('onboarding.show'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page->where('phoneRequired', false));
+
+    $this->actingAs($newUser)
+        ->withSession(['url.intended' => route('teams.index')])
+        ->post(route('onboarding.skip'))
+        ->assertRedirect(route('teams.index'));
+
+    expect($newUser->fresh()->onboarding_completed)->toBeTrue();
+});
+
+test('existing user without a phone is sent to required onboarding before accepting co-captain role', function () {
+    $invitation = makeInvitation(['email' => null, 'role' => 'co_captain']);
+    $user = User::factory()->withoutPhoneNumber()->create();
+
+    $this->actingAs($user)
+        ->post(route('teams.invitation.accept', $invitation->token))
+        ->assertRedirect(route('onboarding.show'))
+        ->assertSessionHas('info', 'Agrega tu número de teléfono para aceptar el rol de co-capitán.')
+        ->assertSessionHas('invitation_token', $invitation->token);
+
+    expect($this->team->fresh()->hasMember($user->id))->toBeFalse()
+        ->and($invitation->fresh()->status)->toBe('pending');
+});
+
+test('invitation service cannot create a co-captain without a phone', function () {
+    $invitation = makeInvitation(['email' => null, 'role' => 'co_captain']);
+    $user = User::factory()->withoutPhoneNumber()->create();
+
+    expect(fn () => app(TeamInvitationService::class)->acceptInvitation($invitation, $user))
+        ->toThrow(AuthorizationException::class, 'Debes agregar un número de teléfono antes de ser co-capitán.');
+
+    expect($this->team->fresh()->hasMember($user->id))->toBeFalse()
+        ->and($invitation->fresh()->status)->toBe('pending');
+});
+
+test('unusable co-captain invitation does not require phone onboarding', function (array $attributes) {
+    $invitation = makeInvitation(array_merge([
+        'email' => null,
+        'role' => 'co_captain',
+    ], $attributes));
+    $user = User::factory()->withoutPhoneNumber()->withoutOnboarding()->create();
+
+    $this->actingAs($user)
+        ->withSession(['invitation_token' => $invitation->token])
+        ->get(route('onboarding.show'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page->where('phoneRequired', false))
+        ->assertSessionMissing('invitation_token');
+})->with([
+    'expired' => [['expires_at' => now()->subDay()]],
+    'revoked' => [['status' => 'revoked']],
+    'different email' => [['email' => 'somebody-else@example.com']],
+]);
+
+test('full team co-captain invitation does not trap onboarding', function () {
+    $this->team->update(['max_members' => 2]);
+    $invitation = makeInvitation(['email' => null, 'role' => 'co_captain']);
+    $user = User::factory()->withoutPhoneNumber()->withoutOnboarding()->create();
+
+    $this->actingAs($user)
+        ->withSession(['invitation_token' => $invitation->token])
+        ->get(route('onboarding.show'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page->where('phoneRequired', false))
+        ->assertSessionMissing('invitation_token');
+});
+
 test('an authenticated member visiting the invite link is redirected to the team', function () {
     $invitation = makeInvitation();
 
@@ -302,9 +452,20 @@ test('an authenticated member visiting the invite link is redirected to the team
         ->assertRedirect(route('teams.show', $this->team));
 });
 
+test('an email invitation cannot be accepted by a different user', function () {
+    $invitation = makeInvitation(['email' => 'intended@example.com']);
+
+    $this->actingAs($this->outsider)
+        ->post(route('teams.invitation.accept', $invitation->token))
+        ->assertForbidden();
+
+    expect($this->team->fresh()->hasMember($this->outsider->id))->toBeFalse();
+    expect($invitation->fresh()->status)->toBe('pending');
+});
+
 test('invitation is not accepted when the team is full', function () {
     $this->team->update(['max_members' => 2]); // captain + player already fill it
-    $invitation = makeInvitation();
+    $invitation = makeInvitation(['email' => null]);
 
     $this->actingAs($this->outsider)
         ->from(route('teams.invitation.show', $invitation->token))

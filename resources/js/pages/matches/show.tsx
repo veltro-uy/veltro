@@ -228,6 +228,7 @@ export default function Show({
                 >
                     {homeAvailabilityStats && homeAvailability ? (
                         <AvailabilityPanel
+                            matchPublicId={match.public_id}
                             homeTeam={{
                                 team: match.home_team,
                                 stats: homeAvailabilityStats,
@@ -354,6 +355,11 @@ export default function Show({
                     homeLineup={homeLineup}
                     awayLineup={awayLineup}
                     events={events}
+                    canDownloadCalendar={
+                        userTeamId != null &&
+                        (match.status === 'confirmed' ||
+                            match.status === 'in_progress')
+                    }
                     onCancelClick={() => setShowCancelDialog(true)}
                     onCompleteClick={() => setShowCompleteDialog(true)}
                 />

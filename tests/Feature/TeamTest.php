@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\JoinRequest;
 use App\Models\Team;
 use App\Models\TeamMember;
 use App\Models\User;
@@ -762,6 +763,20 @@ test('team page does not expose member contact details to visitors', function ()
                     ->toHaveKey('has_phone_number');
             });
         });
+});
+
+test('team page does not expose pending join requests to non-leaders', function () {
+    JoinRequest::create([
+        'team_id' => $this->team->id,
+        'user_id' => $this->outsider->id,
+        'message' => 'Private application message',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->player)
+        ->get(route('teams.show', $this->team))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->missing('team.pending_join_requests'));
 });
 
 test('a leader still sees their own phone number in shared auth props', function () {

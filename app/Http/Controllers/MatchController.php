@@ -11,6 +11,7 @@ use App\Rules\CleanText;
 use App\Services\MatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -217,12 +218,71 @@ final class MatchController extends Controller
             'awayLineup' => $awayLineup,
             'events' => $events,
             'opposingTeamLeaders' => Inertia::defer(fn () => $this->formatOpposingLeaders($match, $user->id, $isHomeLeader, $isAwayLeader), 'secondary'),
-            'homeAvailability' => Inertia::defer(fn () => $this->loadAvailability($match)['home'], 'secondary'),
-            'awayAvailability' => Inertia::defer(fn () => $this->loadAvailability($match)['away'], 'secondary'),
+            'homeAvailability' => Inertia::defer(fn () => $this->loadAvailability($match, $isHomeLeader, $isAwayLeader)['home'], 'secondary'),
+            'awayAvailability' => Inertia::defer(fn () => $this->loadAvailability($match, $isHomeLeader, $isAwayLeader)['away'], 'secondary'),
             'userAvailability' => $userAvailability,
             'userTeamId' => $userTeamId,
-            'homeAvailabilityStats' => Inertia::defer(fn () => $this->loadAvailability($match)['homeStats'], 'secondary'),
-            'awayAvailabilityStats' => Inertia::defer(fn () => $this->loadAvailability($match)['awayStats'], 'secondary'),
+            'homeAvailabilityStats' => Inertia::defer(fn () => $this->loadAvailability($match, $isHomeLeader, $isAwayLeader)['homeStats'], 'secondary'),
+            'awayAvailabilityStats' => Inertia::defer(fn () => $this->loadAvailability($match, $isHomeLeader, $isAwayLeader)['awayStats'], 'secondary'),
+        ]);
+    }
+
+    /**
+     * Download a confirmed match as a standard calendar event.
+     */
+    public function calendar(FootballMatch $match, Request $request): HttpResponse
+    {
+        $user = $request->user();
+        $isParticipant = $match->homeTeam->hasMember($user->id)
+            || ($match->away_team_id && $match->awayTeam->hasMember($user->id));
+
+        abort_unless($isParticipant && in_array($match->status, ['confirmed', 'in_progress'], true), 403);
+        abort_unless($match->scheduled_at !== null, 404);
+
+        $escape = static fn (?string $value): string => str_replace(
+            ['\\', ';', ',', "\r\n", "\n", "\r"],
+            ['\\\\', '\\;', '\\,', '\\n', '\\n', '\\n'],
+            $value ?? ''
+        );
+        $fold = static function (string $line): string {
+            $chunks = [];
+            $limit = 75;
+
+            while (strlen($line) > $limit) {
+                $chunk = mb_strcut($line, 0, $limit, 'UTF-8');
+                $chunks[] = $chunk;
+                $line = substr($line, strlen($chunk));
+                $limit = 74;
+            }
+
+            $chunks[] = $line;
+
+            return implode("\r\n ", $chunks);
+        };
+        $title = $match->homeTeam->name.' vs '.($match->awayTeam?->name ?? 'Rival a definir');
+        $startsAt = $match->scheduled_at->copy()->utc();
+        // ponytail: matches reserve two hours; add configurable durations only if variants need them.
+        $endsAt = $startsAt->copy()->addHours(2);
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Veltro//Partidos//ES',
+            'CALSCALE:GREGORIAN',
+            'BEGIN:VEVENT',
+            'UID:match-'.$match->public_id.'@veltro',
+            'DTSTAMP:'.now()->utc()->format('Ymd\\THis\\Z'),
+            'DTSTART:'.$startsAt->format('Ymd\\THis\\Z'),
+            'DTEND:'.$endsAt->format('Ymd\\THis\\Z'),
+            'SUMMARY:'.$escape($title),
+            'LOCATION:'.$escape($match->location),
+            'DESCRIPTION:'.$escape($match->notes),
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ];
+
+        return response(implode("\r\n", array_map($fold, $lines))."\r\n", 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="partido-'.$match->public_id.'.ics"',
         ]);
     }
 
@@ -269,40 +329,47 @@ final class MatchController extends Controller
      *
      * @return array{home: \Illuminate\Support\Collection, away: \Illuminate\Support\Collection, homeStats: array<string, int>, awayStats: array<string, int>|null}
      */
-    private function loadAvailability(FootballMatch $match): array
+    private function loadAvailability(FootballMatch $match, bool $isHomeLeader, bool $isAwayLeader): array
     {
-        return once(function () use ($match) {
-            $mapAvailability = fn ($availability) => [
-                'id' => $availability->id,
-                'match_id' => $availability->match_id,
-                'user_id' => $availability->user_id,
-                'team_id' => $availability->team_id,
-                'status' => $availability->status,
-                'confirmed_at' => $availability->confirmed_at,
-                'reminded_at' => $availability->reminded_at,
-                'created_at' => $availability->created_at,
-                'updated_at' => $availability->updated_at,
-                'user' => $availability->user ? [
-                    'id' => $availability->user->id,
-                    'public_id' => $availability->user->public_id,
-                    'name' => $availability->user->name,
-                    'avatar_url' => $availability->user->avatar_url,
-                ] : null,
-            ];
-
-            $home = $match->availability()
-                ->where('team_id', $match->home_team_id)
-                ->with('user')
-                ->get()
-                ->map($mapAvailability);
-
-            $away = $match->away_team_id
-                ? $match->availability()
-                    ->where('team_id', $match->away_team_id)
-                    ->with('user')
+        return once(function () use ($match, $isHomeLeader, $isAwayLeader) {
+            $availabilityFor = function ($team, bool $includePlayers) use ($match) {
+                $responses = $match->availability()
+                    ->where('team_id', $team->id)
                     ->get()
-                    ->map($mapAvailability)
-                : collect();
+                    ->keyBy('user_id');
+
+                $roster = $team->activeMembers()
+                    ->with('user:id,public_id,name,avatar_path')
+                    ->get()
+                    ->map(function ($member) use ($match, $responses) {
+                        $availability = $responses->get($member->user_id);
+
+                        return [
+                            'id' => $availability?->id ?? -$member->id,
+                            'match_id' => $match->id,
+                            'user_id' => $member->user_id,
+                            'team_id' => $member->team_id,
+                            'status' => $availability?->status ?? 'pending',
+                            'confirmed_at' => $availability?->confirmed_at,
+                            'reminded_at' => $availability?->reminded_at,
+                            'created_at' => $availability?->created_at,
+                            'updated_at' => $availability?->updated_at,
+                            'user' => [
+                                'id' => $member->user->id,
+                                'public_id' => $member->user->public_id,
+                                'name' => $member->user->name,
+                                'avatar_url' => $member->user->avatar_url,
+                            ],
+                        ];
+                    });
+
+                return [$includePlayers ? $roster : collect(), $roster];
+            };
+
+            [$home, $homeRoster] = $availabilityFor($match->homeTeam, $isHomeLeader);
+            [$away, $awayRoster] = $match->away_team_id
+                ? $availabilityFor($match->awayTeam, $isAwayLeader)
+                : [collect(), collect()];
 
             $minimum = $match->getMinimumPlayers();
             $statsFor = fn ($collection) => [
@@ -317,8 +384,8 @@ final class MatchController extends Controller
             return [
                 'home' => $home,
                 'away' => $away,
-                'homeStats' => $statsFor($home),
-                'awayStats' => $match->away_team_id ? $statsFor($away) : null,
+                'homeStats' => $statsFor($homeRoster),
+                'awayStats' => $match->away_team_id ? $statsFor($awayRoster) : null,
             ];
         });
     }

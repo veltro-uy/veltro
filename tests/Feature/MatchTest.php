@@ -152,6 +152,60 @@ test('authenticated user can view a match', function () {
         ->assertSuccessful();
 });
 
+test('participating member can download a confirmed match calendar event', function () {
+    $member = User::factory()->create();
+    TeamMember::create([
+        'user_id' => $member->id,
+        'team_id' => $this->homeTeam->id,
+        'role' => 'player',
+        'status' => 'active',
+    ]);
+    $match = createMatch([
+        'away_team_id' => $this->awayTeam->id,
+        'status' => 'confirmed',
+        'scheduled_at' => now()->addDay()->startOfHour(),
+        'location' => 'Cancha, Norte',
+        'notes' => "Llevar camiseta\nblanca ".str_repeat('á', 50),
+    ]);
+
+    $response = $this->actingAs($member)->get(route('matches.calendar', $match));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'text/calendar; charset=utf-8')
+        ->assertHeader('content-disposition', 'attachment; filename="partido-'.$match->public_id.'.ics"');
+    $content = $response->getContent();
+    $unfolded = str_replace("\r\n ", '', $content);
+
+    expect($content)
+        ->toContain('BEGIN:VCALENDAR')
+        ->toContain('SUMMARY:Home FC vs Away FC')
+        ->and($unfolded)
+        ->toContain('LOCATION:Cancha\\, Norte')
+        ->toContain('DESCRIPTION:Llevar camiseta\\nblanca '.str_repeat('á', 50));
+    foreach (explode("\r\n", trim($content)) as $line) {
+        expect(strlen($line))->toBeLessThanOrEqual(75);
+    }
+});
+
+test('outsider cannot download a match calendar event', function () {
+    $match = createMatch([
+        'away_team_id' => $this->awayTeam->id,
+        'status' => 'confirmed',
+    ]);
+
+    $this->actingAs($this->outsider)
+        ->get(route('matches.calendar', $match))
+        ->assertForbidden();
+});
+
+test('calendar event is unavailable before a match is confirmed', function () {
+    $match = createMatch();
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.calendar', $match))
+        ->assertForbidden();
+});
+
 test('match availability and opposing leaders are deferred', function () {
     $match = createMatch([
         'away_team_id' => $this->awayTeam->id,
@@ -194,6 +248,36 @@ test('match availability and opposing leaders are deferred', function () {
                 ],
             ],
         ]);
+});
+
+test('leader sees unanswered active members while a player does not receive the roster', function () {
+    $player = User::factory()->create();
+    TeamMember::create([
+        'user_id' => $player->id,
+        'team_id' => $this->homeTeam->id,
+        'role' => 'player',
+        'status' => 'active',
+    ]);
+    $match = createMatch([
+        'away_team_id' => $this->awayTeam->id,
+        'status' => 'confirmed',
+    ]);
+    $version = app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request());
+    $headers = [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $version,
+        'X-Inertia-Partial-Component' => 'matches/show',
+        'X-Inertia-Partial-Data' => 'homeAvailability',
+    ];
+
+    $this->actingAs($this->homeCaptain)
+        ->get(route('matches.show', $match), $headers)
+        ->assertJsonPath('props.homeAvailability.1.user.name', $player->name)
+        ->assertJsonPath('props.homeAvailability.1.status', 'pending');
+
+    $this->actingAs($player)
+        ->get(route('matches.show', $match), $headers)
+        ->assertJsonCount(0, 'props.homeAvailability');
 });
 
 // ============================================================

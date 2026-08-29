@@ -170,6 +170,11 @@ final class TeamInvitationController extends Controller
 
         $user = Auth::user();
 
+        if (filled($invitation->email)
+            && strcasecmp(trim($invitation->email), trim($user->email)) !== 0) {
+            abort(403, 'Esta invitación fue enviada a otra dirección de correo.');
+        }
+
         // Check if already a member
         $isMember = $invitation->team->teamMembers()
             ->where('user_id', $user->id)
@@ -178,6 +183,20 @@ final class TeamInvitationController extends Controller
         if ($isMember) {
             return redirect()->route('teams.show', $invitation->team)
                 ->with('info', 'Ya eres miembro de este equipo');
+        }
+
+        if ($invitation->team->isFull()) {
+            return back()->with('error', 'El equipo ha alcanzado su capacidad máxima y no puede aceptar más miembros');
+        }
+
+        if ($invitation->role === 'co_captain' && ! $user->canLeadTeam()) {
+            session([
+                'invitation_token' => $invitation->token,
+                'url.intended' => route('teams.invitation.show', $invitation->token),
+            ]);
+
+            return redirect()->route('onboarding.show')
+                ->with('info', 'Agrega tu número de teléfono para aceptar el rol de co-capitán.');
         }
 
         if (! $this->invitationService->acceptInvitation($invitation, $user)) {

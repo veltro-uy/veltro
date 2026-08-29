@@ -1,5 +1,7 @@
+import { router } from '@inertiajs/react';
 import {
     AlertCircle,
+    Bell,
     Check,
     ChevronDown,
     HelpCircle,
@@ -12,6 +14,7 @@ import { useState } from 'react';
 import { TeamAvatar } from '@/components/team-avatar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Collapsible,
@@ -22,6 +25,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserAvatar } from '@/components/user-avatar';
 import { UserNameLink } from '@/components/user-name-link';
+import matches from '@/routes/matches';
+import { toast } from 'sonner';
 
 import type {
     AvailabilityStats,
@@ -43,6 +48,7 @@ interface TeamAvailabilityData {
 }
 
 interface AvailabilityPanelProps {
+    matchPublicId: string;
     homeTeam: TeamAvailabilityData;
     awayTeam?: TeamAvailabilityData;
 }
@@ -215,16 +221,59 @@ function PlayerStatusGroup({
 }
 
 function TeamContent({
+    matchPublicId,
+    team,
     stats,
     availability,
     isLeader,
-}: Omit<TeamAvailabilityData, 'team'>) {
+}: TeamAvailabilityData & { matchPublicId: string }) {
+    const [isReminding, setIsReminding] = useState(false);
+    const unremindedPending = availability.filter(
+        (item) => item.status === 'pending' && !item.reminded_at,
+    ).length;
+
+    const remindPending = () => {
+        setIsReminding(true);
+        router.post(
+            matches.availability.remind(matchPublicId).url,
+            { team_id: team.id },
+            {
+                preserveScroll: true,
+                onError: () =>
+                    toast.error('No se pudieron enviar los recordatorios'),
+                onFinish: () => setIsReminding(false),
+            },
+        );
+    };
+
     return (
         <div className="space-y-4">
             <CompactStats stats={stats} isLeader={isLeader} />
 
             {isLeader && availability.length > 0 && (
                 <div className="space-y-1 border-t pt-3">
+                    {stats.pending > 0 && (
+                        <div className="mb-2 flex items-center justify-between gap-3 rounded-md bg-muted/50 p-2">
+                            <p className="text-xs text-muted-foreground">
+                                {stats.pending} jugador(es) todavía no
+                                respondieron
+                            </p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={remindPending}
+                                disabled={
+                                    isReminding || unremindedPending === 0
+                                }
+                            >
+                                <Bell className="mr-1.5 h-3.5 w-3.5" />
+                                {unremindedPending > 0
+                                    ? 'Recordar'
+                                    : 'Recordados'}
+                            </Button>
+                        </div>
+                    )}
                     <PlayerStatusGroup
                         availability={availability}
                         status="available"
@@ -253,6 +302,7 @@ function TeamContent({
 }
 
 export function AvailabilityPanel({
+    matchPublicId,
     homeTeam,
     awayTeam,
 }: AvailabilityPanelProps) {
@@ -267,7 +317,7 @@ export function AvailabilityPanel({
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <TeamContent {...homeTeam} />
+                    <TeamContent {...homeTeam} matchPublicId={matchPublicId} />
                 </CardContent>
             </Card>
         );
@@ -339,10 +389,16 @@ export function AvailabilityPanel({
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent value="home" className="mt-3">
-                        <TeamContent {...homeTeam} />
+                        <TeamContent
+                            {...homeTeam}
+                            matchPublicId={matchPublicId}
+                        />
                     </TabsContent>
                     <TabsContent value="away" className="mt-3">
-                        <TeamContent {...awayTeam} />
+                        <TeamContent
+                            {...awayTeam}
+                            matchPublicId={matchPublicId}
+                        />
                     </TabsContent>
                 </Tabs>
             </CardContent>

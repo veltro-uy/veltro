@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\FootballMatch;
+use App\Models\Team;
 use App\Services\MatchService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,5 +47,32 @@ class MatchAvailabilityController extends Controller
         }
 
         return redirect()->back()->with('success', 'Disponibilidad actualizada exitosamente.');
+    }
+
+    /**
+     * Remind pending players on the caller's team to answer.
+     */
+    public function remind(Request $request, FootballMatch $match): RedirectResponse
+    {
+        $validated = $request->validate([
+            'team_id' => ['required', 'integer', 'exists:teams,id'],
+        ]);
+        $team = Team::findOrFail($validated['team_id']);
+
+        abort_unless(
+            in_array($team->id, [$match->home_team_id, $match->away_team_id], true)
+                && $team->isLeader($request->user()->id),
+            403
+        );
+        abort_unless(in_array($match->status, ['available', 'confirmed'], true), 403);
+
+        $sent = $this->matchService->remindPendingPlayers($match, $team);
+
+        return back()->with(
+            'success',
+            $sent > 0
+                ? "Recordatorio enviado a {$sent} jugador(es) pendiente(s)."
+                : 'No hay jugadores pendientes sin recordar.'
+        );
     }
 }

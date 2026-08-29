@@ -21,7 +21,12 @@ class GoogleAuthController extends Controller
         // Preserve a team invitation token across the OAuth round-trip so the
         // user can be auto-joined to the team after signing up with Google.
         if ($request->filled('invitation')) {
-            session(['invitation_token' => $request->string('invitation')->toString()]);
+            $token = $request->string('invitation')->toString();
+
+            session([
+                'invitation_token' => $token,
+                'url.intended' => route('teams.invitation.show', $token),
+            ]);
         }
 
         return Socialite::driver('google')->redirect();
@@ -44,7 +49,6 @@ class GoogleAuthController extends Controller
                 // Update existing user with Google credentials
                 $user->update([
                     'google_id' => $googleUser->id,
-                    'google_token' => $googleUser->token,
                     'google_avatar_url' => $googleUser->avatar,
                 ]);
             } else {
@@ -53,10 +57,9 @@ class GoogleAuthController extends Controller
                     'name' => $googleUser->name,
                     'email' => $googleUser->email,
                     'google_id' => $googleUser->id,
-                    'google_token' => $googleUser->token,
                     'google_avatar_url' => $googleUser->avatar,
-                    'email_verified_at' => now(), // Google users are verified
                 ]);
+                $user->markEmailAsVerified();
             }
 
             // Check if user has two-factor authentication enabled
@@ -87,7 +90,7 @@ class GoogleAuthController extends Controller
      */
     private function acceptPendingInvitation(User $user): void
     {
-        $token = session()->pull('invitation_token');
+        $token = session('invitation_token');
 
         if (! $token) {
             return;
@@ -97,9 +100,32 @@ class GoogleAuthController extends Controller
             ->where('status', 'pending')
             ->first();
 
-        if ($invitation && $invitation->isValid()) {
-            app(TeamInvitationService::class)->acceptInvitation($invitation, $user);
-            session(['url.intended' => route('teams.invitation.show', $invitation->token)]);
+        if (! $invitation || ! $invitation->isValid()) {
+            session()->forget('invitation_token');
+
+            return;
         }
+
+        $emailMatches = blank($invitation->email)
+            || strcasecmp(trim($invitation->email), trim($user->email)) === 0;
+
+        if (! $emailMatches) {
+            session()->forget('invitation_token');
+
+            return;
+        }
+
+        session(['url.intended' => route('teams.invitation.show', $invitation->token)]);
+
+        if ($invitation->role === 'co_captain' && ! $user->canLeadTeam()) {
+            if ($invitation->team->isFull()) {
+                session()->forget('invitation_token');
+            }
+
+            return;
+        }
+
+        session()->forget('invitation_token');
+        app(TeamInvitationService::class)->acceptInvitation($invitation, $user);
     }
 }

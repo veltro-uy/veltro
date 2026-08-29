@@ -45,17 +45,24 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
             ? ($this->match->awayTeam ? $this->match->awayTeam->name : 'A definir')
             : $this->match->homeTeam->name;
 
-        $scheduledDate = $this->match->scheduled_at->locale('es')->isoFormat('dddd D [de] MMMM [de] YYYY');
-        $scheduledTime = $this->match->scheduled_at->format('H:i').' hs';
-
-        return (new MailMessage)
-            ->subject('Confirmá tu disponibilidad — Partido en 48 horas')
+        $message = (new MailMessage)
+            ->subject('Confirmá tu disponibilidad para el próximo partido')
             ->greeting("¡Hola {$notifiable->name}!")
-            ->line("Tu equipo **{$this->team->name}** tiene un partido en 48 horas.")
-            ->line("**Rival:** {$opponent}")
-            ->line("**Fecha:** {$scheduledDate}")
-            ->line("**Hora:** {$scheduledTime}")
-            ->line("**Lugar:** {$this->match->location}")
+            ->line("Tu equipo **{$this->team->name}** tiene un partido próximo.")
+            ->line("**Rival:** {$opponent}");
+
+        if ($this->match->scheduled_at) {
+            $scheduledDate = $this->match->scheduled_at->locale('es')->isoFormat('dddd D [de] MMMM [de] YYYY');
+            $message
+                ->line("**Fecha:** {$scheduledDate}")
+                ->line("**Hora:** {$this->match->scheduled_at->format('H:i')} hs");
+        }
+
+        if ($this->match->location) {
+            $message->line("**Lugar:** {$this->match->location}");
+        }
+
+        return $message
             ->line('Confirmá tu disponibilidad para que tu equipo pueda organizarse.')
             ->action('Confirmar disponibilidad', $matchUrl)
             ->line('¡Gracias por ayudar a tu equipo a estar organizado!');
@@ -75,7 +82,7 @@ class AvailabilityReminderNotification extends Notification implements ShouldQue
         return [
             'type' => 'availability_reminder',
             'title' => 'Confirmá tu disponibilidad',
-            'message' => "El partido contra {$opponent} es en 48 horas",
+            'message' => "Tu equipo necesita tu respuesta para el partido contra {$opponent}",
             'action_url' => route('matches.show', $this->match),
             'icon' => 'Clock',
             'related_model' => [
